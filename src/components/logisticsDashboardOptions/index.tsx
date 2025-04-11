@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Image, { StaticImageData } from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
-import shadow from "../../../public/assets/images/Shadow.png";
+import shadow from "../../../public/assets/images/shadow.png";
 import dashboardImage from "../../../public/assets/images/dashboardImage.png";
 import shopImg from "../../../public/assets/images/bag-happy.png";
 import transactionImg from "../../../public/assets/images/transactionImg.png";

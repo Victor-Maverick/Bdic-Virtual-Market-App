@@ -11,7 +11,6 @@ import smartWatch from '../../../public/assets/images/smartwatch.png'
 import hardDrive from '../../../public/assets/images/samsung.png'
 import nikeDunk from '../../../public/assets/images/nike dunk low.png'
 import airForce from '../../../public/assets/images/air force 1.png'
-import adidas from '../../../public/assets/images/adidas.png'
 import reebok from '../../../public/assets/images/reebok.png'
 import box from '../../../public/assets/images/box.png'
 import routing from '../../../public/assets/images/routing.png'
@@ -29,10 +28,6 @@ import books from '../../../public/assets/images/books.png'
 import eraser from '../../../public/assets/images/eraser.png'
 import pencils from '../../../public/assets/images/pencils.png'
 import highlightSet from '../../../public/assets/images/highlight set.png'
-import iphone12 from '../../../public/assets/images/iphone12.png'
-import samXiami from '../../../public/assets/images/samsung xiami.png'
-import storeWriteUp from '../../../public/assets/images/Super Gadget store.png'
-import productCard from '../../../public/assets/images/Product card.png'
 import fashionIcon from '../../../public/assets/images/fashionIcon.png'
 import neckTie from '../../../public/assets/images/men tie.png'
 import agricImg from '../../../public/assets/images/agricImg.png'
@@ -111,27 +106,6 @@ const FlashSale = ({ countdown, featuredProducts }) => {
     );
 };
 
-// Reusable FeaturedStore Component
-const FeaturedStore = () => (
-    <div className="flex-col mt-4 px-25">
-        <div className="h-[70px] bg-[#022B23] rounded-t-3xl text-[#C6EB5F] pl-4 pt-3">
-            <p className="font-normal text-[20px]">Featured store</p>
-            <p className="text-[12px] font-light">Check out top verified stores</p>
-        </div>
-        <div className="h-[370px] flex gap-[10px] p-2 border bg-[#f9fde8] border-[#C6EB5F] rounded-b-3xl my-2">
-            <div className="w-[580px] bg-[#DBF0FF] h-[350px] rounded-[14px] flex-col justify-evenly pt-8">
-                <div className="flex gap-[10px] justify-around items-center">
-                    <Image src={storeWriteUp} alt="Store Write-Up" />
-                    <Image src={samXiami} alt="Samsung Xiaomi" />
-                </div>
-                <div className="flex justify-center items-baseline">
-                    <Image className="align-bottom self-center" src={iphone12} alt="iPhone 12" height={501} width={461} />
-                </div>
-            </div>
-            <Image src={productCard} alt="Product Card" />
-        </div>
-    </div>
-);
 
 const MarketPlace = () => {
     const [selectedMarket, setSelectedMarket] = useState("Wurukum");
@@ -145,7 +119,7 @@ const MarketPlace = () => {
         { name: "Portable hard drive", image: hardDrive, price: "25,000" },
         { name: "Air Force 1", image: airForce, price: "32,000" },
         { name: "Nike dunk low", image: nikeDunk, price: "28,000" },
-        { name: "Adidas superstar", image: adidas, price: "25,000" },
+        { name: "Adidas superstar", image: nikeDunk, price: "25,000" },
         { name: "Yeezy", image: yeezy, price: "20,000" },
         { name: "Reebok classic leather", image: reebok, price: "20,000" },
         { name: "Tomatoes", image: tomatoes, price: "2,000" },
