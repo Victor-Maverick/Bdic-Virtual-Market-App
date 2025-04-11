@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
-import agricImg from '../../../public/assets/images/agricImg.png';
+import agricimg from '../../../public/assets/images/agricImg.png';
 import categoryImg from '../../../public/assets/images/categoryImg.png';
 import electronicIcon from '../../../public/assets/images/electronicIcon.png';
 import hospitalIcon from '../../../public/assets/images/hospitalIcon.svg';
@@ -22,7 +22,7 @@ type Category = {
 };
 
 const categories: Category[] = [
-    { label: "Agriculture", icon: agricImg },
+    { label: "Agriculture", icon: agricimg },
     { label: "Electronics", icon: electronicIcon },
     { label: "Healthcare", icon: hospitalIcon },
     { label: "Kids", icon: babyIcon },
