@@ -264,7 +264,6 @@ const MarketPlace = () => {
                 <div className="flex-col px-25">
                     <FlashSale countdown={countdown} featuredProducts={featuredProducts} />
                 </div>
-                <FeaturedStore />
             </div>
             <Footer/>
         </>
