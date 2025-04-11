@@ -5,7 +5,7 @@ import arrowLeft from "../../../../public/assets/images/arrow-left.png";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import goodsPack from "../../../../public/assets/images/goodsPack.png";
 import { useRouter } from "next/navigation";
-import envelopeImg from '@/../public/assets/images/EnvelopeImg.png'
+import envelopeImg from '@/../public/assets/images/envelopeImg.svg'
 
 const EmailVerification = () => {
     const router = useRouter();

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
-import sideLine from '@/../public/assets/images/Frame 29.png';
+import sideLine from '@/../public/assets/images/greyline.svg';
 import riderImg from '@/../public/assets/images/rider image.png';
 import arrow from "@/../public/assets/images/blackArrow.png";
 import shortFrame from '@/../public/assets/images/shortFrame.png';

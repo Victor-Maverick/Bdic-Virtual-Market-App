@@ -2,7 +2,7 @@
 
 
 import Image from "next/image";
-import addressImg from '@/../public/assets/images/Delivery address-rafiki 1.png'
+import addressImg from '@/../public/assets/images/deliverySuccessImg.svg'
 import limeArrow from '../../../public/assets/images/green arrow.png'
 import greenTick from '../../../public/assets/images/green tick.png'
 

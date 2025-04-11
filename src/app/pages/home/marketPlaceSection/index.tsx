@@ -4,12 +4,11 @@ import ProductCard from "@/components/productCard";
 import pepper from '../../../../../public/assets/images/pepper.jpeg';
 import miniFan from '../../../../../public/assets/images/table fan.png';
 import carrots from '../../../../../public/assets/images/carrot.png';
-import nikeShoe from '../../../../../public/assets/images/Nike Shoes.png';
 
 const products = [
     { id: 1, image: miniFan, title: "Mini Fan", price: 23000, location: "Makurdi" },
     { id: 2, image: carrots, title: "Carrots", price: 12000, location: "Gboko" },
-    { id: 3, image: nikeShoe, title: "Nike air shoe", price: 50000, location: "Wannune" },
+    { id: 3, image: carrots, title: "Nike air shoe", price: 50000, location: "Wannune" },
     { id: 4, image: pepper, title: "Bags of Oranges", price: 50000, location: "Makurdi" },
     { id: 5, image: pepper, title: "Tuber of Yam", price: 15000, location: "Otukpo" },
 ];
