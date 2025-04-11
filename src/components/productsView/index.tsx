@@ -11,7 +11,7 @@ import wirelessCharger from "../../../public/assets/images/wireless charger.png"
 import jblSpeaker from "../../../public/assets/images/jbl.png";
 import smartWatch from "../../../public/assets/images/smartwatch.png";
 import hardDrive from "../../../public/assets/images/samsung.png";
-import airForce from "../../../public/assets/images/air force 1.png";
+import airForce from "../../../public/assets/images/airforce.svg";
 import arrow from '../../../public/assets/images/grey right arrow.png'
 
 
