@@ -1,69 +1,51 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
-import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
-import {useRouter, useSearchParams} from "next/navigation";
-import {useEffect, useRef, useState} from "react";
-import NewProductView from "@/components/newProductView";
+import {Suspense, useEffect, useRef} from 'react'
+import DashboardHeader from "@/components/dashboardHeader"
+import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useState } from "react"
+import NewProductView from "@/components/newProductView"
 import orderImg from '@/../public/assets/images/archive.png'
 import blackArrowImg from '@/../public/assets/images/arrow-up.svg'
 import deliveredImg from '@/../public/assets/images/dropbox.svg'
 import pendingImg from '@/../public/assets/images/flag-2.svg'
-import Image from "next/image";
-import iPhone from "../../../../public/assets/images/blue14.png";
-import arrowDown from "../../../../public/assets/images/arrowDown.png";
+import Image from "next/image"
+import iPhone from "../../../../public/assets/images/blue14.png"
+import arrowDown from "../../../../public/assets/images/arrowDown.png"
 
 const products = [
     { id: 1, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "", fee: 1200},
     { id: 2, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 3, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000,  deliveryAddress: "", fee: 1200},
+    { id: 3, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "", fee: 1200},
     { id: 4, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Delivered", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 5, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "",fee: 1200},
-    { id: 6, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Delivered", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",fee: 1200},
-    { id: 7, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "",fee: 1200},
-    { id: 8, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Delivered", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",fee: 1200},
-    { id: 9, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000,  deliveryAddress: "",fee: 1200},
-    { id: 10, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Delivered", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",fee: 1200}
-];
-import { StaticImageData } from 'next/image';
+    { id: 5, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "", fee: 1200},
+    { id: 6, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Delivered", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
+    { id: 7, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "", fee: 1200},
+    { id: 8, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Delivered", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
+    { id: 9, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "", fee: 1200},
+    { id: 10, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Delivered", deliveryMethod: "Home delivery", unitPrice: 840000, deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200}
+]
 
-type Product = {
-    id: number;
-    productId: string;
-    image: StaticImageData;
-    name: string;
-    customerId: string;
-    status: string;
-    deliveryMethod: string;
-    deliveryAddress: string;
-    unitPrice: number;
-    fee: number;
-};
-
-const ProductActionsDropdown = ({
-                                    children
-                                }: {
-    productId: number;
-    children: React.ReactNode;
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-    const triggerRef = useRef<HTMLDivElement>(null);
+const ProductActionsDropdown = ({ children }: { productId: number; children: React.ReactNode }) => {
+    const [isOpen, setIsOpen] = useState(false)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const triggerRef = useRef<HTMLDivElement>(null)
 
     const handleToggle = (e: React.MouseEvent) => {
-        e.stopPropagation();
-        setIsOpen(!isOpen);
-    };
+        e.stopPropagation()
+        setIsOpen(!isOpen)
+    }
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
+                setIsOpen(false)
             }
-        };
+        }
 
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, []);
+        document.addEventListener('click', handleClickOutside)
+        return () => document.removeEventListener('click', handleClickOutside)
+    }, [])
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -78,25 +60,19 @@ const ProductActionsDropdown = ({
             {isOpen && (
                 <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
                     <ul className="py-1">
-                        <li className="px-[8px] py-[4px] h-[38px] text-[12px] text-[#8C8C8C]  cursor-pointer">Accept order</li>
+                        <li className="px-[8px] py-[4px] h-[38px] text-[12px] text-[#8C8C8C] cursor-pointer">Accept order</li>
                         <li className="px-[8px] py-[4px] h-[38px] border-t-[0.5px] border-[#F2F2F2] text-[12px] bg-[#FFFAEB] cursor-pointer">Schedule delivery</li>
-                        <li className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] bg-[#FFFAF9] border-t-[0.5px]  border-[#F2F2F2] cursor-pointer text-[#FF5050]">
+                        <li className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] bg-[#FFFAF9] border-t-[0.5px] border-[#F2F2F2] cursor-pointer text-[#FF5050]">
                             Reject order
                         </li>
                     </ul>
                 </div>
             )}
         </div>
-    );
-};
+    )
+}
 
-const ProductTableRow = ({
-                             product,
-                             isLast
-                         }: {
-    product: Product;
-    isLast: boolean
-}) => {
+const ProductTableRow = ({ product, isLast }: { product: typeof products[0]; isLast: boolean }) => {
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[284px] pr-[24px] gap-3">
@@ -158,66 +134,42 @@ const ProductTableRow = ({
                 </ProductActionsDropdown>
             </div>
         </div>
-    );
-};
+    )
+}
 
-const Dashboard = () => {
-    const [currentPage, setCurrentPage] = useState(1);
-    const productsPerPage = 5;
-    const searchParams = useSearchParams();
-    const initialTab = searchParams.get('tab') as 'new-orders' | 'pending' | 'delivered' | 'disputes' || 'new-orders';
-    const [activeTab, setActiveTab] = useState<'new-orders' | 'pending' | 'delivered' | 'disputes'>(initialTab);
-    const router = useRouter();
+function DashboardContent() {
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const initialTab = searchParams.get('tab') as 'new-orders' | 'pending' | 'delivered' | 'disputes' || 'new-orders'
+    const [activeTab, setActiveTab] = useState(initialTab)
+    const [currentPage, setCurrentPage] = useState(1)
+    const productsPerPage = 5
 
-    const handleTabChange = (tab: 'new-orders' | 'pending' | 'delivered' | 'disputes') => {
-        setActiveTab(tab);
-        setCurrentPage(1); // Reset to first page when changing tabs
-        router.replace(`/logistics/dashboard?tab=${tab}`, { scroll: false });
-    };
+    const handleTabChange = (tab: typeof activeTab) => {
+        setActiveTab(tab)
+        setCurrentPage(1)
+        router.replace(`/logistics/dashboard?tab=${tab}`, { scroll: false })
+    }
 
-    // Filter products based on active tab
     const filteredProducts = products.filter(product => {
-        if (activeTab === 'new-orders') {
-            return product.status === 'Pending';
-        } else if (activeTab === 'pending') {
-            return product.status === 'Pending';
-        } else if (activeTab === 'delivered') {
-            return product.status === 'Delivered';
-        }
-        return true; // For disputes or other tabs
-    });
+        if (activeTab === 'new-orders') return product.status === 'Pending'
+        if (activeTab === 'pending') return product.status === 'Pending'
+        if (activeTab === 'delivered') return product.status === 'Delivered'
+        return true
+    })
 
-    const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-    const indexOfLastProduct = currentPage * productsPerPage;
-    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    const indexOfLastProduct = currentPage * productsPerPage
+    const indexOfFirstProduct = indexOfLastProduct - productsPerPage
+    const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct)
 
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const goToPrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
-    const goToPage = (pageNumber: number) => {
-        setCurrentPage(pageNumber);
-    };
-
-    // Counts for the summary cards
-    const pendingCount = products.filter(p => p.status === 'Pending').length;
-    const deliveredCount = products.filter(p => p.status === 'Delivered').length;
+    const pendingCount = products.filter(p => p.status === 'Pending').length
+    const deliveredCount = products.filter(p => p.status === 'Delivered').length
 
     return (
         <>
             <DashboardHeader />
             <LogisticsDashboardOptions />
 
-            {/* Tabs Section */}
             <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
                 <div className="w-[328px] h-[52px] gap-[24px] flex items-end">
                     <p
@@ -249,7 +201,7 @@ const Dashboard = () => {
 
             <div className="bg-white rounded-lg mx-[100px] mb-8">
                 {activeTab === 'new-orders' && (
-                    <div className="">
+                    <div>
                         <div className="flex flex-col gap-[12px]">
                             <p className="text-[#022B23] text-[16px] font-medium">New orders ({pendingCount})</p>
                             <div className="flex justify-between h-[100px] w-[778px]">
@@ -342,12 +294,21 @@ const Dashboard = () => {
                             <p className="text-[#101828] font-medium">Delivered Orders ({deliveredCount})</p>
                             <p className="text-[#667085] text-[14px]">View delivered orders</p>
                         </div>
-                        {/* Similar table structure for delivered orders */}
                     </div>
                 )}
             </div>
         </>
-    );
-};
+    )
+}
 
-export default Dashboard;
+export default function Dashboard() {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center items-center h-screen">
+                <p>Loading dashboard...</p>
+            </div>
+        }>
+            <DashboardContent />
+        </Suspense>
+    )
+}
