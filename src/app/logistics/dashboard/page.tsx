@@ -5,7 +5,7 @@ import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import NewProductView from "@/components/newProductView"
-import orderImg from '@/../public/assets/images/archive.png'
+import orderImg from '@/../public/assets/images/archive.svg'
 import blackArrowImg from '@/../public/assets/images/arrow-up.svg'
 import deliveredImg from '@/../public/assets/images/dropbox.svg'
 import pendingImg from '@/../public/assets/images/flag-2.svg'

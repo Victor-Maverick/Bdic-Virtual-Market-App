@@ -11,11 +11,11 @@ import biArrows from "../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../public/assets/images/arrow-up.svg";
 import flagImg from '../../../public/assets/images/flag-2.svg';
 import dropBoxImg from '../../../public/assets/images/dropbox.svg';
-import archiveImg from '../../../public/assets/images/archive.png';
+import archiveImg from '../../../public/assets/images/archive.svg';
 import profileImg from "../../../public/assets/images/dashuserimg.svg";
 import arrowDown from '../../../public/assets/images/arrowDown.png';
 import iPhone from '../../../public/assets/images/blue14.png';
-import arrowBack from '../../../public/assets/images/arrow-left.png';
+import arrowBack from '../../../public/assets/images/arrow-right.svg';
 import arrowRight from '../../../public/assets/images/grey right arrow.png';
 import displayImg from '../../../public/assets/images/iphone14Img.svg'
 import ProductAddedModal from "@/components/productAddedModal";

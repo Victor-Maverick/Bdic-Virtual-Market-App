@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import backArrow from '../../../public/assets/images/arrow-right.png'
+import backArrow from '../../../public/assets/images/arrow-right.svg'
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error

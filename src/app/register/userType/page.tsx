@@ -1,7 +1,7 @@
 'use client';
 import Image from "next/image";
 import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
-import arrowLeft from "../../../../public/assets/images/arrow-left.png";
+import arrowLeft from "../../../../public/assets/images/arrow-right.svg";
 import shop from "../../../../public/assets/images/shop.svg";
 import profileCirle from '../../../../public/assets/images/profile-circle.svg';
 import logCar from '../../../../public/assets/images/logCar.png';

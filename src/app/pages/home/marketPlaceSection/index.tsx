@@ -1,5 +1,5 @@
 import Image from "next/image";
-import arrow from "../../../../../public/assets/images/arrow-right.png";
+import arrow from "../../../../../public/assets/images/arrow-right.svg";
 import ProductCard from "@/components/productCard";
 import pepper from '../../../../../public/assets/images/pepper.jpeg';
 import miniFan from '../../../../../public/assets/images/table fan.png';

@@ -1,7 +1,7 @@
 'use client'
 import Image from "next/image";
 import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
-import arrowLeft from "../../../../public/assets/images/arrow-left.png";
+import arrowLeft from "../../../../public/assets/images/arrow-right.svg";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import goodsPack from "../../../../public/assets/images/goodsPack.png";
 import { useRouter } from "next/navigation";

@@ -2,7 +2,7 @@
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
 import Image from "next/image";
-import arrow from "../../../../../public/assets/images/arrow-left.png";
+import arrow from "../../../../../public/assets/images/arrow-right.svg";
 import {useRouter} from "next/navigation";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import doneImg from '../../../../../public/assets/images/doneImg.png'

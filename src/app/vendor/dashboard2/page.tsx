@@ -1,7 +1,7 @@
 'use client'
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import archiveImg from '../../../../public/assets/images/archive.png'
+import archiveImg from '../../../../public/assets/images/archive.svg'
 import Image from "next/image";
 import biArrows from '../../../../public/assets/images/biArrows.svg'
 import awardImg from '../../../../public/assets/images/award.png'

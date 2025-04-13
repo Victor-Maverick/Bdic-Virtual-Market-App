@@ -1,7 +1,7 @@
 'use client'
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import arrow from '../../../../../public/assets/images/arrow-left.png'
+import arrow from '../../../../../public/assets/images/arrow-right.svg'
 import Image from 'next/image'
 import {useState} from "react";
 import {ChevronDown} from "lucide-react";

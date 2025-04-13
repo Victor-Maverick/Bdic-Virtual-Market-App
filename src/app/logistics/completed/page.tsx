@@ -3,7 +3,7 @@ import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
 import dashImg from "../../../../public/assets/images/Logistics-rafiki.svg";
 import Image from "next/image";
-import arrow from "../../../../public/assets/images/arrow-left.png";
+import arrow from "../../../../public/assets/images/arrow-right.svg";
 import doneImg from "../../../../public/assets/images/logDashImg.png";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import {useRouter} from "next/navigation";
