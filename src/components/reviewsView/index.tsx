@@ -1,5 +1,5 @@
 import Image, {StaticImageData} from "next/image";
-import arrowDown from "../../../public/assets/images/arrowDown.png";
+import arrowDown from "../../../public/assets/images/arrow-down.svg";
 import iPhone from "../../../public/assets/images/blue14.png";
 
 interface Product {

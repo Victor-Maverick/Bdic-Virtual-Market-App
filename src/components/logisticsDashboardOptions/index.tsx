@@ -4,7 +4,7 @@ import Image, { StaticImageData } from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import shadow from "../../../public/assets/images/shadow.png";
 import dashboardImage from "../../../public/assets/images/dashboardImage.png";
-import shopImg from "../../../public/assets/images/bag-happy.png";
+import shopImg from "../../../public/assets/images/shop-image.svg";
 import transactionImg from "../../../public/assets/images/transactionImg.png";
 import notificationImg from "../../../public/assets/images/notification-bing.png";
 import settingImg from "../../../public/assets/images/settingImg.png";

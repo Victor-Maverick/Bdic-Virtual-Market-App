@@ -2,11 +2,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
-import agricimg from '../../../public/assets/images/agricImg.png';
+import agricimg from '../../../public/assets/images/mapIcon.png';
 import categoryImg from '../../../public/assets/images/categoryImg.png';
 import electronicIcon from '../../../public/assets/images/electronicIcon.png';
 import hospitalIcon from '../../../public/assets/images/hospitalIcon.svg';
-import babyIcon from '../../../public/assets/images/babyIcon.png';
+import babyIcon from '../../../public/assets/images/homeIcon.png';
 import lotionIcon from '../../../public/assets/images/lotionIcon.svg';
 import carIcon from '../../../public/assets/images/carIcon.svg';
 import mobileIcon from '../../../public/assets/images/mobileIcon.svg';
@@ -15,10 +15,9 @@ import homeIcon from '../../../public/assets/images/homeIcon.png';
 import mapIcon from '../../../public/assets/images/mapIcon.png';
 import deviceIcon from '../../../public/assets/images/deviceIcon.svg';
 
-// Define the type for category items
 type Category = {
     label: string;
-    icon: string; // or StaticImageData if using Next.js Image with imported images
+    icon: string;
 };
 
 const categories: Category[] = [

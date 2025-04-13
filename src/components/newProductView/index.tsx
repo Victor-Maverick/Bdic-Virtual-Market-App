@@ -12,7 +12,7 @@ import flagImg from '../../../public/assets/images/flag-2.svg';
 import dropBoxImg from '../../../public/assets/images/dropbox.svg';
 import archiveImg from '../../../public/assets/images/archive.svg';
 import profileImg from "../../../public/assets/images/dashuserimg.svg";
-import arrowDown from '../../../public/assets/images/arrowDown.png';
+import arrowDown from '../../../public/assets/images/arrow-down.svg';
 import iPhone from '../../../public/assets/images/blue14.png';
 import arrowBack from '../../../public/assets/images/arrow-right.svg';
 import arrowRight from '../../../public/assets/images/grey right arrow.png';

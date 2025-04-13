@@ -11,7 +11,7 @@ import deliveredImg from '@/../public/assets/images/dropbox.svg'
 import pendingImg from '@/../public/assets/images/flag-2.svg'
 import Image from "next/image"
 import iPhone from "../../../../public/assets/images/blue14.png"
-import arrowDown from "../../../../public/assets/images/arrowDown.png"
+import arrowDown from "../../../../public/assets/images/arrow-down.svg"
 
 const products = [
     { id: 1, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "", fee: 1200},

@@ -30,7 +30,6 @@ import pencils from '@/../public/assets/images/pencils.png'
 import highlightSet from '@/../public/assets/images/highlight set.png'
 import fashionIcon from '@/../public/assets/images/fashionIcon.png'
 import neckTie from '@/../public/assets/images/men tie.png'
-import agricImg from '@/../public/assets/images/agricImg.png'
 import skirtImg from '@/../public/assets/images/skirt.png'
 import { useState, useEffect, Key} from "react";
 import Header from "@/components/header";
@@ -254,7 +253,7 @@ const MarketPlace = () => {
                         </div>
                         <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
                             <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[46px] w-[100px]  text-center ">
-                                <Image src={agricImg} alt={''}/>
+                                <Image src={skirtImg} alt={''}/>
                                 <p className="text-center text-[14px]">Farm</p>
                             </div>
                         </div>

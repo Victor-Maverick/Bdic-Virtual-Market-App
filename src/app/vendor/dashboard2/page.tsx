@@ -4,7 +4,7 @@ import DashboardSubHeader from "@/components/dashboardSubHeader";
 import archiveImg from '../../../../public/assets/images/archive.svg'
 import Image from "next/image";
 import biArrows from '../../../../public/assets/images/biArrows.svg'
-import awardImg from '../../../../public/assets/images/award.png'
+import awardImg from '../../../../public/assets/images/award.svg'
 import dropBoxImg from '../../../../public/assets/images/dropbox.svg'
 import flag from '../../../../public/assets/images/flag-2.svg'
 import dashUser from '../../../../public/assets/images/dashuserimg.svg'
