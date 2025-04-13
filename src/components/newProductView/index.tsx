@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useRef, ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
