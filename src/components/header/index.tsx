@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
 import headerImg from "../../../public/assets/images/headerImg.png";
@@ -10,7 +10,7 @@ const Header = () => {
     const router = useRouter();
 
     return (
-        <div className="fixed w-full h-[70px] md:h-[80px] lg:h-[90px] bg-white z-50 flex items-center border-b border-gray-300 shadow-md px-4 sm:px-6 md:px-10 lg:px-20 justify-between max-w-screen overflow-hidden">
+        <div className="fixed w-full h-[70px] md:h-[80px] lg:h-[90px] bg-white z-50 flex items-center border-b border-gray-300 shadow-md px-4 sm:px-6 md:px-10 lg:px-20 justify-between max-w-screen ">
             <div className="flex items-center gap-2">
                 <Image src={headerImg} alt="FarmGo Logo" width={28} height={28} className="md:w-[30px] md:h-[30px]" />
                 <p className="text-[14px] sm:text-[16px] md:text-[18px] font-semibold text-black leading-tight">

@@ -8,16 +8,14 @@ import Footer from "@/components/footer";
 
 export default function Home() {
   return (
-      <div>
-        <main>
-            <Header/>
+      <div className="flex flex-col">
+          <Header/>
           <HeroSection/>
           <StatSection/>
           <OfferSection/>
           <MarketPlaceSection/>
           <LogisticsSection/>
             <Footer/>
-        </main>
 
       </div>
   );

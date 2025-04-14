@@ -13,7 +13,7 @@ const formatNumber = (num: number) => {
     if (num >= 1000) {
         return (num / 1000).toFixed(num % 1000 === 0 ? 0 : 1) + "K";
     }
-    return num;
+    return num.toString();
 };
 
 const StatSection = () => {
@@ -21,6 +21,13 @@ const StatSection = () => {
     const [hovered, setHovered] = useState(false);
 
     useEffect(() => {
+        const isMobile = window.innerWidth < 768;
+
+        if (isMobile) {
+            setCounts(stats.map(stat => stat.value));
+            return;
+        }
+
         if (!hovered) return;
 
         const duration = 1000;
@@ -43,16 +50,16 @@ const StatSection = () => {
 
     return (
         <div
-            className="bg-[#f9fbe9] px-6 md:px-25 py-2 w-full"
+            className="bg-[#f9fbe9] px-4 md:px-[6vw] py-4 w-full"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            <div className="flex items-center justify-between w-full">
-                <div className="flex w-full justify-between md:justify-start md:gap-25 text-sm md:text-normal a ">
+            <div className="flex items-center justify-between flex-wrap md:flex-nowrap w-full">
+                <div className="flex w-full justify-between md:justify-start md:gap-[5vw] text-sm md:text-base">
                     {stats.map((stat, index) => (
                         <div key={index} className="flex flex-col items-center md:items-start">
                             <p className="text-[#022b23] uppercase text-xs md:text-sm">{stat.label}</p>
-                            <p className="text-[#022b23] text-lg md:text-[36px] font-semibold">
+                            <p className="text-[#022b23] text-lg md:text-[2.25rem] font-semibold">
                                 {formatNumber(Math.floor(counts[index]))}+
                             </p>
                         </div>

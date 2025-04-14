@@ -43,7 +43,7 @@ const UserType = () => {
     return (
         <div className="flex min-h-screen">
             {/* Left Side - Form */}
-            <div className="w-full md:w-[879px] pb-[65px] flex flex-col">
+            <div className="w-full md:w-[65%] pb-[65px] flex flex-col">
                 <Image
                     src={farmGoLogo}
                     alt="FarmGo logo"
@@ -188,7 +188,7 @@ const UserType = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col bg-[#ecfdf6] h-auto w-[471px] pl-[20px]">
+            <div className="flex flex-col bg-[#ecfdf6] h-auto w-[35%] pl-[20px]">
                 <div className="mt-[231px]">
                     <p className="text-[#461602] text-[22px]">Get started</p>
                     <p className="mt-[10px] text-[26px] leading-tight">
