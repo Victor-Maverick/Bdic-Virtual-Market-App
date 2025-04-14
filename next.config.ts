@@ -1,9 +1,10 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
     images: {
         formats: ['image/webp'],
     },
-    output: 'standalone', // Lean deployment
+    output: 'standalone',
 };
 
-module.exports = nextConfig;
+export default nextConfig;
