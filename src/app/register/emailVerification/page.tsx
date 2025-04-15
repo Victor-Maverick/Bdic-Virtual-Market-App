@@ -13,6 +13,9 @@ const EmailVerification = () => {
     const handleClick = ()=>{
         router.push("/register/userType");
     }
+    const handleBack=()=>{
+        router.push("/register/getStarted");
+    }
     return (
         <div className="flex">
             <div className="pb-10 z-10 w-2/3 flex-col space-y-2.5">
@@ -29,9 +32,9 @@ const EmailVerification = () => {
                         <div className="w-20 h-1.5 bg-[#F0FACD]"></div>
                     </div>
 
-                    <div className="flex items-center mt-4 gap-1">
-                        <Image src={arrowLeft} alt="arrow" />
-                        <p className="text-[#7C7C7C] text-lg">Go back</p>
+                    <div onClick={handleBack} className="flex items-center mt-4 gap-1">
+                        <Image src={arrowLeft} alt="arrow" className="cursor-pointer" width={24} height={24} />
+                        <p className="text-[#7C7C7C] cursor-pointer text-[#7C7C7C] text-[16px]">Go back</p>
                     </div>
 
                     <div className="mt-16">

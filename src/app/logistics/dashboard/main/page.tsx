@@ -5,13 +5,13 @@ import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import NewProductView from "@/components/newProductView"
-import orderImg from '@/../public/assets/images/archive.svg'
-import blackArrowImg from '@/../public/assets/images/arrow-up.svg'
-import deliveredImg from '@/../public/assets/images/dropbox.svg'
-import pendingImg from '@/../public/assets/images/flag-2.svg'
+import orderImg from '../../../../../public/assets/images/archive.svg'
+import blackArrowImg from '../../../../../public/assets/images/arrow-up.svg'
+import deliveredImg from '../../../../../public/assets/images/dropbox.svg'
+import pendingImg from '../../../../../public/assets/images/flag-2.svg'
 import Image from "next/image"
-import iPhone from "../../../../public/assets/images/blue14.png"
-import arrowDown from "../../../../public/assets/images/arrow-down.svg"
+import iPhone from "../../../../../public/assets/images/blue14.png"
+import arrowDown from "../../../../../public/assets/images/arrow-down.svg"
 
 const products = [
     { id: 1, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", deliveryMethod: "Shop pick-up", unitPrice: 840000, deliveryAddress: "", fee: 1200},
@@ -148,7 +148,7 @@ function DashboardContent() {
     const handleTabChange = (tab: typeof activeTab) => {
         setActiveTab(tab)
         setCurrentPage(1)
-        router.replace(`/logistics/dashboard?tab=${tab}`, { scroll: false })
+        router.replace(`/logistics/dashboard/main?tab=${tab}`, { scroll: false })
     }
 
     const filteredProducts = products.filter(product => {

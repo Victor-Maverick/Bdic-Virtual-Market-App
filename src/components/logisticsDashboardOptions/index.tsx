@@ -29,7 +29,7 @@ const LogisticsDashboardOptions = ({
 
     useEffect(() => {
         const routeToOption: Record<string, MenuOption> = {
-            '/logistics/dashboard': 'dashboard',
+            '/logistics/dashboard/main': 'dashboard',
             '/logistics/dashboard/fleet': 'fleet',
             '/dashboard/transactions': 'transaction',
             '/dashboard/notifications': 'notifications',
@@ -45,7 +45,7 @@ const LogisticsDashboardOptions = ({
 
     const getRouteForOption = (option: MenuOption): string => {
         const routeMap: Record<MenuOption, string> = {
-            dashboard: '/logistics/dashboard',
+            dashboard: '/logistics/dashboard/main',
             fleet: '/logistics/dashboard/fleet',
             transaction: '/dashboard/transactions',
             notifications: '/dashboard/notifications',

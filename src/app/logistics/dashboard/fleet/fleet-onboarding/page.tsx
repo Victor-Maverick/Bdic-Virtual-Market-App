@@ -3,10 +3,10 @@
 import { useState } from "react";
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import dashImg from "../../../../public/assets/images/Logistics-rafiki.svg";
+import dashImg from "../../../../../../public/assets/images/Logistics-rafiki.svg";
 import Image from "next/image";
-import arrow from "../../../../public/assets/images/arrow-right.svg";
-import limeArrow from "@/../public/assets/images/green arrow.png";
+import arrow from "../../../../../../public/assets/images/arrow-right.svg";
+import limeArrow from "../../../../../../public/assets/images/green arrow.png";
 import {InputField} from "@/components/inputField";
 import {FleetOnboardModal} from "@/components/fleetOnboardModal";
 

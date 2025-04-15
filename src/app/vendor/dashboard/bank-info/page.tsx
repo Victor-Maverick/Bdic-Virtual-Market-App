@@ -59,14 +59,14 @@ const DropDown = () => {
     );
 };
 
-type InputFieldProps = {
+interface InputFieldProps {
     id: string;
     label: string;
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
     optional?: boolean;
-};
+}
 
 const InputField = ({
                         id,

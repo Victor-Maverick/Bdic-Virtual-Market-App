@@ -50,15 +50,16 @@ const StatSection = () => {
 
     return (
         <div
-            className="bg-[#f9fbe9] px-4 md:px-[6vw] py-4 w-full"
+            className="bg-[#f9fbe9] w-full py-4 px-4 lg:px-[100px]"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            <div className="flex items-center justify-between flex-wrap md:flex-nowrap w-full">
-                <div className="flex w-full justify-between md:justify-start md:gap-[5vw] text-sm md:text-base">
+            <div className="max-w-screen-xl mx-auto flex items-center justify-between flex-wrap md:flex-nowrap">
+                {/* Stats Section */}
+                <div className="flex w-full justify-between md:justify-start md:gap-16 text-sm md:text-base">
                     {stats.map((stat, index) => (
-                        <div key={index} className="flex flex-col items-center md:items-start">
-                            <p className="text-[#022b23] uppercase text-xs md:text-sm">{stat.label}</p>
+                        <div key={index} className="flex flex-col items-center md:items-start flex-shrink-0">
+                            <p className="text-[#022b23] uppercase text-xs md:text-sm whitespace-nowrap">{stat.label}</p>
                             <p className="text-[#022b23] text-lg md:text-[2.25rem] font-semibold">
                                 {formatNumber(Math.floor(counts[index]))}+
                             </p>
@@ -66,8 +67,8 @@ const StatSection = () => {
                     ))}
                 </div>
 
-                {/* Image - Hidden on small screens */}
-                <div className="hidden md:block md:ml-12">
+                {/* Arrow Image */}
+                <div className="hidden md:block md:ml-12 flex-shrink-0">
                     <Image src={arrowImg} alt="Arrow Image" width={80} height={80} />
                 </div>
             </div>

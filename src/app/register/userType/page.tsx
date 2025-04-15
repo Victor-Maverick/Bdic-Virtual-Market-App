@@ -1,15 +1,19 @@
 'use client';
 import Image from "next/image";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+// Assets
 import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
 import arrowLeft from "../../../../public/assets/images/arrow-right.svg";
 import shop from "../../../../public/assets/images/shop.svg";
 import profileCirle from '../../../../public/assets/images/profile-circle.svg';
 import logCar from '../../../../public/assets/images/logCar.png';
-import { ChevronDown } from "lucide-react";
-import { useState } from "react";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import threeImages from '../../../../public/assets/images/threeImages.png';
-import { useRouter } from "next/navigation";
+import greenTick from '@/../public/assets/images/greentick.svg';
+import greyTick from '@/../public/assets/images/greytick.svg';
 
 type StateOption = {
     label: string;
@@ -33,7 +37,13 @@ const UserType = () => {
     const [address, setAddress] = useState("");
 
     const handleClick = () => {
-        router.push("/welcome");
+        if (selectedUserType && selectedOption && address.trim()) {
+            router.push("/welcome");
+        }
+    };
+
+    const handleBack = () => {
+        router.push("/register/emailVerification");
     };
 
     const handleUserTypeSelect = (type: UserTypeOption) => {
@@ -66,9 +76,9 @@ const UserType = () => {
                         ))}
                     </div>
 
-                    <div className="flex items-center mt-4 gap-1 cursor-pointer">
-                        <Image src={arrowLeft} alt="Back arrow" width={20} height={20} />
-                        <p className="text-[#7C7C7C] text-lg">Go back</p>
+                    <div onClick={handleBack} className="flex items-center mt-4 gap-1 ">
+                        <Image src={arrowLeft} alt="Back arrow" width={24} height={24} />
+                        <p className="text-[#7C7C7C] cursor-pointer text-lg">Go back</p>
                     </div>
 
                     <div className="mt-16">
@@ -103,18 +113,26 @@ const UserType = () => {
                         ].map((option) => (
                             <div
                                 key={option.type}
-                                className={`flex items-center h-[58px] px-[18px] py-[8px] cursor-pointer gap-[10px] border-b-[0.5px] border-[#ededed] transition-all
-                  ${selectedUserType === option.type ? 'bg-[#ECFDF6] border-[1px] border-black' : 'hover:bg-[#ECFDF6] hover:border-[1px] hover:border-black'}
-                  ${option.type === 'buyer' ? 'rounded-t-[14px]' : ''}
-                  ${option.type === 'logistics' ? 'rounded-b-[14px] border-b-0' : ''}
-                `}
+                                className={`flex items-center justify-between h-[58px] px-[18px] py-[8px] cursor-pointer gap-[10px] border-b-[0.5px] border-[#ededed] transition-all
+                                    ${selectedUserType === option.type ? 'bg-[#ECFDF6] border-[1px] border-black' : 'hover:bg-[#ECFDF6] hover:border-[1px] hover:border-black'}
+                                    ${option.type === 'buyer' ? 'rounded-t-[14px]' : ''}
+                                    ${option.type === 'logistics' ? 'rounded-b-[14px] border-b-0' : ''}
+                                `}
                                 onClick={() => handleUserTypeSelect(option.type as UserTypeOption)}
                             >
-                                <Image src={option.icon} alt={`${option.type} icon`} width={24} height={24} />
-                                <div>
-                                    <p className="font-medium text-[14px] text-[#121212]">{option.title}</p>
-                                    <p className="text-[#707070] text-[12px]">{option.description}</p>
+                                <div className="flex items-center gap-[10px]">
+                                    <Image src={option.icon} alt={`${option.type} icon`} width={24} height={24} />
+                                    <div>
+                                        <p className="font-medium text-[14px] text-[#121212]">{option.title}</p>
+                                        <p className="text-[#707070] text-[12px]">{option.description}</p>
+                                    </div>
                                 </div>
+                                <Image
+                                    src={selectedUserType === option.type ? greenTick : greyTick}
+                                    alt={selectedUserType === option.type ? "Selected" : "Not selected"}
+                                    width={20}
+                                    height={20}
+                                />
                             </div>
                         ))}
                     </div>
@@ -180,10 +198,17 @@ const UserType = () => {
 
                     <button
                         onClick={handleClick}
-                        className="flex mt-[35px] cursor-pointer gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] w-full hover:bg-[#011C17] transition-colors"
+                        disabled={!selectedUserType || !selectedOption || !address.trim()}
+                        className={`flex mt-[35px] gap-[9px] justify-center items-center rounded-[12px] h-[52px] w-full transition-colors ${
+                            selectedUserType && selectedOption && address.trim()
+                                ? "bg-[#022B23] text-[#C6EB5F] hover:bg-[#011C17] cursor-pointer"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        }`}
                     >
-                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Complete onboarding</p>
-                        <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                        <p className="font-semibold text-[14px]">Complete onboarding</p>
+                        {selectedUserType && selectedOption && address.trim() && (
+                            <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                        )}
                     </button>
                 </div>
             </div>
