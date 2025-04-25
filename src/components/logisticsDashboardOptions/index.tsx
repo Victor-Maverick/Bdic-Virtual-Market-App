@@ -5,7 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import shadow from "../../../public/assets/images/shadow.png";
 import dashboardImage from "../../../public/assets/images/dashboardImage.png";
 import shopImg from "../../../public/assets/images/shop-image.svg";
-import transactionImg from "../../../public/assets/images/transactionImg.png";
+import transactionImg from "../../../public/assets/images/receipt-discount.svg";
+import starImg from "../../../public/assets/images/star.svg";
 import notificationImg from "../../../public/assets/images/notification-bing.png";
 import settingImg from "../../../public/assets/images/settingImg.png";
 
@@ -13,6 +14,7 @@ type MenuOption =
     | 'dashboard'
     | 'fleet'
     | 'transaction'
+    | 'reviews'
     | 'notifications'
     | 'settings';
 
@@ -31,9 +33,10 @@ const LogisticsDashboardOptions = ({
         const routeToOption: Record<string, MenuOption> = {
             '/logistics/dashboard/main': 'dashboard',
             '/logistics/dashboard/fleet': 'fleet',
-            '/dashboard/transactions': 'transaction',
-            '/dashboard/notifications': 'notifications',
-            '/dashboard/settings': 'settings',
+            '/logistics/dashboard/transactions': 'transaction',
+            '/logistics/dashboard/reviews': 'reviews',
+            '/logistics/dashboard/notifications': 'notifications',
+            '/logistics/dashboard/settings': 'settings',
         };
 
         const matchedOption = Object.entries(routeToOption).find(([route]) =>
@@ -47,9 +50,10 @@ const LogisticsDashboardOptions = ({
         const routeMap: Record<MenuOption, string> = {
             dashboard: '/logistics/dashboard/main',
             fleet: '/logistics/dashboard/fleet',
-            transaction: '/dashboard/transactions',
-            notifications: '/dashboard/notifications',
-            settings: '/dashboard/settings',
+            transaction: '/logistics/dashboard/transactions',
+            reviews: '/logistics/dashboard/reviews',
+            notifications: '/logistics/dashboard/notifications',
+            settings: '/logistics/dashboard/settings',
         };
         return routeMap[option];
     };
@@ -69,6 +73,7 @@ const LogisticsDashboardOptions = ({
         { id: 'dashboard', icon: dashboardImage, label: 'Dashboard', widthClass: 'w-[116px]' },
         { id: 'fleet', icon: shopImg, label: 'Fleet', widthClass: 'w-[77px]' },
         { id: 'transaction', icon: transactionImg, label: 'Transactions', widthClass: 'w-[127px]' },
+        { id: 'reviews', icon: starImg, label: 'Reviews and Ratings',  widthClass: 'w-[163px]'},
         {
             id: 'notifications',
             icon: notificationImg,

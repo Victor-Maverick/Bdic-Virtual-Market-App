@@ -417,7 +417,7 @@ const TextAreaField = ({
     );
 };
 
-const   NewProductView = () => {
+const NewProductView = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [activeView, setActiveView] = useState<'New-item' | 'Products-management'>(
