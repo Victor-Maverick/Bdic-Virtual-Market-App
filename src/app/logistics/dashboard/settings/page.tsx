@@ -15,8 +15,6 @@ import { useState, useRef, useEffect } from "react";
 import emailIcon from "../../../../../public/assets/images/sms.svg";
 import eyeOpen from "../../../../../public/assets/images/eye.svg";
 import eyeClosed from "../../../../../public/assets/images/eye.svg";
-import PayoutRequestModal from "@/components/payoutRequestModal";
-import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
 import AddLogMemberModal from "@/components/addLogMemberModal";
 import AddLogMemberSuccessModal from "@/components/addLogMemberSuccessModal";
 
@@ -159,8 +157,12 @@ const Settings = () => {
         }
     };
 
-    // IntersectionObserver to detect which section is in view
     useEffect(() => {
+        const generalSettingsNode = generalSettingsRef.current;
+        const teamNode = teamRef.current;
+        const securityNode = securityRef.current;
+        const notificationsNode = notificationsRef.current;
+
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
@@ -185,16 +187,16 @@ const Settings = () => {
             { threshold: 0.5 }
         );
 
-        if (generalSettingsRef.current) observer.observe(generalSettingsRef.current);
-        if (teamRef.current) observer.observe(teamRef.current);
-        if (securityRef.current) observer.observe(securityRef.current);
-        if (notificationsRef.current) observer.observe(notificationsRef.current);
+        if (generalSettingsNode) observer.observe(generalSettingsNode);
+        if (teamNode) observer.observe(teamNode);
+        if (securityNode) observer.observe(securityNode);
+        if (notificationsNode) observer.observe(notificationsNode);
 
         return () => {
-            if (generalSettingsRef.current) observer.unobserve(generalSettingsRef.current);
-            if (teamRef.current) observer.unobserve(teamRef.current);
-            if (securityRef.current) observer.unobserve(securityRef.current);
-            if (notificationsRef.current) observer.unobserve(notificationsRef.current);
+            if (generalSettingsNode) observer.unobserve(generalSettingsNode);
+            if (teamNode) observer.unobserve(teamNode);
+            if (securityNode) observer.unobserve(securityNode);
+            if (notificationsNode) observer.unobserve(notificationsNode);
         };
     }, []);
 

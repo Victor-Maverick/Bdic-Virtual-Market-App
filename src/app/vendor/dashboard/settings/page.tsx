@@ -6,8 +6,6 @@ import verify from "@/../public/assets/images/verify.svg";
 import shopImg from "@/../public/assets/images/shop.png";
 import locationImg from '@/../public/assets/images/location.png'
 import barCodeImg from "@/../public/assets/images/barcode.png";
-import emptyTick from '@/../public/assets/images/empty-tick.svg'
-import clock from '@/../public/assets/images/clock.png'
 import rating from '@/../public/assets/images/rating.svg'
 import { useState, useRef, useEffect } from "react";
 import emailIcon from "../../../../../public/assets/images/sms.svg";
@@ -149,8 +147,11 @@ const Settings = () => {
         }
     };
 
-    // IntersectionObserver to detect which section is in view
     useEffect(() => {
+        const generalSettingsNode = generalSettingsRef.current;
+        const securityNode = securityRef.current;
+        const notificationsNode = notificationsRef.current;
+
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
@@ -172,14 +173,14 @@ const Settings = () => {
             { threshold: 0.5 }
         );
 
-        if (generalSettingsRef.current) observer.observe(generalSettingsRef.current);
-        if (securityRef.current) observer.observe(securityRef.current);
-        if (notificationsRef.current) observer.observe(notificationsRef.current);
+        if (generalSettingsNode) observer.observe(generalSettingsNode);
+        if (securityNode) observer.observe(securityNode);
+        if (notificationsNode) observer.observe(notificationsNode);
 
         return () => {
-            if (generalSettingsRef.current) observer.unobserve(generalSettingsRef.current);
-            if (securityRef.current) observer.unobserve(securityRef.current);
-            if (notificationsRef.current) observer.unobserve(notificationsRef.current);
+            if (generalSettingsNode) observer.unobserve(generalSettingsNode);
+            if (securityNode) observer.unobserve(securityNode);
+            if (notificationsNode) observer.unobserve(notificationsNode);
         };
     }, []);
 

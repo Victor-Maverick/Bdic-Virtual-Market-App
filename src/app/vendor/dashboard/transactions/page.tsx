@@ -1,48 +1,45 @@
 'use client'
 import DashboardHeader from "@/components/dashboardHeader";
-import Image, {StaticImageData} from "next/image";
+import Image from "next/image";
 import biArrows from "../../../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../../../public/assets/images/arrow-up.svg";
 import exportImg from "../../../../../public/assets/images/exportImg.svg";
 import archiveImg from "../../../../../public/assets/images/archive.svg";
 import Stats from "../../../../../public/assets/images/Stats.svg";
-import {useState} from "react";
+import { useState } from "react";
 import iPhone from "../../../../../public/assets/images/blue14.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import PayoutRequestModal from "@/components/payoutRequestModal";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
 import DashboardOptions from "@/components/dashboardOptions";
 
-
-const products = [
-    { id: 1, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 2, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 3, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 4, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 5, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 6, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 7, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 8, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 9, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200},
-    { id: 10, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200}
-]
-
-
 type Product = {
     id: number;
-    image: StaticImageData;
+    productId: string;
+    image: any;
     name: string;
-    review: number;
-    status: string;
-    salesQty: number;
-    unitPrice: string;
-    salesAmount: string;
-    totalStock: string;
-    remainingStock: string;
+    date: string;
+    status: 'Paid' | 'Pending';
+    deliveryMethod: string;
+    time: string;
+    deliveryAddress: string;
+    fee: number;
 };
 
+const products: Product[] = [
+    { id: 1, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 2, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 3, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 4, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 5, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 6, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 7, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 8, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 9, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
+    { id: 10, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 }
+];
 
-const ProductTableRow = ({ product, isLast }: { product: typeof products[0]; isLast: boolean }) => {
+const ProductTableRow = ({ product, isLast }: { product: Product; isLast: boolean }) => {
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[35%] pr-[24px] gap-3">
@@ -61,7 +58,7 @@ const ProductTableRow = ({ product, isLast }: { product: typeof products[0]; isL
                 </div>
             </div>
 
-            <div className="flex items-center w-[13%]  px-[20px]">
+            <div className="flex items-center w-[13%] px-[20px]">
                 <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
                     product.status === 'Paid'
                         ? 'bg-[#ECFDF3] text-[#027A48]'
@@ -71,9 +68,9 @@ const ProductTableRow = ({ product, isLast }: { product: typeof products[0]; isL
                 </div>
             </div>
 
-            <div className="flex flex-col  w-[17%] px-[16px] justify-center">
-                <p className="text-[14px]  text-[#101828]">{product.date}</p>
-                <p className="text-[14px]  text-[#667085]">{product.time}</p>
+            <div className="flex flex-col w-[17%] px-[16px] justify-center">
+                <p className="text-[14px] text-[#101828]">{product.date}</p>
+                <p className="text-[14px] text-[#667085]">{product.time}</p>
             </div>
 
             <div className="flex flex-col gap-[4px] justify-center w-[20%] px-[16px]">
@@ -86,21 +83,24 @@ const ProductTableRow = ({ product, isLast }: { product: typeof products[0]; isL
             </div>
 
             <div className="flex items-center w-[17%] px-[28px]">
-                <p className="text-[14px]  text-[#101828]">NGN {product.fee.toLocaleString()}.00</p>
+                <p className="text-[14px] text-[#101828]">NGN {product.fee.toLocaleString()}.00</p>
             </div>
-
         </div>
-    )
-}
+    );
+};
 
-
-const Transactions = ()=>{
-    const [activeView, setActiveView] = useState('product-transactions');
+const Transactions = () => {
+    const [activeView, setActiveView] = useState<'product-transactions' | 'pay-outs'>('product-transactions');
     const [currentPage, setCurrentPage] = useState(1);
-
     const [isPayoutRequestModalOpen, setIsPayoutRequestModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
+    const PRODUCTS_PER_PAGE = 5;
+    const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+    const currentProducts = products.slice(
+        (currentPage - 1) * PRODUCTS_PER_PAGE,
+        currentPage * PRODUCTS_PER_PAGE
+    );
 
     const handleOpenPayoutRequest = () => {
         setIsPayoutRequestModalOpen(true);
@@ -115,66 +115,77 @@ const Transactions = ()=>{
         setIsSuccessModalOpen(false);
     };
 
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
 
-    const productsPerPage = 5;
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
 
-    const indexOfLastProduct = currentPage * productsPerPage;
-    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
 
-
-
-
-
-    return(
+    return (
         <>
             <DashboardHeader />
             <DashboardOptions />
+
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col gap-[12px]">
                     <p className="text-[#022B23] text-[16px] font-medium">Transaction summary</p>
                     <div className="flex justify-between items-center">
                         <div className="flex items-center gap-[20px]">
-                            <div className="flex border-[0.5px] bg-[#FFFAEB] h-[100px] flex-col gap-[12px] p-[12px] border-[#F99007] rounded-[14px]  w-[246px]">
+                            <div className="flex border-[0.5px] bg-[#FFFAEB] h-[100px] flex-col gap-[12px] p-[12px] border-[#F99007] rounded-[14px] w-[246px]">
                                 <div className="flex items-center text-[#022B23] text-[12px] font-medium gap-[8px]">
-                                    <Image src={biArrows} alt={'image'} />
+                                    <Image src={biArrows} alt="Total amount earned" />
                                     <p>Total amount earned</p>
                                 </div>
                                 <div className="flex justify-between">
                                     <p className="text-[#18181B] text-[16px] font-medium">N102,426,231.00</p>
                                     <div className="flex gap-[4px] items-center">
-                                        <Image src={arrowUp} alt={'image'} />
+                                        <Image src={arrowUp} alt="Increase" />
                                         <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
                                     </div>
                                 </div>
                             </div>
+
                             <div className="flex border-[0.5px] flex-col gap-[12px] p-[12px] border-[#E4E4E7] rounded-[14px] h-[110px] w-[324px]">
                                 <div className="flex justify-between">
                                     <div className="flex items-center text-[#022B23] text-[12px] font-medium gap-[8px]">
-                                        <Image src={exportImg} alt={'image'} />
+                                        <Image src={exportImg} alt="Available for payout" />
                                         <p>Available for payout</p>
                                     </div>
-                                    <span onClick={handleOpenPayoutRequest} className="text-[#C6EB5F] cursor-pointer flex justify-center items-center text-[12px] font-medium h-[30px] w-[113px] rounded-[100px] px-[8px] py-[6px] bg-[#022B23]">
-                                        Request payout
-                                    </span>
+                                    <span
+                                        onClick={handleOpenPayoutRequest}
+                                        className="text-[#C6EB5F] cursor-pointer flex justify-center items-center text-[12px] font-medium h-[30px] w-[113px] rounded-[100px] px-[8px] py-[6px] bg-[#022B23]"
+                                    >
+                    Request payout
+                  </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <p className="text-[#18181B] text-[16px] font-medium">N84,426,231.00</p>
                                     <div className="flex gap-[4px] items-center">
-                                        <Image src={arrowUp} alt={'image'} />
+                                        <Image src={arrowUp} alt="Increase" />
                                         <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
                                     </div>
                                 </div>
                             </div>
+
                             <div className="flex border-[0.5px] flex-col gap-[12px] p-[12px] border-[#E4E4E7] rounded-[14px] h-[100px] w-[246px]">
                                 <div className="flex items-center text-[#71717A] text-[12px] font-medium gap-[8px]">
-                                    <Image src={archiveImg} alt={'image'} />
+                                    <Image src={archiveImg} alt="Completed deliveries" />
                                     <p>Completed deliveries</p>
                                 </div>
                                 <div className="flex justify-between">
                                     <p className="text-[#18181B] text-[16px] font-medium">720</p>
                                     <div className="flex gap-[4px] items-center">
-                                        <Image src={arrowUp} alt={'image'} />
+                                        <Image src={arrowUp} alt="Increase" />
                                         <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
                                     </div>
                                 </div>
@@ -182,21 +193,28 @@ const Transactions = ()=>{
                         </div>
                     </div>
                 </div>
-
             </div>
+
             <div className="mx-[100px] border-[1px] border-[#ededed] rounded-[24px] pt-6 mb-10">
                 <div className="flex items-center text-[#8C8C8C] text-[10px] w-[174px] mx-6 h-[26px] border-[0.5px] border-[#ededed] rounded-[8px] relative mb-4">
                     <div
                         className={`flex items-center justify-center w-[115px] h-full z-10 cursor-pointer ${
-                            activeView === 'product-transactions' ? 'border-r-[1px] border-[#ededed] rounded-tl-[8px] rounded-bl-[8px] bg-[#F8FAFB] text-[#8C8C8C]' : ''
+                            activeView === 'product-transactions'
+                                ? 'border-r-[1px] border-[#ededed] rounded-tl-[8px] rounded-bl-[8px] bg-[#F8FAFB] text-[#8C8C8C]'
+                                : ''
                         }`}
-                        onClick={() => setActiveView('product-transactions')}
+                        onClick={() => {
+                            setActiveView('product-transactions');
+                            setCurrentPage(1);
+                        }}
                     >
                         <p>Product Transactions</p>
                     </div>
                     <div
                         className={`flex items-center justify-center w-[50%] h-full z-10 cursor-pointer ${
-                            activeView === 'pay-outs' ? 'border-l-[1px] border-[#ededed]  rounded-tr-[8px] rounded-br-[8px] bg-[#F8FAFB] text-[#8C8C8C]' : ''
+                            activeView === 'pay-outs'
+                                ? 'border-l-[1px] border-[#ededed] rounded-tr-[8px] rounded-br-[8px] bg-[#F8FAFB] text-[#8C8C8C]'
+                                : ''
                         }`}
                         onClick={() => setActiveView('pay-outs')}
                     >
@@ -204,15 +222,17 @@ const Transactions = ()=>{
                     </div>
                     <div
                         className={`absolute top-0 h-full rounded-[6px] transition-all ${
-                            activeView === 'product-transactions' ? ' left-0 bg-[#F8FAFB]' : 'left-[50%] bg-[#F8FAFB]'
+                            activeView === 'product-transactions'
+                                ? 'left-0 bg-[#F8FAFB]'
+                                : 'left-[50%] bg-[#F8FAFB]'
                         }`}
                     ></div>
                 </div>
 
                 {activeView === 'product-transactions' ? (
                     <>
-                        <div className="flex flex-col ">
-                            <div className=" mx-6 mb-6 flex flex-col">
+                        <div className="flex flex-col">
+                            <div className="mx-6 mb-6 flex flex-col">
                                 <p className="text-[#101828] font-medium">All transactions</p>
                                 <p className="text-[#667085] text-[14px]">View all your transaction details</p>
                             </div>
@@ -245,8 +265,50 @@ const Transactions = ()=>{
                                     />
                                 ))}
                             </div>
-                        </div>
 
+                            {/* Pagination Controls */}
+                            <div className="flex justify-between items-center mt-4 px-6 pb-6">
+                                <button
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 1}
+                                    className={`px-4 py-2 rounded-md ${
+                                        currentPage === 1
+                                            ? 'text-gray-400 cursor-not-allowed'
+                                            : 'text-[#022B23] hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Previous
+                                </button>
+
+                                <div className="flex gap-2">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => handlePageChange(page)}
+                                            className={`w-8 h-8 rounded-md flex items-center justify-center ${
+                                                currentPage === page
+                                                    ? 'bg-[#022B23] text-white'
+                                                    : 'text-[#022B23] hover:bg-gray-100'
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                <button
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                    className={`px-4 py-2 rounded-md ${
+                                        currentPage === totalPages
+                                            ? 'text-gray-400 cursor-not-allowed'
+                                            : 'text-[#022B23] hover:bg-gray-100'
+                                    }`}
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
                     </>
                 ) : (
                     <>
@@ -265,8 +327,6 @@ const Transactions = ()=>{
                                     <p>+3.4%</p>
                                 </div>
                             </div>
-
-
                         </div>
                         <Image src={Stats} alt={'stats'} className="mb-[20px]"/>
                         <div className="flex items-center justify-between gap-4">
@@ -294,8 +354,6 @@ const Transactions = ()=>{
                                     </div>
                                 </div>
                             </div>
-
-
                             <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
                                 <div className="flex items-center gap-[9px]">
                                     <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
@@ -308,7 +366,6 @@ const Transactions = ()=>{
                                     </div>
                                 </div>
                             </div>
-
                             <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
                                 <div className="flex items-center gap-[9px]">
                                     <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
@@ -325,6 +382,7 @@ const Transactions = ()=>{
                     </>
                 )}
             </div>
+
             <PayoutRequestModal
                 isPayoutRequestModalOpen={isPayoutRequestModalOpen}
                 onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}
@@ -336,7 +394,7 @@ const Transactions = ()=>{
                 onClose={handleCloseSuccessModal}
             />
         </>
-    )
-}
+    );
+};
 
 export default Transactions;

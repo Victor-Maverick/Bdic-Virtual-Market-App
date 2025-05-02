@@ -25,7 +25,6 @@ const formFields: FormField[] = [
 ];
 
 const Login = ()=>{
-    const router = useRouter();
     const [form, setForm] = useState<FormData>({
         email: '',
         password: ''
