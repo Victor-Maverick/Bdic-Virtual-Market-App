@@ -1,24 +1,35 @@
 'use client'
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Image, {StaticImageData} from "next/image";
 import DashboardHeader from "@/components/dashboardHeader";
-import Image from "next/image";
+import DashboardOptions from "@/components/dashboardOptions";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import arrowBack from "../../../../../public/assets/images/arrowBack.svg";
 import arrowFoward from "../../../../../public/assets/images/arrowFoward.svg";
 import promoteIcon from '@/../public/assets/images/promoteIcon.svg'
-import {useState} from "react";
 import iPhone from "../../../../../public/assets/images/blue14.png";
 import profileIcon from '@/../public/assets/images/dashuserimg.svg'
-import DashboardOptions from "@/components/dashboardOptions";
 import arrowUp from '@/../public/assets/images/arrow-up.svg'
 import dropBox from '@/../public/assets/images/dropbox.svg'
 import flag from '@/../public/assets/images/flag-2.svg'
-import {useRouter, useSearchParams} from "next/navigation";
 
-const products = [
+interface Product {
+    id: number;
+    productId: string;
+    productImage: StaticImageData;
+    orderId: string;
+    productName: string;
+    status: "Good" | "Normal" | "Bad";
+    rating: number;
+    comment: string;
+}
+
+const products: Product[] = [
     { id: 1, productId: "1234567887654", productImage: iPhone, orderId: "21367", productName: "iPhone 14 pro max",  status: "Good", rating: 4.2, comment: "Delivery was fast, great service" },
     { id: 2, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max",  status: "Normal", rating: 4.2, comment: "fair" },
-    { id: 3, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Bad", name: "TVS Bike", rating: 4.2, comment: "Not well handled, carton had dents" },
-    { id: 4, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Good", name: "TVS Bike", rating: 4.2, comment: "Fast delivery" },
+    { id: 3, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Bad",  rating: 4.2, comment: "Not well handled, carton had dents" },
+    { id: 4, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Good", rating: 4.2, comment: "Fast delivery" },
     { id: 5, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Normal", rating: 4.2, comment: "Fast delivery, and polite dispatch rider" },
     { id: 6, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Good", rating: 4.2, comment: "Fast delivery, and polite dispatch rider" },
     { id: 7, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Bad", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
@@ -29,17 +40,62 @@ const products = [
     { id: 12, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max",  status: "Normal", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
 ];
 
-const ReviewTab=()=>{
+const ProductTableRow = ({ product, isLast }: { product: Product; isLast: boolean }) => {
+    return (
+        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+            <div className="flex items-center w-[40%] pr-[24px] gap-3">
+                <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
+                    <Image
+                        src={product.productImage}
+                        alt={product.productName}
+                        width={70}
+                        height={70}
+                        className="object-cover"
+                    />
+                </div>
+                <div className="flex flex-col">
+                    <p className="text-[14px] font-medium text-[#101828]">{product.productName}</p>
+                    <p className="text-[12px] text-[#667085]">Review: {product.rating}</p>
+                </div>
+            </div>
+
+            <div className="flex items-center w-[15%]  px-[10px]">
+                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
+                    product.status === 'Good'
+                        ? 'bg-[#ECFDF3] text-[#027A48]'
+                        : product.status === 'Normal'
+                            ? 'bg-[#FFFAEB] text-[#FFB320]'
+                            : 'bg-[#FEF3F2] text-[#FF5050]'
+                }`}>
+                    <p className="text-[12px] font-medium">{product.status}</p>
+                </div>
+            </div>
+
+            <div className="flex items-center w-[35%] px-[16px]">
+                <p className="text-[12px] w-[176px] leading-tight text-[#667085]">
+                    {product.comment}
+                </p>
+            </div>
+
+            <div className="flex items-center w-[10%] px-[28px]">
+                <p className="text-[14px] font-medium  text-[#344054]">{product.rating}</p>
+            </div>
+        </div>
+    )
+}
+
+const ReviewTab = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
     const totalPages = Math.ceil(products.length / itemsPerPage);
+    const router = useRouter();
+
     const handlePrevious = () => {
         if (currentPage > 1) {
             setCurrentPage(currentPage - 1);
         }
     };
 
-    const router = useRouter();
     const handleNext = () => {
         if (currentPage < totalPages) {
             setCurrentPage(currentPage + 1);
@@ -50,15 +106,14 @@ const ReviewTab=()=>{
         setCurrentPage(page);
     };
 
-    const handlePromoteShop = ()=>{
+    const handlePromoteShop = () => {
         router.push("/vendor/dashboard/reviews/promote-shop");
     }
 
-    // Calculate the items to display on the current page
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentItems = products.slice(startIndex, startIndex + itemsPerPage);
 
-    return(
+    return (
         <>
             <div className="flex w-full h-[131px] mb-[30px] justify-between items-center">
                 <div className="h-full gap-[12px] w-full flex flex-col">
@@ -109,7 +164,7 @@ const ReviewTab=()=>{
                                 <p className="text-[12px] text-[#71717A] font-medium">Campaign tier</p>
                             </div>
                             <div className="flex justify-between items-center ">
-                                <span className="rounded-[100px]  cursor-pointer text-[#022B23] text-[14px] font-medium flex items-center justify-center bg-[#C6EB5F] w-[68px] h-[32px]">Basic</span>
+                                <span className="rounded-[100px] cursor-pointer text-[#022B23] text-[14px] font-medium flex items-center justify-center bg-[#C6EB5F] w-[68px] h-[32px]">Basic</span>
                                 <p className="text-[12px] text-[#022B23] font-medium">NGN 7,000.00</p>
                             </div>
                         </div>
@@ -165,7 +220,7 @@ const ReviewTab=()=>{
                                 className={`flex justify-center items-center w-[36px] h-[36px] rounded-[8px] text-[14px] font-medium cursor-pointer ${
                                     currentPage === index + 1
                                         ? 'bg-[#ecfdf6] text-[#022B23]'
-                                        : 'bg-white text-[#022B23]  hover:shadow-md'
+                                        : 'bg-white text-[#022B23] hover:shadow-md'
                                 }`}
                             >
                                 {index + 1}
@@ -185,99 +240,67 @@ const ReviewTab=()=>{
     )
 }
 
-const Coupons=()=>{
-    return(
-        <>
-        </>
-    )
+const Coupons = () => {
+    return <></>;
 }
 
-const ProductTableRow = ({ product, isLast }: { product: typeof products[0]; isLast: boolean }) => {
-    return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex items-center w-[40%] pr-[24px] gap-3">
-                <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
-                    <Image
-                        src={product.productImage}
-                        alt={product.productName}
-                        width={70}
-                        height={70}
-                        className="object-cover"
-                    />
-                </div>
-                <div className="flex flex-col">
-                    <p className="text-[14px] font-medium text-[#101828]">{product.productName}</p>
-                    <p className="text-[12px] text-[#667085]">Review: {product.rating}</p>
-                </div>
-            </div>
-
-            <div className="flex items-center w-[15%]  px-[10px]">
-                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    product.status === 'Good'
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : product.status === 'Normal'
-                            ? 'bg-[#FFFAEB] text-[#FFB320]'
-                            : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium">{product.status}</p>
-                </div>
-            </div>
-
-            <div className="flex items-center w-[35%] px-[16px]">
-                <p className="text-[12px] w-[176px] leading-tight text-[#667085]">
-                    {product.comment}
-                </p>
-            </div>
-
-
-            <div className="flex items-center w-[10%] px-[28px]">
-                <p className="text-[14px] font-medium  text-[#344054]">{product.rating}</p>
-            </div>
-        </div>
-    )
-}
-
-const Reviews = ()=>{
+const ReviewsContent = () => {
     const searchParams = useSearchParams();
-    const initialTab = searchParams.get('tab') as 'reviews' | 'coupons';
+    const initialTab = searchParams.get('tab') as 'reviews' | 'coupons' || 'reviews';
     const [activeTab, setActiveTab] = useState<'reviews' | 'coupons'>(initialTab);
     const router = useRouter();
 
-    const handleTabChange = (tab: 'reviews' | 'coupons' ) => {
+    const handleTabChange = (tab: 'reviews' | 'coupons') => {
         setActiveTab(tab);
         router.replace(`/vendor/dashboard/reviews?tab=${tab}`, { scroll: false });
     };
 
-
-    return(
+    return (
         <>
             <DashboardHeader />
             <DashboardOptions />
-            <div className="flex flex-col  py-[30px] px-25">
+            <div className="flex flex-col py-[30px] px-25">
                 <div className="w-[359px] h-[52px] gap-[24px] flex items-end">
-                    <p
-                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'reviews' ? 'font-medium  border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
+                    <button
                         onClick={() => handleTabChange('reviews')}
+                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${
+                            activeTab === 'reviews'
+                                ? 'font-medium border-b-2 border-[#C6EB5F]'
+                                : 'text-gray-500'
+                        }`}
                     >
                         Reviews & campaigns
-                    </p>
-                    <p
-                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'coupons' ? 'font-medium  border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
+                    </button>
+                    <button
                         onClick={() => handleTabChange('coupons')}
+                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${
+                            activeTab === 'coupons'
+                                ? 'font-medium border-b-2 border-[#C6EB5F]'
+                                : 'text-gray-500'
+                        }`}
                     >
                         Coupons
-                    </p>
-
+                    </button>
                 </div>
                 <div className="bg-white rounded-lg mt-[20px] mb-8">
                     {activeTab === 'reviews' && <ReviewTab />}
                     {activeTab === 'coupons' && <Coupons />}
-
                 </div>
-
             </div>
         </>
-    )
+    );
+}
+
+const Reviews = () => {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center items-center h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#C6EB5F]"></div>
+            </div>
+        }>
+            <ReviewsContent />
+        </Suspense>
+    );
 }
 
 export default Reviews;

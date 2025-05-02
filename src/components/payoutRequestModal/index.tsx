@@ -60,7 +60,6 @@ const InputField = ({
 
 const PayoutRequestModal = ({
                                 isPayoutRequestModalOpen,
-                                onClosePayoutRequestModal,
                                 onRequestSuccess
                             }: PayoutRequestModalProps) => {
     const [formData, setFormData] = useState({

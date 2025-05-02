@@ -59,7 +59,6 @@ const InputField = ({
 
 const AddLogMemberModal = ({
                                isAddLogMemberModalOpen,
-                               onCloseAddLogMemberModal,
                                onRequestSuccess
                            }: AddLogMemberModalProps)=>{
     const [formData, setFormData] = useState({

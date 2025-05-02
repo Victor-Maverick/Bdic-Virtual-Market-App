@@ -1,6 +1,6 @@
 'use client'
 import DashboardHeader from "@/components/dashboardHeader";
-import Image from "next/image";
+import Image, {StaticImageData} from "next/image";
 import biArrows from "../../../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../../../public/assets/images/arrow-up.svg";
 import exportImg from "../../../../../public/assets/images/exportImg.svg";
@@ -16,7 +16,7 @@ import DashboardOptions from "@/components/dashboardOptions";
 type Product = {
     id: number;
     productId: string;
-    image: any;
+    image: StaticImageData;
     name: string;
     date: string;
     status: 'Paid' | 'Pending';

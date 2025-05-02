@@ -9,7 +9,7 @@ import orderImg from '../../../../../public/assets/images/archive.svg'
 import blackArrowImg from '../../../../../public/assets/images/arrow-up.svg'
 import deliveredImg from '../../../../../public/assets/images/dropbox.svg'
 import pendingImg from '../../../../../public/assets/images/flag-2.svg'
-import Image from "next/image"
+import Image, {StaticImageData} from "next/image"
 import iPhone from "../../../../../public/assets/images/blue14.png"
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg"
 
@@ -74,7 +74,7 @@ const ProductActionsDropdown = ({ children }: { productId: string; children: Rea
 
 interface Product {
     id: string;
-    image: string;
+    image: StaticImageData;
     name: string;
     productId: string;
     status: "Delivered" | "Pending" | string;

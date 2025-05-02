@@ -1,8 +1,8 @@
 'use client'
 import iPhone from "../../../../../public/assets/images/blue14.png";
-import {useEffect, useRef, useState} from "react";
-import {useRouter, useSearchParams} from "next/navigation";
-import Image from "next/image";
+import { useEffect, useRef, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Image, { StaticImageData } from "next/image";
 import DashboardHeader from "@/components/dashboardHeader";
 import orderImg from "../../../../../public/assets/images/archive.svg";
 import blackArrowImg from "../../../../../public/assets/images/arrow-up.svg";
@@ -71,7 +71,7 @@ const ProductActionsDropdown = ({ children }: { productId: string; children: Rea
 
 interface Product {
     id: string;
-    image: string;
+    image: StaticImageData;
     name: string;
     productId: string;
     status: "Delivered" | "Pending" | string;
@@ -91,7 +91,6 @@ const ProductTableRow = ({ product, isLast }: ProductTableRowProps) => {
     const router = useRouter();
 
     const handleOrderClick = () => {
-        // Convert the product to a URL-safe string
         const productData = encodeURIComponent(JSON.stringify(product));
         router.push(`/rider/dashboard/main/order/${product.id}?data=${productData}`);
     };
@@ -182,7 +181,7 @@ const ProductTableRow = ({ product, isLast }: ProductTableRowProps) => {
     );
 };
 
-const DashBoard = ()=>{
+const DashboardContent = () => {
     const searchParams = useSearchParams()
     const router = useRouter()
     const initialTab = searchParams.get('tab') as 'new-orders' | 'pending' | 'delivered' | 'disputes' || 'new-orders'
@@ -212,9 +211,6 @@ const DashBoard = ()=>{
 
     return (
         <>
-            <DashboardHeader />
-            <RiderDashboardOptions />
-
             <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
                 <div className="w-[328px] h-[52px] gap-[24px] flex items-end">
                     <p
@@ -246,26 +242,26 @@ const DashBoard = ()=>{
                             <div className="flex justify-between h-[100px] w-[512px]">
                                 <div className="h-full flex flex-col gap-[20px] bg-[#FFFAEB] p-[12px] w-[246px] rounded-[14px] border-[0.5px] border-[#1E1E1E]">
                                     <div className="flex gap-[8px] items-center">
-                                        <Image src={orderImg} alt={'image'} width={18} height={18} />
+                                        <Image src={orderImg} alt={'New orders icon'} width={18} height={18} />
                                         <p className="text-[#1E1E1E] font-medium text-[12px]">New orders</p>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <p className="text-[#18181B] text-[16px] font-medium">{pendingCount}</p>
                                         <div className="flex gap-[4px] items-center">
-                                            <Image src={blackArrowImg} alt={'imag'}/>
+                                            <Image src={blackArrowImg} alt={'Increase icon'}/>
                                             <p className="font-medium text-[#1E1E1E] text-[12px]">6%</p>
                                         </div>
                                     </div>
                                 </div>
                                 <div className="h-full bg-[#FFFFFF] flex-col flex gap-[20px] p-[12px] rounded-[14px] w-[246px] border-[0.5px] border-[#E4E4E7]">
                                     <div className="flex gap-[8px] items-center">
-                                        <Image src={deliveredImg} alt={'image'} width={18} height={18} />
+                                        <Image src={deliveredImg} alt={'Delivered icon'} width={18} height={18} />
                                         <p className="text-[#1E1E1E] font-medium text-[12px]">Delivered</p>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <p className="text-[#18181B] text-[16px] font-medium">{deliveredCount}</p>
                                         <div className="flex gap-[4px] items-center">
-                                            <Image src={blackArrowImg} alt={'imag'}/>
+                                            <Image src={blackArrowImg} alt={'Increase icon'}/>
                                             <p className="font-medium text-[#1E1E1E] text-[12px]">6%</p>
                                         </div>
                                     </div>
@@ -326,6 +322,18 @@ const DashBoard = ()=>{
                     </div>
                 )}
             </div>
+        </>
+    )
+}
+
+const DashBoard = () => {
+    return (
+        <>
+            <DashboardHeader />
+            <RiderDashboardOptions />
+            <Suspense fallback={<div>Loading...</div>}>
+                <DashboardContent />
+            </Suspense>
         </>
     )
 }

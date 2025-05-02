@@ -10,29 +10,29 @@ import badProduct from '@/../public/assets/images/brokenPhone.svg';
 import arrowRight from '@/../public/assets/images/green arrow.png'
 
 const products = [
-    { id: 1, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup", deliveryAddress:"", review: 4.2, status: "Delivered", stock: 200, price: 840000 },
-    { id: 2, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "Pending",stock:200, price: 840000 },
-    { id: 3, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",deliveryAddress:"", status: "In transit",  stock:200, price: 840000 },
-    { id: 4, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",status: "Delivered",stock:200, price: 840000},
-    { id: 5, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max",  customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",deliveryAddress:"", status: "Pending", comment: "It's okay",stock:200, price: 840000},
-    { id: 6, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",  status: "Delivered", stock:200, price: 840000 },
-    { id: 7, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup", deliveryAddress:"",  status: "Pending", comment: "Not satisfied",stock:200, price: 840000},
-    { id: 8, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "In transit", stock:200, price: 840000 },
-    { id: 9, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup", deliveryAddress:"", status: "Delivered", stock:200, price: 840000},
-    { id: 10, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "Pending",stock:200, price: 840000}
+    { id: 1, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup", deliveryAddress:"",  reason: "Wrong item received", review: 4.2, status: "Delivered", stock: 200, price: 840000 },
+    { id: 2, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "Pending",stock:200, price: 840000 },
+    { id: 3, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received",deliveryAddress:"", status: "In transit",  stock:200, price: 840000 },
+    { id: 4, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",status: "Delivered",stock:200, price: 840000},
+    { id: 5, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max",  customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received",deliveryAddress:"", status: "Pending", comment: "It's okay",stock:200, price: 840000},
+    { id: 6, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",  status: "Delivered", stock:200, price: 840000 },
+    { id: 7, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received", deliveryAddress:"",  status: "Pending", comment: "Not satisfied",stock:200, price: 840000},
+    { id: 8, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "In transit", stock:200, price: 840000 },
+    { id: 9, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received",deliveryAddress:"", status: "Delivered", stock:200, price: 840000},
+    { id: 10, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "Pending",stock:200, price: 840000}
 ];
 
 const disputes = [
-    { id: 1, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Processed", reason: "Wrong item received", price: 840000 },
-    { id: 2, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",   status: "Pending", reason: "Defect on product", price: 840000 },
-    { id: 3, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Inspecting", reason: "Damaged product", price: 840000 },
-    { id: 4, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Processed", reason: "Damaged product",price: 840000},
-    { id: 5, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max",  customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product",price: 840000},
-    { id: 6, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Inspecting", reason: "Damaged product", price: 840000 },
-    { id: 7, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Not satisfied",price: 840000},
-    { id: 8, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Inspecting", reason: "Damaged product", price: 840000 },
-    { id: 9, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Processed", reason: "Damaged product",price: 840000},
-    { id: 10, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product", price: 840000}
+    { id: 1, productId: 1, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Processed", reason: "Wrong item received", price: 840000 },
+    { id: 2, productId: 2, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",   status: "Pending", reason: "Defect on product", price: 840000 },
+    { id: 3, productId: 3,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Inspecting", reason: "Damaged product", price: 840000 },
+    { id: 4, productId: 4,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Processed", reason: "Damaged product",price: 840000},
+    { id: 5, productId: 5,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max",  customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product",price: 840000},
+    { id: 6, productId: 6, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Inspecting", reason: "Damaged product", price: 840000 },
+    { id: 7, productId: 7, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Not satisfied",price: 840000},
+    { id: 8, productId: 8, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Inspecting", reason: "Damaged product", price: 840000 },
+    { id: 9, productId: 9,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Processed", reason: "Damaged product",price: 840000},
+    { id: 10, productId: 10,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product", price: 840000}
 ];
 
 interface Product {
@@ -46,10 +46,10 @@ interface Product {
     deliveryAddress: string;
     price: number;
     stock: number;
-    comment: string;
+    reason: string;
 }
 const ProductActionsDropdown = ({
-                                    productId,
+
                                     children
                                 }: {
     productId: number;
@@ -231,7 +231,7 @@ const DisputeDetailsModal = ({
     );
 };
 
-const DisputeActionsDropdown = ({ productId, onViewDispute }: { productId: number; onViewDispute: () => void }) => {
+const DisputeActionsDropdown = ({  onViewDispute }: { productId: number; onViewDispute: () => void }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 

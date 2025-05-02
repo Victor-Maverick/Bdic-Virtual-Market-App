@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronDownIcon } from "./../icons";
+import Image from "next/image";
 
 interface UserProfileProps {
     name: string;
@@ -20,7 +21,7 @@ export function UserProfile({
         >
             <div className="w-7 h-7 bg-[#F2F2F2] rounded-[50%]">
                 {avatarUrl && (
-                    <img
+                    <Image
                         src={avatarUrl}
                         alt={name}
                         className="w-full h-full rounded-[50%] object-cover"

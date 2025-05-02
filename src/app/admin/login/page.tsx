@@ -2,7 +2,6 @@
 import shadow from "../../../../public/assets/images/shadow.png";
 import headerIcon from '@/../public/assets/images/headerImg.png'
 import Image from "next/image";
-import {useRouter} from "next/navigation";
 import {useState} from "react";
 import emailIcon from "../../../../public/assets/images/sms.svg";
 import eyeOpen from "../../../../public/assets/images/eye.svg";

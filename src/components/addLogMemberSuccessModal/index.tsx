@@ -1,5 +1,4 @@
 import Image from "next/image";
-import cash from "../../../public/assets/images/cash.svg";
 import limeArrow from "../../../public/assets/images/green arrow.png";
 import handShake from '@/../public/assets/images/Friendly handshake.svg'
 

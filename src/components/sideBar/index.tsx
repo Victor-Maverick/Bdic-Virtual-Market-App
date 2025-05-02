@@ -1,6 +1,7 @@
 'use client'
 import React from "react";
 import Link from "next/link";
+import Image from 'next/image'
 import { UserProfile } from "./../userProfile";
 import {
     OverviewIcon,
@@ -50,7 +51,7 @@ export function Sidebar({ className }: SidebarProps) {
             className={`w-[298px] border-r-neutral-200 flex flex-col justify-between bg-[#F7F7F7] px-0 py-5 border-r-[0.5px] border-solid ${className}`}
         >
             <div className="px-10 py-0">
-                <img src="https://cdn.builder.io/api/v1/image/assets/TEMP/8a1d52a441c246cc253647be8372fe502da99296?placeholderIfAbsent=true" alt="Logo" className="w-full" />
+                <Image src={"https://cdn.builder.io/api/v1/image/assets/TEMP/8a1d52a441c246cc253647be8372fe502da99296?placeholderIfAbsent=true"} alt={"Logo"} className="w-full" />
             </div>
             <div className="grow px-10 py-0">
                 <NavItem icon={<OverviewIcon />} label="Overview" href="/" />
