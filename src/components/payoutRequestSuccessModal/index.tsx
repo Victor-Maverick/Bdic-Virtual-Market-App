@@ -2,7 +2,6 @@
 import Image from "next/image";
 import limeArrow from "../../../public/assets/images/green arrow.png";
 import cash from '@/../public/assets/images/cash.svg'
-import {useRouter} from "next/navigation";
 
 interface PayoutRequestSuccessModalProps {
     isOpen: boolean;
@@ -10,7 +9,6 @@ interface PayoutRequestSuccessModalProps {
 }
 
 const PayoutRequestSuccessModal = ({ isOpen, onClose }: PayoutRequestSuccessModalProps) => {
-    const router = useRouter();
 
     if (!isOpen) return null;
 

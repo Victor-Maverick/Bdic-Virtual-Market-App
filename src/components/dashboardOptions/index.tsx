@@ -15,7 +15,7 @@ type MenuOption =
     | 'dashboard'
     | 'shop'
     | 'order'
-    | 'transaction'
+    | 'transactions'
     | 'chats'
     | 'reviews'
     | 'notifications'
@@ -37,10 +37,10 @@ const DashboardOptions = ({
             '/vendor/dashboard2': 'dashboard',
             '/vendor/dashboard/shop': 'shop',
             '/vendor/dashboard/order': 'order',
-            '/dashboard/transactions': 'transaction',
-            '/dashboard/chats': 'chats',
-            '/dashboard/reviews': 'reviews',
-            '/dashboard/notifications': 'notifications',
+            '/vendor/dashboard/transactions': 'transactions',
+            '/vendor/dashboard/chats': 'chats',
+            '/vendor/dashboard/reviews': 'reviews',
+            '/vendor/dashboard/notifications': 'notifications',
             '/dashboard/settings': 'settings',
         };
 
@@ -56,11 +56,11 @@ const DashboardOptions = ({
             dashboard: '/vendor/dashboard2',
             shop: '/vendor/dashboard/shop',
             order: '/vendor/dashboard/order',
-            transaction: '/dashboard/transactions',
-            chats: '/dashboard/chats',
-            reviews: '/dashboard/reviews',
-            notifications: '/dashboard/notifications',
-            settings: '/dashboard/settings',
+            transactions: '/vendor/dashboard/transactions',
+            chats: '/vendor/dashboard/chats',
+            reviews: '/vendor/dashboard/reviews',
+            notifications: '/vendor/dashboard/notifications',
+            settings: '/vendor/dashboard/settings',
         };
         return routeMap[option];
     };
@@ -75,12 +75,12 @@ const DashboardOptions = ({
         icon: StaticImageData;
         label: string;
         widthClass: string;
-        notification?: string;
+        notifications?: string;
     }[] = [
         { id: 'dashboard', icon: dashboardImage, label: 'Dashboard', widthClass: 'w-[116px]' },
         { id: 'shop', icon: shopImg, label: 'Shop', widthClass: 'w-[77px]' },
         { id: 'order', icon: orderImg, label: 'Order', widthClass: 'w-[88px]' },
-        { id: 'transaction', icon: transactionImg, label: 'Transaction', widthClass: 'w-[127px]' },
+        { id: 'transactions', icon: transactionImg, label: 'Transactions', widthClass: 'w-[127px]' },
         { id: 'chats', icon: chatImg, label: 'Chats', widthClass: 'w-[81px]' },
         { id: 'reviews', icon: chatImg, label: 'Reviews and Campaigns', widthClass: 'w-[188px]' },
         {
@@ -88,7 +88,7 @@ const DashboardOptions = ({
             icon: notificationImg,
             label: 'Notifications',
             widthClass: 'w-[154px]',
-            notification: '30+'
+            notifications: '30+'
         },
         { id: 'settings', icon: settingImg, label: 'Settings', widthClass: 'w-[97px]' },
     ];
@@ -122,9 +122,9 @@ const DashboardOptions = ({
                     />
                     <p className="whitespace-nowrap">{item.label}</p>
 
-                    {item.notification && (
+                    {item.notifications && (
                         <div className="text-[#ffffff] p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[10px] w-[22px] h-[18px] text-[14px]">
-                            <p className="text-[8px] font-semibold">{item.notification}</p>
+                            <p className="text-[8px] font-semibold">{item.notifications}</p>
                         </div>
                     )}
                 </div>

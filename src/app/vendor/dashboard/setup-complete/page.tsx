@@ -38,11 +38,20 @@ const SetupComplete = ()=>{
                 </p>
             </div>
             <div className="flex ml-[366px] w-auto mt-16 gap-25">
-                <div className="flex flex-col w-[268px] h-[67px] gap-[10px]">
-                    <p className="text-[#022B23] text-[16px] font-medium">Setup complete</p>
-                    <p className="text-[#707070] font-medium text-[14px]">
-                        Your setup is complete and pending approval, you’ll be notified when approved.
-                    </p>
+                <div className="flex flex-col gap-15 h-auto">
+                    <div className="flex flex-col w-[268px] h-[67px] gap-[10px]">
+                        <p className="text-[#022B23] text-[16px] font-medium">Setup complete</p>
+                        <p className="text-[#707070] font-medium text-[14px]">
+                            Your setup is complete and pending approval, you’ll be notified when approved.
+                        </p>
+                    </div>
+                    <div className="flex flex-col w-[244px] py-[10px] px-[12px] border border-[#ededed] h-[87px] bg-[#FCFCFC] rounded-[12px] gap-[7px]">
+                        <p className="text-[#707070] text-[14px] font-medium leading-tight">Pay a store activation fee<br/>
+                            to continue</p>
+                        <p className="text-[#000000] font-semibold text-[20px]">
+                            NGN 5,000.00
+                        </p>
+                    </div>
                 </div>
                 <div className="flex flex-col w-[400px] h-auto gap-[38px]">
                     <div className="flex flex-col items-center h-[218px] w-full justify-center">
@@ -52,7 +61,7 @@ const SetupComplete = ()=>{
                         className="flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
                         onClick={handleContinue}
                     >
-                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue to store</p>
+                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue to payment</p>
                         <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
                     </div>
                 </div>

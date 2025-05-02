@@ -1,3 +1,4 @@
+'use client'
 import Image from "next/image";
 import DashboardHeader from "@/components/dashboardHeader";
 import arrow from '../../../../public/assets/images/dashArrow.png'
@@ -6,8 +7,13 @@ import limeArrow from "../../../../public/assets/images/green arrow.png";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
 import DashboardOptions from "@/components/dashboardOptions";
 import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
+import {useRouter} from "next/navigation";
 
 const DashBoard = () => {
+    const router = useRouter();
+    const handleContinue =()=>{
+        router.push("/vendor/dashboard/shop-info");
+    }
     return (
         <div className="w-full pb-25 ">
             <DashboardHeader/>
@@ -30,7 +36,7 @@ const DashBoard = () => {
                         <p className="mb-[10px] text-[16px] text-[#022B23] font-medium">Setup shop and complete KYC </p>
                         <p className="font-medium text-[#707070] text-[14px]">Provide information about your shop <br/>and yourself to complete setup</p>
                     </div>
-                    <div className="flex mt-[35px] gap-[9px] w-[268px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px]">
+                    <div onClick={handleContinue} className="flex mt-[35px] gap-[9px] w-[268px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px]">
                         <p className="text-[#C6EB5F] font-semibold text-[14px]">Setup shop</p>
                         <Image src={limeArrow} alt={'image'} className="h-[18px] w-[18px]"/>
                     </div>

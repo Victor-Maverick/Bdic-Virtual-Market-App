@@ -1,13 +1,10 @@
-import DashboardHeader from "@/components/dashboardHeader";
-import DashboardOptions from "@/components/dashboardOptions";
+'use client'
+import dynamic from 'next/dynamic';
 
-const Order = ()=>{
-    return(
-        <>
-            <DashboardHeader />
-            <DashboardOptions/>
-        </>
-    )
+const OrderClient = dynamic(() => import('@/components/orderClient'), {
+    ssr: false
+});
+
+export default function Shop() {
+    return <OrderClient />;
 }
-
-export default Order;

@@ -2,7 +2,6 @@
 import {useState} from "react";
 import Image from "next/image";
 import limeArrow from "../../../public/assets/images/green arrow.png";
-import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
 
 interface PayoutRequestModalProps {
     isPayoutRequestModalOpen: boolean;
