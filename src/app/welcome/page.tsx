@@ -9,7 +9,7 @@ import {useRouter} from "next/navigation";
 const Welcome = ()=>{
     const router = useRouter();
     const handleClick = ()=>{
-        router.push("/marketPlace");
+        router.push("/logistics/dashboard/main");
     }
     return(
         <div>
