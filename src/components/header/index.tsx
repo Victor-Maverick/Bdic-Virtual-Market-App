@@ -26,7 +26,7 @@ const Header = () => {
                 <p className="cursor-pointer hover:text-[#c6eb5f]" onClick={() => router.push("/aboutUs")}>About us</p>
             </div>
 
-            <button onClick={()=> router.push("/register/getStarted")} className="hidden md:block w-[90px] md:w-[100px] lg:w-[110px] h-[35px] md:h-[40px] border border-black rounded-lg cursor-pointer hover:bg-gray-200">
+            <button onClick={()=> router.push("/login")} className="hidden md:block w-[90px] md:w-[100px] lg:w-[110px] h-[35px] md:h-[40px] border border-black rounded-lg cursor-pointer hover:bg-gray-200">
                 Login
             </button>
 

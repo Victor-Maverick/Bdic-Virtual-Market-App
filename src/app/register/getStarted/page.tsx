@@ -1,11 +1,12 @@
 'use client';
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from 'axios';
 import topGraphics from '../../../../public/assets/images/topGraphics.png';
 import farmGoLogo from '../../../../public/assets/images/farmGoLogo.png';
 import limeArrow from '../../../../public/assets/images/green arrow.png';
-import onboardImage from '../../../../public/assets/images/onboard image.png';
+import onboardImage from '../../../../public/assets/images/getStartedImg.svg';
 import emailIcon from '../../../../public/assets/images/sms.svg';
 import eyeOpen from '../../../../public/assets/images/eye.svg';
 import eyeClosed from '../../../../public/assets/images/eye.svg';
@@ -70,6 +71,25 @@ const GetStarted = () => {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Handle responsive detection
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        handleResize();
+
+        window.addEventListener('resize', handleResize);
+
+        // Clean up
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -111,21 +131,80 @@ const GetStarted = () => {
         return (focusedFields[field.id] || form[field.id]) && field.type === 'password';
     };
 
+    const handleSubmit = async () => {
+        // Validate form
+        if (!form.email || !form.password || !form.firstName || !form.lastName) {
+            setError('Please fill in all required fields');
+            return;
+        }
+
+        if (form.password !== form.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        // Check if password meets all criteria
+        if (!Object.values(passwordValid).every(Boolean)) {
+            setError('Password does not meet all requirements');
+            return;
+        }
+
+        setError(null);
+        setIsLoading(true);
+
+        try {
+            // Prepare form data
+            const formData = new FormData();
+            formData.append('email', form.email);
+            formData.append('surname', form.lastName); // surname is last name
+            formData.append('otherName', form.firstName); // otherName is first name
+            formData.append('password', form.password);
+
+            // Make API call
+            const response = await axios.post(
+                'https://api.digitalmarke.bdic.ng/api/users/register',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            );
+
+            console.log('Registration successful:', response.data);
+            console.log('Registration successful:', response.data.data);
+
+            // Redirect to verification page on success
+            router.push("/register/emailVerification");
+        } catch (err) {
+            console.error('Registration failed:', err);
+
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            } else {
+                setError('An unexpected error occurred. Please try again.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="relative min-h-screen overflow-hidden">
-            <div className="absolute z-20 left-[660px] top-[1px]">
+            {/* Show top graphics only on desktop */}
+            <div className="absolute z-20 left-[660px] top-[1px] hidden md:block">
                 <Image src={topGraphics} alt="Decorative graphics" width={570} height={300} priority />
             </div>
 
             <div className="flex min-h-screen relative z-10">
                 {/* Left Panel - Form */}
                 <div className="w-full md:w-[65%] pb-[40px] flex flex-col bg-white">
-                    <div className="mt-[60px] ml-[102px]">
+                    <div className={`mt-[40px] md:mt-[60px] mx-auto md:ml-[102px] md:mx-0 ${isMobile ? 'ml-[102px]' : 'ml-[102px]'}`}>
                         <Image src={farmGoLogo} alt="FarmGo logo" width={90} height={45} />
                     </div>
 
-                    <div className="ml-[104px] mt-[30px]">
-                        <div className="w-[400px] flex justify-between items-center">
+                    <div className="px-6 md:px-0 md:ml-[204px] mt-[30px] max-w-full">
+                        <div className="w-full md:w-[400px] flex justify-between items-center">
                             <p className="text-[#022B23] text-[14px] font-medium">ACCOUNT SETUP</p>
                             <p className="text-[#022B23] text-[14px] font-medium">1/3</p>
                         </div>
@@ -140,7 +219,13 @@ const GetStarted = () => {
                             Get started by providing your details below.
                         </h1>
 
-                        <div className="mt-[20px] w-[400px]">
+                        {error && (
+                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="mt-[20px] w-full md:w-[400px]">
                             {formFields.map((field) => (
                                 <div key={field.id} className="relative w-full flex flex-col mb-[14px]">
                                     <label
@@ -202,17 +287,20 @@ const GetStarted = () => {
                                             passwordValid[criteria.key as keyof PasswordValidation] ? 'bg-[#D1FAE7]' : 'bg-gray-300'
                                         }`}
                                     >
-                    {criteria.label}
-                  </span>
+                                        {criteria.label}
+                                    </span>
                                 ))}
                             </div>
 
                             <button
-                                onClick={() => router.push("/register/emailVerification")}
-                                className="w-full cursor-pointer h-[52px] flex justify-center items-center gap-[9px] mt-[40px] bg-[#022B23] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] transition-colors"
+                                onClick={handleSubmit}
+                                disabled={isLoading}
+                                className={`w-full cursor-pointer h-[52px] flex justify-center items-center gap-[9px] mt-[40px] bg-[#022B23] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] transition-colors ${
+                                    isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                                }`}
                             >
-                                Continue
-                                <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />
+                                {isLoading ? 'Processing...' : 'Continue'}
+                                {!isLoading && <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />}
                             </button>
 
                             <p className="text-[14px] mt-[10px] text-[#7C7C7C]">
@@ -228,9 +316,9 @@ const GetStarted = () => {
                     </div>
                 </div>
 
-                {/* Right Panel - Graphics */}
-                <div className="hidden md:flex bg-[#022B23] w-[35%] flex-col pt-[171px] relative">
-                    <div className="pl-[20px]">
+                {/* Right Panel - Graphics - Hidden on mobile */}
+                <div className="hidden md:flex bg-[#022B23] w-[35%] flex-col justify-between relative">
+                    <div className="pl-[20px] pt-[171px]">
                         <p className="mb-[15px] text-[#FFEEBE] text-[20px] font-medium">Get started</p>
                         <p className="text-[#C6EB5F] text-[25px]">
                             Register on the largest<br />
@@ -238,13 +326,16 @@ const GetStarted = () => {
                             to buy and sale products.
                         </p>
                     </div>
-                    <Image
-                        src={onboardImage}
-                        alt="Onboarding illustration"
-                        width={600}
-                        height={400}
-                        className="w-[550px] absolute h-[400px] mt-[270px] ml-[-37px]"
-                    />
+                    <div className="w-full mt-auto">
+                        <Image
+                            src={onboardImage}
+                            alt="Onboarding illustration"
+                            width={500}
+                            height={400}
+                            className="w-full object-contain ml-[-10px]"
+                            priority
+                        />
+                    </div>
                 </div>
             </div>
         </div>

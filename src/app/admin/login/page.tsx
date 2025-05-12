@@ -23,6 +23,7 @@ const formFields: FormField[] = [
     { id: 'password', label: 'Password', type: 'password' },
 ];
 
+
 const Login = ()=>{
     const [form, setForm] = useState<FormData>({
         email: '',
@@ -66,7 +67,7 @@ const Login = ()=>{
 
     return(
         <div className="h-[982px] flex flex-col justify-between items-center">
-            <div className="h-[90px]  px-25 py-[10px] w-full relative flex items-center gap-[14px]"
+            <div className="h-[90px]  px-[185px] py-[10px] w-full relative flex items-center gap-[14px]"
                  style={{
                      backgroundImage: `url(${shadow.src})`,
                      backgroundSize: "cover",

@@ -4,7 +4,6 @@ import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-// Assets
 import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
 import arrowLeft from "../../../../public/assets/images/arrow-right.svg";
 import shop from "../../../../public/assets/images/shop.svg";
@@ -38,7 +37,19 @@ const UserType = () => {
 
     const handleClick = () => {
         if (selectedUserType && selectedOption && address.trim()) {
-            router.push("/welcome");
+            switch (selectedUserType) {
+                case 'buyer':
+                    router.push("/welcome/buyer");
+                    break;
+                case 'seller':
+                    router.push("/welcome/vendor");
+                    break;
+                case 'logistics':
+                    router.push("/welcome/logistics");
+                    break;
+                default:
+                    router.push("/welcome");
+            }
         }
     };
 
@@ -53,7 +64,7 @@ const UserType = () => {
     return (
         <div className="flex min-h-screen">
             {/* Left Side - Form */}
-            <div className="w-full md:w-[65%] pb-[65px] flex flex-col">
+            <div className="w-full px-[20px] md:w-[65%] pb-[65px] z-10  flex flex-col">
                 <Image
                     src={farmGoLogo}
                     alt="FarmGo logo"
@@ -62,7 +73,7 @@ const UserType = () => {
                     height={45}
                 />
 
-                <div className="mt-[40px] w-[400px] ml-[204px]">
+                <div className="mt-[40px] w-full md:w-[400px] md:ml-[204px]">
                     <div className="flex justify-between items-center">
                         <p className="text-[#022B23] text-[14px] font-medium">ACCOUNT SETUP</p>
                         <p className="text-[#022B23] text-[14px] font-medium">3/3</p>
@@ -124,7 +135,7 @@ const UserType = () => {
                                     <Image src={option.icon} alt={`${option.type} icon`} width={24} height={24} />
                                     <div>
                                         <p className="font-medium text-[14px] text-[#121212]">{option.title}</p>
-                                        <p className="text-[#707070] text-[12px]">{option.description}</p>
+                                        <p className="text-[#707070] text-[10px] md:text-[12px]">{option.description}</p>
                                     </div>
                                 </div>
                                 <Image
@@ -213,7 +224,7 @@ const UserType = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col bg-[#ecfdf6] h-auto w-[35%] pl-[20px]">
+            <div className="hidden md:flex md:flex-col bg-[#ecfdf6] h-auto w-[35%] pl-[20px]">
                 <div className="mt-[231px]">
                     <p className="text-[#461602] text-[22px]">Get started</p>
                     <p className="mt-[10px] text-[26px] leading-tight">
