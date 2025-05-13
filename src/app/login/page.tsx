@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import axios from 'axios';
 import shadow from "../../../public/assets/images/shadow.png";
 import headerIcon from "../../../public/assets/images/headerImg.png";
 import emailIcon from "../../../public/assets/images/sms.svg";
@@ -33,6 +34,8 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     // Handle responsive detection
     useEffect(() => {
@@ -85,6 +88,34 @@ const Login = () => {
         setForm(prev => ({ ...prev, [name]: value }));
     };
 
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/auth/login', {
+                email: form.email,
+                password: form.password
+            });
+
+            // Handle successful login
+            console.log('Login successful:', response.data);
+
+            // localStorage.setItem('authToken', response.data.token);
+            // router.push('/dashboard');
+
+        } catch (err) {
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.message || 'Login failed. Please try again.');
+            } else {
+                setError('An unexpected error occurred');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <>
             <div
@@ -114,7 +145,7 @@ const Login = () => {
                             </div>
                             <p className="text-[#1E1E1E] text-[16px]">Sign in to continue to your dashboard</p>
                         </div>
-                        <div>
+                        <form onSubmit={handleSubmit}>
                             {formFields.map((field) => (
                                 <div key={field.id} className="relative w-full flex flex-col mb-[14px]">
                                     <label
@@ -142,6 +173,7 @@ const Login = () => {
                                                     ? "pt-[14px] pb-[4px] text-[#121212] text-[14px] font-medium"
                                                     : "text-[#BDBDBD] text-[16px] font-medium"
                                             }`}
+                                            required
                                         />
 
                                         {shouldShowIcon(field) && (
@@ -154,6 +186,7 @@ const Login = () => {
                                             <div
                                                 className="absolute right-4 px-[6px] py-[4px] flex items-center text-[#DCDCDC] text-[12px] shadow-md gap-[8px] rounded-[8px] border-[1px] border-[#EAEAEA] w-[72px] top-1/2 transform -translate-y-1/2 cursor-pointer bg-white"
                                                 onClick={field.id === 'password' ? togglePasswordVisibility : toggleConfirmPasswordVisibility}
+                                                type="button"
                                             >
                                                 <Image
                                                     src={(field.id === 'password' ? showPassword : showConfirmPassword) ? eyeOpen : eyeClosed}
@@ -167,10 +200,19 @@ const Login = () => {
                                     </div>
                                 </div>
                             ))}
-                            <div className="flex items-center cursor-pointer bg-[#033228] rounded-[12px] w-full h-[52px] text-[14px] font-semibold text-[#C6EB5F] justify-center">
-                                <p>Sign in</p>
-                            </div>
-                        </div>
+                            {error && (
+                                <div className="text-red-500 text-sm mb-4">
+                                    {error}
+                                </div>
+                            )}
+                            <button
+                                type="submit"
+                                className="flex items-center cursor-pointer bg-[#033228] rounded-[12px] w-full h-[52px] text-[14px] font-semibold text-[#C6EB5F] justify-center"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? 'Signing in...' : 'Sign in'}
+                            </button>
+                        </form>
                     </div>
                     <p className="mt-6 md:mt-[-15px] text-[#7C7C7C] text-[14px]">Don&#39;t have an account?
                         <span className="text-[#001234] text-[16px] cursor-pointer"> Register</span>
