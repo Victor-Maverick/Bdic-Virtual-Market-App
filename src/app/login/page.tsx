@@ -186,7 +186,6 @@ const Login = () => {
                                             <div
                                                 className="absolute right-4 px-[6px] py-[4px] flex items-center text-[#DCDCDC] text-[12px] shadow-md gap-[8px] rounded-[8px] border-[1px] border-[#EAEAEA] w-[72px] top-1/2 transform -translate-y-1/2 cursor-pointer bg-white"
                                                 onClick={field.id === 'password' ? togglePasswordVisibility : toggleConfirmPasswordVisibility}
-                                                type="button"
                                             >
                                                 <Image
                                                     src={(field.id === 'password' ? showPassword : showConfirmPassword) ? eyeOpen : eyeClosed}
