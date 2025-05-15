@@ -235,9 +235,10 @@ const GetStarted = () => {
 
                             <button
                                 onClick={handleSubmit}
-                                className={`w-full cursor-pointer h-[52px] flex justify-center items-center gap-[9px] mt-[40px] bg-[#022B23] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] transition-colors opacity-70 ' : ''
-                                }`}
+                                className={`w-full cursor-pointer bg-[#022B23] h-[52px] flex justify-center items-center gap-[9px] mt-[40px] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] '
+                                `}
                             >
+                                <p>Continue</p>
                                 <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />
                             </button>
 

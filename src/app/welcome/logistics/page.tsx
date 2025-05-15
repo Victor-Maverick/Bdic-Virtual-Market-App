@@ -9,7 +9,7 @@ import limeArrow from "../../../../public/assets/images/green arrow.png";
 const Welcome = ()=>{
     const router = useRouter();
     const handleClick = ()=>{
-        router.push("/vendor/dashboard/main");
+        router.push("/logistics/dashboard/main");
     }
     return(
         <div >
