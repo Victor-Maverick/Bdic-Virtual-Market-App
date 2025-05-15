@@ -1,9 +1,8 @@
 'use client';
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown } from "lucide-react";
 import agricimg from '../../../public/assets/images/mapIcon.png';
-import categoryImg from '../../../public/assets/images/categoryImg.png';
+import categoryImg from '../../../public/assets/images/categoryImg.svg';
 import electronicIcon from '../../../public/assets/images/electronicIcon.png';
 import hospitalIcon from '../../../public/assets/images/hospitalIcon.svg';
 import babyIcon from '../../../public/assets/images/homeIcon.png';
@@ -41,21 +40,16 @@ const Dropdown = () => {
     return (
         <div className="relative">
             <div
-                className="flex items-center bg-[#022B23] px-4 py-2 rounded-md cursor-pointer"
+                className="flex items-center h-[52px] bg-[#022B23] w-[246px] px-[10px] rounded-[8px] cursor-pointer"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 <Image src={categoryImg} alt="Dropdown Icon" width={20} height={20} />
                 <span className="bg-[#022B23] text-[#ffeebe] pr-1 ml-2">
           {selectedOption ? selectedOption.label : "Categories"}
         </span>
-                <ChevronDown
-                    size={18}
-                    className={`ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-                    color="#ffeebe"
-                />
             </div>
             {isOpen && (
-                <div className="absolute mt-2 w-[280px] bg-[#ffffff] text-black rounded-md shadow-lg z-10">
+                <div className="absolute  w-[246px] bg-[#ffffff] text-black rounded-md shadow-lg z-10">
                     <ul className="py-1">
                         {categories.map((option, index) => (
                             <li

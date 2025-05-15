@@ -1,13 +1,13 @@
 'use client'
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import axios from 'axios';
 import shadow from "../../../public/assets/images/shadow.png";
 import headerIcon from "../../../public/assets/images/headerImg.png";
 import emailIcon from "../../../public/assets/images/sms.svg";
 import eyeOpen from "../../../public/assets/images/eye.svg";
 import eyeClosed from "../../../public/assets/images/eye.svg";
 import loginImg from '@/../public/assets/images/loginImg.svg';
+import {useRouter} from "next/navigation";
 
 type FormField = {
     id: keyof FormData;
@@ -31,6 +31,7 @@ const Login = () => {
         email: '',
         password: ''
     });
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
@@ -93,27 +94,7 @@ const Login = () => {
         setIsLoading(true);
         setError(null);
 
-        try {
-            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/auth/login', {
-                email: form.email,
-                password: form.password
-            });
-
-            // Handle successful login
-            console.log('Login successful:', response.data);
-
-            // localStorage.setItem('authToken', response.data.token);
-            // router.push('/dashboard');
-
-        } catch (err) {
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || 'Login failed. Please try again.');
-            } else {
-                setError('An unexpected error occurred');
-            }
-        } finally {
-            setIsLoading(false);
-        }
+        router.push("/admin/dashboard/markets")
     };
 
     return (

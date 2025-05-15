@@ -14,6 +14,7 @@ const categories = [
 ];
 
 
+
 const FeaturedCategories = ()=>{
     return (
         <div className="flex items-start justify-between px-25 py-6">
@@ -21,7 +22,7 @@ const FeaturedCategories = ()=>{
             <div className="flex items-center justify-between gap-2">
                 {categories.map(category => (
                     <div key={category.id}
-                    className="h-[92px] w-[92px] bg-[#F5F5F5] rounded-[18px] text-center">
+                         className="h-[92px] w-[92px] bg-[#F5F5F5] rounded-[18px] text-center">
                         <p className="mt-14 text-[15px]">{category.name}</p>
                     </div>
                 ))
@@ -33,3 +34,4 @@ const FeaturedCategories = ()=>{
 }
 
 export default FeaturedCategories;
+

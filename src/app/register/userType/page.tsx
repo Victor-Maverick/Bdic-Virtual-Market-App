@@ -1,6 +1,5 @@
 'use client';
 import Image from "next/image";
-import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -14,29 +13,17 @@ import threeImages from '../../../../public/assets/images/threeImages.png';
 import greenTick from '@/../public/assets/images/greentick.svg';
 import greyTick from '@/../public/assets/images/greytick.svg';
 
-type StateOption = {
-    label: string;
-};
+
 
 type UserTypeOption = 'buyer' | 'seller' | 'logistics';
 
-const states: StateOption[] = [
-    { label: "BENUE STATE" },
-    { label: "LAGOS STATE" },
-    { label: "OGUN STATE" },
-    { label: "FCT ABUJA" },
-];
 
 const UserType = () => {
     const router = useRouter();
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<StateOption | null>(null);
     const [selectedUserType, setSelectedUserType] = useState<UserTypeOption | null>(null);
-    const [isFocused, setIsFocused] = useState(false);
-    const [address, setAddress] = useState("");
 
     const handleClick = () => {
-        if (selectedUserType && selectedOption && address.trim()) {
+        if (selectedUserType) {
             switch (selectedUserType) {
                 case 'buyer':
                     router.push("/welcome/buyer");
@@ -148,76 +135,19 @@ const UserType = () => {
                         ))}
                     </div>
 
-                    <div className="relative mt-[30px]">
-                        <div
-                            onClick={() => setIsOpen(!isOpen)}
-                            className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#ededed] items-center cursor-pointer"
-                        >
-                            <p className={`text-[16px] font-medium ${
-                                selectedOption ? 'text-[#022B23]' : 'text-[#BDBDBD]'
-                            }`}>
-                                {selectedOption ? selectedOption.label : "State of origin"}
-                            </p>
-                            <ChevronDown
-                                size={24}
-                                className={`transition-transform ${isOpen ? "rotate-180" : ""}`}
-                                color="#ededed"
-                            />
-                        </div>
 
-                        {isOpen && (
-                            <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
-                                <ul className="py-1">
-                                    {states.map((option, index) => (
-                                        <li
-                                            key={index}
-                                            className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
-                                            onClick={() => {
-                                                setSelectedOption(option);
-                                                setIsOpen(false);
-                                            }}
-                                        >
-                                            {option.label}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="relative mt-[20px] w-full h-[58px]">
-                        <input
-                            type="text"
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            onFocus={() => setIsFocused(true)}
-                            onBlur={() => setIsFocused(address !== "")}
-                            className={`w-full px-4 pt-6 pb-2 text-lg border-[2px] h-full rounded-[14px] outline-none transition-all duration-300 caret-[#C0DDFD] ${
-                                isFocused ? "border-[#022B23]" : "border-[#ededed]"
-                            }`}
-                        />
-                        <label
-                            className={`absolute left-4 transition-all duration-300 ${
-                                isFocused || address
-                                    ? "top-2 text-[12px] font-normal text-[#6D6D6D]"
-                                    : "top-1/2 transform -translate-y-1/2 text-[#BDBDBD] text-[14px] font-medium"
-                            }`}
-                        >
-                            Your address
-                        </label>
-                    </div>
 
                     <button
                         onClick={handleClick}
-                        disabled={!selectedUserType || !selectedOption || !address.trim()}
+                        disabled={!selectedUserType}
                         className={`flex mt-[35px] gap-[9px] justify-center items-center rounded-[12px] h-[52px] w-full transition-colors ${
-                            selectedUserType && selectedOption && address.trim()
+                            selectedUserType
                                 ? "bg-[#022B23] text-[#C6EB5F] hover:bg-[#011C17] cursor-pointer"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         }`}
                     >
                         <p className="font-semibold text-[14px]">Complete onboarding</p>
-                        {selectedUserType && selectedOption && address.trim() && (
+                        {selectedUserType && (
                             <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
                         )}
                     </button>

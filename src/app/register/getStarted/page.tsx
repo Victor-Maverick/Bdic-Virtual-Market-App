@@ -2,7 +2,6 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import axios from 'axios';
 import topGraphics from '../../../../public/assets/images/topGraphics.png';
 import farmGoLogo from '../../../../public/assets/images/farmGoLogo.png';
 import limeArrow from '../../../../public/assets/images/green arrow.png';
@@ -72,8 +71,6 @@ const GetStarted = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     // Handle responsive detection
     useEffect(() => {
@@ -132,61 +129,9 @@ const GetStarted = () => {
     };
 
     const handleSubmit = async () => {
-        // Validate form
-        if (!form.email || !form.password || !form.firstName || !form.lastName) {
-            setError('Please fill in all required fields');
-            return;
-        }
-
-        if (form.password !== form.confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        // Check if password meets all criteria
-        if (!Object.values(passwordValid).every(Boolean)) {
-            setError('Password does not meet all requirements');
-            return;
-        }
-
-        setError(null);
-        setIsLoading(true);
-
-        try {
-            // Prepare form data
-            const formData = new FormData();
-            formData.append('email', form.email);
-            formData.append('surname', form.lastName); // surname is last name
-            formData.append('otherName', form.firstName); // otherName is first name
-            formData.append('password', form.password);
-
-            // Make API call
-            const response = await axios.post(
-                'https://api.digitalmarke.bdic.ng/api/users/register',
-                formData,
-                {
-                    headers: {
-                        'Content-Type': 'multipart/form-data',
-                    },
-                }
-            );
-
-            console.log('Registration successful:', response.data);
-            console.log('Registration successful:', response.data.data);
-
             // Redirect to verification page on success
-            router.push("/register/emailVerification");
-        } catch (err) {
-            console.error('Registration failed:', err);
+        router.push("/register/emailVerification");
 
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || 'Registration failed. Please try again.');
-            } else {
-                setError('An unexpected error occurred. Please try again.');
-            }
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     return (
@@ -219,11 +164,7 @@ const GetStarted = () => {
                             Get started by providing your details below.
                         </h1>
 
-                        {error && (
-                            <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
-                                {error}
-                            </div>
-                        )}
+
 
                         <div className="mt-[20px] w-full md:w-[400px]">
                             {formFields.map((field) => (
@@ -294,13 +235,10 @@ const GetStarted = () => {
 
                             <button
                                 onClick={handleSubmit}
-                                disabled={isLoading}
-                                className={`w-full cursor-pointer h-[52px] flex justify-center items-center gap-[9px] mt-[40px] bg-[#022B23] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] transition-colors ${
-                                    isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                                className={`w-full cursor-pointer h-[52px] flex justify-center items-center gap-[9px] mt-[40px] bg-[#022B23] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] transition-colors opacity-70 ' : ''
                                 }`}
                             >
-                                {isLoading ? 'Processing...' : 'Continue'}
-                                {!isLoading && <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />}
+                                <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />
                             </button>
 
                             <p className="text-[14px] mt-[10px] text-[#7C7C7C]">

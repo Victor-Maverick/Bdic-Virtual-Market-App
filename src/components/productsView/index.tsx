@@ -34,7 +34,7 @@ const ProductGrid = ({products}) => (
                 height={303}
                 name={product.name}
                 image={product.image}
-                price={product.price} size={201} imageHeight={215}            />
+                price={product.price}  imageHeight={215}            />
         ))}
     </div>
 );

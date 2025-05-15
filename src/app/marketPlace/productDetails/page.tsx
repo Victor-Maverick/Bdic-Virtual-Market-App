@@ -213,7 +213,8 @@ const ProductDetails =()=>{
                             key={index}
                             name={product.name}
                             image={product.image}
-                            price={product.price} size={undefined} imageHeight={undefined}                        />
+                            price={product.price}  imageHeight={undefined}
+                        />
                     ))}
                 </div>
 
