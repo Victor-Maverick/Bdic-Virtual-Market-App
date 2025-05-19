@@ -182,7 +182,7 @@ const OnboardMarket = () => {
         const fetchAllWards = async () => {
             setIsLoading(prev => ({...prev, wards: true}));
             try {
-                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/council-wards/council-wards/all`);
+                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/council-wards/all`);
                 setAllWards(response.data);
             } catch (error) {
                 console.error("Error fetching all wards:", error);
