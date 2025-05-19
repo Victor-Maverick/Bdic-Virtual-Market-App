@@ -8,6 +8,7 @@ import eyeOpen from "../../../public/assets/images/eye.svg";
 import eyeClosed from "../../../public/assets/images/eye.svg";
 import loginImg from '@/../public/assets/images/loginImg.svg';
 import {useRouter} from "next/navigation";
+import axios from 'axios';
 
 type FormField = {
     id: keyof FormData;
@@ -26,6 +27,48 @@ const formFields: FormField[] = [
     { id: 'password', label: 'Password', type: 'password' },
 ];
 
+const Toast = ({
+                   type,
+                   message,
+                   subMessage,
+                   onClose,
+               }: {
+    type: "success" | "error";
+    message: string;
+    subMessage: string;
+    onClose: () => void;
+}) => {
+    return (
+        <div className={`fixed top-6 right-6 w-[243px] bg-white ${type === "success" ? 'h-auto' : 'h-[138px]'} rounded-md shadow-lg z-50 border border-[#ededed]`}>
+            <div className="flex w-full gap-[16px] px-[16px] py-[12px]">
+                <div
+                    className={`flex items-center justify-center w-6 h-6 rounded-full ${
+                        type === "success" ? "bg-green-100" : "bg-red-100"
+                    }`}
+                >
+                    <div
+                        className={`w-3 h-3 rounded-full ${
+                            type === "success" ? "bg-green-500" : "bg-red-500"
+                        }`}
+                    ></div>
+                </div>
+                <div className="flex-1">
+                    <p className="text-[#001234] text-[12px] font-medium">{message}</p>
+                    <p className="text-[11px] text-[#707070] font-medium">{subMessage}</p>
+                    {type === "error" && (
+                        <button
+                            onClick={onClose}
+                            className="mt-[10px] text-[#022B23] text-[12px] font-medium"
+                        >
+                            Try again
+                        </button>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const Login = () => {
     const [form, setForm] = useState<FormData>({
         email: '',
@@ -36,7 +79,10 @@ const Login = () => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [showToast, setShowToast] = useState(false);
+    const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastSubMessage, setToastSubMessage] = useState("");
 
     // Handle responsive detection
     useEffect(() => {
@@ -92,13 +138,65 @@ const Login = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        setError(null);
 
-        router.push("/admin/dashboard/markets")
+        try {
+            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/auth/login', {
+                email: form.email,
+                password: form.password
+            });
+
+            console.log('API Response:', response.data); // Log the response data
+
+            if (response.status === 200) {
+                setToastType("success");
+                setToastMessage("Login successful");
+                setToastSubMessage("You are being redirected to your dashboard");
+                setShowToast(true);
+
+                // Redirect after 2 seconds
+                setTimeout(() => {
+                    router.push("/admin/dashboard/markets");
+                }, 2000);
+            } else {
+                setToastType("error");
+                setToastMessage("Login failed");
+                setToastSubMessage(response.data.message || "Invalid email or password");
+                setShowToast(true);
+            }
+        } catch (error: any) {
+            console.error('Login error:', error.response?.data || error.message);
+
+            setToastType("error");
+            setToastMessage("Login failed");
+            setToastSubMessage(
+                error.response?.data?.message ||
+                error.message ||
+                "Unable to connect to the server"
+            );
+            setShowToast(true);
+        } finally {
+            setIsLoading(false);
+            setTimeout(() => {
+                setShowToast(false);
+            }, 3000);
+        }
+    };
+
+    const handleCloseToast = () => {
+        setShowToast(false);
     };
 
     return (
         <>
+            {showToast && (
+                <Toast
+                    type={toastType}
+                    message={toastMessage}
+                    subMessage={toastSubMessage}
+                    onClose={handleCloseToast}
+                />
+            )}
+
             <div
                 className="h-[90px] md:pl-[185px] pl-[20px] py-[10px] w-full flex items-center gap-[14px]"
                 style={{
@@ -180,17 +278,16 @@ const Login = () => {
                                     </div>
                                 </div>
                             ))}
-                            {error && (
-                                <div className="text-red-500 text-sm mb-4">
-                                    {error}
-                                </div>
-                            )}
                             <button
                                 type="submit"
-                                className="flex items-center cursor-pointer bg-[#033228] rounded-[12px] w-full h-[52px] text-[14px] font-semibold text-[#C6EB5F] justify-center"
+                                className="flex items-center justify-center cursor-pointer bg-[#033228] rounded-[12px] w-full h-[52px] text-[14px] font-semibold text-[#C6EB5F]"
                                 disabled={isLoading}
                             >
-                                {isLoading ? 'Signing in...' : 'Sign in'}
+                                {isLoading ? (
+                                    <div className="flex items-center justify-center">
+                                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#C6EB5F]"></div>
+                                    </div>
+                                ) : 'Sign in'}
                             </button>
                         </form>
                     </div>

@@ -1,4 +1,5 @@
 'use client'
+import React from 'react';
 import BannerSection from "@/components/bannerSection";
 import Image from 'next/image';
 import FeaturedCategories from "@/components/featuredCategories";
@@ -42,8 +43,8 @@ import mapIcon from "../../../public/assets/images/mapIcon.png";
 import deviceIcon from "../../../public/assets/images/deviceIcon.svg";
 import filterImg from '@/../public/assets/images/filter.svg'
 import {useRouter} from "next/navigation";
-import store1 from '@/../public/assets/images/store 1.svg'
-import store2 from '@/../public/assets/images/store2.svg'
+import store1 from '@/../public/assets/images/store1.png'
+import store2 from '@/../public/assets/images/store2.png'
 
 type Category = {
     label: string;
@@ -93,7 +94,7 @@ const SearchBar = () => (
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 const ProductGrid = ({products}) => (
-    <div className="grid grid-cols-5 w-full gap-x-3 gap-y-3 px-25 py-6">
+    <div className="grid grid-cols-5 w-full gap-x-3 gap-y-[10px] px-25 py-[10px]">
         {products.map((product: { name: unknown; image: unknown; price: unknown; }, index: Key | null | undefined) => (
             <ProductCard
                 key={index}
@@ -154,55 +155,54 @@ const FlashSale = ({ countdown, featuredProducts }) => {
     );
 };
 
-const StoreSection=()=>{
-    const stores =[
-        {id: 1, image: store1},
-        {id: 2, image: store2},
-        {id: 3, image: store1},
-        {id: 4, image: store2},
-        {id: 5, image: store1},
-        {id: 6, image: store2},
-        {id: 7, image: store1},
-        {id: 8, image: store2},
-        {id: 9, image: store1},
-        {id: 10, image: store2},
-    ]
+const StoreSection = () => {
+    const router = useRouter();
+    const stores = React.useMemo(() => [
+        { id: 1, image: store1 },
+        { id: 2, image: store2 },
+        { id: 3, image: store1 },
+        { id: 4, image: store2 },
+        { id: 5, image: store1 },
+        { id: 6, image: store2 },
+        { id: 7, image: store1 },
+        { id: 8, image: store2 },
+        { id: 9, image: store1 },
+        { id: 10, image: store2 },
+    ], []);
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    const PictureCard =({image})=>{
-        return(
-            <>
-                <div className="w-full h-[200px] rounded-[14px]">
-                    <Image src={image} alt={'image'} className="w-full h-full rounded-[14px]"/>
-                </div>
-            </>
-        )
-    }
-    return(
+    const PictureCard = ({ image }: { image: string }) => {
+        return (
+            <div
+                onClick={()=>{router.push("/marketPlace/store")}}
+                className="w-full h-[200px] rounded-[14px] overflow-hidden">
+                <Image
+                    src={image}
+                    alt="store"
+                    className="w-full h-full object-cover rounded-[14px]"
+                    priority // Disables lazy loading (if using Next.js)
+                />
+            </div>
+        );
+    };
+
+    return (
         <div className="flex-col rounded-3xl mt-[20px] mx-25">
             <div className="bg-[#022B23] h-[80px] flex justify-between px-4 pt-2">
                 <div>
-                    <div className="flex  items-center">
-                        <p className="font-medium text-[#C6EB5F] text-[22px]">Stores</p>
-                    </div>
+                    <p className="font-medium text-[#C6EB5F] text-[22px]">Stores</p>
                     <p className="text-[#C6EB5F] text-[14px]">Check out top verified stores</p>
                 </div>
             </div>
             <div className="bg-[#F9FDE8] mt-[6px] h-[440px] border border-[#C6EB5F] p-[10px]">
-                {/* Grid container with 5 columns */}
                 <div className="grid grid-cols-5 gap-[6px]">
-                    {stores.map((product, index) => (
-                        <PictureCard
-                        key={index}
-                        image={product.image}
-                        />
+                    {stores.map((product) => (
+                        <PictureCard key={product.id} image={product.image} />
                     ))}
                 </div>
             </div>
         </div>
     );
-}
+};
 
 const MarketPlace = () => {
     const [selectedMarket, setSelectedMarket] = useState("Wurukum");
