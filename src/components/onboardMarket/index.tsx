@@ -1,121 +1,135 @@
 'use client';
 import Image from "next/image";
-import limeArrow from "../../../public/assets/images/green arrow.png";
-import {useState} from "react";
+import arrowRight from '@/../public/assets/images/green arrow.png';
+import { useState } from "react";
+import axios from 'axios';
 
 interface OnboardModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onContinue: () => void;
-}
-
-interface InputFieldProps {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    optional?: boolean;
-}
-
-const InputField = ({
-                        id,
-                        label,
-                        value,
-                        onChange,
-                        placeholder,
-                        optional = false,
-                    }: InputFieldProps) => {
-    const [isFocused, setIsFocused] = useState(false);
-
-    return (
-        <div className="relative w-full flex flex-col">
-            <label
-                htmlFor={id}
-                className={`absolute left-4 transition-all ${
-                    isFocused || value
-                        ? "text-[#6D6D6D] text-[12px] font-medium top-[6px]"
-                        : "hidden"
-                }`}
-            >
-                {label} {optional && <span className="text-[#B0B0B0]">(optional)</span>}
-            </label>
-            <input
-                id={id}
-                type="text"
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholder={!isFocused && !value ? placeholder : ""}
-                className={`px-4 h-[58px] w-full border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] ${
-                    isFocused || value
-                        ? "pt-[14px] pb-[4px] text-[#121212] text-[14px] font-medium"
-                        : "text-[#BDBDBD] text-[16px] font-medium"
-                }`}
-            />
-        </div>
-    );
-};
-
-const OnboardMarketModal = ({ isOpen, onClose, onContinue }: OnboardModalProps) => {
-    const [formData, setFormData] = useState({
-        line: "",
-        shops: ""
-    });
-
-    const handleChange = (field: keyof typeof formData) => (value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+    onSuccess: () => void;
+    marketData: {
+        name: string;
+        address: string;
+        councilWardId?: number;
     };
+}
 
-    const handleClose = () => {
-        onClose();
-        onContinue();
+const OnboardMarketModal = ({ isOpen, onClose, onSuccess, marketData }: OnboardModalProps) => {
+    const [lines, setLines] = useState('');
+    const [shops, setShops] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+
+        if (!lines || !shops) {
+            setError("Please enter both lines and shops count");
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const payload = {
+                ...marketData,
+                city: "Makurdi", // Hardcoded as per requirement
+                lines: Number(lines),
+                shops: Number(shops),
+            };
+
+            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/markets/add', payload);
+
+            if (response.status === 200) {
+                onSuccess();
+                onClose();
+            }
+        } catch (err) {
+            console.error("Error onboarding market:", err);
+            setError("Failed to onboard market. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-            <div className="bg-white px-10 py-25 w-[722px] justify-center gap-[30px] h-[461px] flex flex-col items-center">
-                <div className="w-[542px] flex flex-col gap-[64px] text-left ">
-                    <div className="w-[268px] flex font-medium flex-col gap-[14px] ">
-                        <p className="text-[#022B23] text-[16px] ">Lines and shops</p>
-                        <p className="text-[14px]  text-[#707070]">Add the number of lines and shops in this market</p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-[14px] p-6 w-[400px]">
+                <h2 className="text-[#022B23] text-[18px] font-semibold mb-6">Market Details</h2>
+
+                {error && (
+                    <div className="mb-4 text-red-500 text-sm">
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-4">
+                        <div className="relative w-full flex flex-col">
+                            <label
+                                htmlFor="lines"
+                                className={`absolute left-4 text-[#6D6D6D] text-[12px] font-medium top-[6px]`}
+                            >
+                                Number of Lines
+                            </label>
+                            <input
+                                id="lines"
+                                type="number"
+                                min="1"
+                                value={lines}
+                                onChange={(e) => setLines(e.target.value)}
+                                className="px-4 h-[58px] w-full border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] pt-[14px] pb-[4px] text-[#121212] text-[14px] font-medium"
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="flex flex-col w-[528px] gap-[40px]">
-                        <div className="flex gap-[12px]  w-full">
-                            <div className="w-[65%]">
-                                <InputField
-                                    id="line"
-                                    label="Line"
-                                    value={formData.line}
-                                    onChange={handleChange('line')}
-                                    placeholder="Line"
-                                />
-                            </div>
-                            <div className="w-[35%]">
-                                <InputField
-                                    id="shops"
-                                    label="Shops"
-                                    value={formData.shops}
-                                    onChange={handleChange('shops')}
-                                    placeholder="Shops"
-                                />
-                            </div>
-                        </div>
-                        <div
-                            onClick={handleClose}
-                            className="flex w-[513px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
-                        >
-                            <p className="text-[#C6EB5F] font-semibold text-[14px]">
-                                Continue
-                            </p>
-                            <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                    <div className="mb-6">
+                        <div className="relative w-full flex flex-col">
+                            <label
+                                htmlFor="shops"
+                                className={`absolute left-4 text-[#6D6D6D] text-[12px] font-medium top-[6px]`}
+                            >
+                                Number of Shops
+                            </label>
+                            <input
+                                id="shops"
+                                type="number"
+                                min="1"
+                                value={shops}
+                                onChange={(e) => setShops(e.target.value)}
+                                className="px-4 h-[58px] w-full border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] pt-[14px] pb-[4px] text-[#121212] text-[14px] font-medium"
+                                required
+                            />
                         </div>
                     </div>
-                </div>
+
+                    <div className="flex justify-end gap-3">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 text-[#022B23] border border-[#022B23] rounded-[12px] text-[14px] font-semibold"
+                            disabled={isSubmitting}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            className="flex h-[52px] cursor-pointer text-[14px] rounded-[12px] font-semibold text-[#C6EB5F] bg-[#022B23] px-4 items-center justify-center gap-[9px]"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting ? 'Submitting...' : (
+                                <>
+                                    <span>Continue</span>
+                                    <Image src={arrowRight} alt="Continue arrow" width={20} height={20} />
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

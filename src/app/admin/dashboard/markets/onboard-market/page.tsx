@@ -1,10 +1,10 @@
 'use client';
 import Image from "next/image";
-import arrowBack from '@/../public/assets/images/arrow-right.svg'
-import {useRouter} from "next/navigation";
-import {useState, useEffect} from "react";
-import {ChevronDown} from "lucide-react";
-import arrowRight from '@/../public/assets/images/green arrow.png'
+import arrowBack from '@/../public/assets/images/arrow-right.svg';
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
+import arrowRight from '@/../public/assets/images/green arrow.png';
 import OnboardMarketModal from "@/components/onboardMarket";
 import OnboardMarketSuccessModal from "@/components/onboardMarketSuccessModal";
 import axios from 'axios';
@@ -225,7 +225,6 @@ const OnboardMarket = () => {
     };
 
     const handleOpenMarketModal = () => {
-        // Validate required fields
         if (!selectedState || !selectedLga || !selectedWard || !formData.marketName) {
             alert("Please fill all required fields");
             return;
@@ -233,19 +232,19 @@ const OnboardMarket = () => {
         setIsMarketModalOpen(true);
     };
 
-    const handleCloseMarketModal = () => {
-        setIsMarketModalOpen(false);
-    };
-
-    const handleMarketModalContinue = () => {
-        // Here you would typically submit the data to your API
-        setIsMarketModalOpen(false);
+    const handleSuccess = () => {
         setIsSuccessModalOpen(true);
+        // Reset form after successful submission
+        setSelectedState(null);
+        setSelectedLga(null);
+        setSelectedWard(null);
+        setFormData({
+            location: "",
+            marketName: ""
+        });
     };
 
-    const handleCloseSuccessModal = () => {
-        setIsSuccessModalOpen(false);
-        // Reset form after successful submission
+    const resetForm = () => {
         setSelectedState(null);
         setSelectedLga(null);
         setSelectedWard(null);
@@ -334,16 +333,23 @@ const OnboardMarket = () => {
                 </div>
             </div>
 
-            {/* Modals - unchanged from original */}
             <OnboardMarketModal
                 isOpen={isMarketModalOpen}
-                onClose={handleCloseMarketModal}
-                onContinue={handleMarketModalContinue}
+                onClose={() => setIsMarketModalOpen(false)}
+                onSuccess={handleSuccess}
+                marketData={{
+                    name: formData.marketName,
+                    address: formData.location,
+                    councilWardId: selectedWard?.id
+                }}
             />
 
             <OnboardMarketSuccessModal
                 isOpen={isSuccessModalOpen}
-                onClose={handleCloseSuccessModal}
+                onClose={() => {
+                    setIsSuccessModalOpen(false);
+                    resetForm();
+                }}
             />
         </>
     );
