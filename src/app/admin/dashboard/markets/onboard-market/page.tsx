@@ -2,37 +2,16 @@
 import Image from "next/image";
 import arrowBack from '@/../public/assets/images/arrow-right.svg'
 import {useRouter} from "next/navigation";
-import {useState} from "react";
+import {useState, useEffect} from "react";
 import {ChevronDown} from "lucide-react";
 import arrowRight from '@/../public/assets/images/green arrow.png'
 import OnboardMarketModal from "@/components/onboardMarket";
 import OnboardMarketSuccessModal from "@/components/onboardMarketSuccessModal";
+import axios from 'axios';
 
-const states = [
-    { label: "BENUE STATE" },
-    { label: "LAGOS STATE" },
-    { label: "OGUN STATE" }
-];
-
-const localGovernments = [
-    { label: "GBOKO" },
-    { label: "MAKURDI" },
-    { label: "VANDEIKYA" }
-];
-
-const councils = [
-    { label: "HIGH LEVEL" },
-    { label: "NORTH BANK" },
-    { label: "AKPEHE" }
-];
-
-interface InputFieldProps {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    optional?: boolean;
+interface Location {
+    id: number;
+    name: string;
 }
 
 const InputField = ({
@@ -42,7 +21,14 @@ const InputField = ({
                         onChange,
                         placeholder,
                         optional = false,
-                    }: InputFieldProps) => {
+                    }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    optional?: boolean;
+}) => {
     const [isFocused, setIsFocused] = useState(false);
 
     return (
@@ -75,18 +61,33 @@ const InputField = ({
     );
 };
 
-const StateDropDown = () => {
+const LocationDropdown = ({
+                              options,
+                              selectedOption,
+                              onSelect,
+                              placeholder,
+                              isLoading = false,
+                              disabled = false,
+                          }: {
+    options: Location[];
+    selectedOption: Location | null;
+    onSelect: (option: Location) => void;
+    placeholder: string;
+    isLoading?: boolean;
+    disabled?: boolean;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<{ label: string } | null>(null);
 
     return (
         <div className="relative w-[400px]">
             <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                className={`border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center ${
+                    disabled ? "cursor-not-allowed bg-[#F5F5F5]" : "cursor-pointer"
+                }`}
             >
                 <p className={`${selectedOption ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
-                    {selectedOption ? selectedOption.label : "State"}
+                    {isLoading ? "Loading..." : selectedOption ? selectedOption.name : placeholder}
                 </p>
                 <ChevronDown
                     size={24}
@@ -95,103 +96,19 @@ const StateDropDown = () => {
                 />
             </div>
 
-            {isOpen && (
-                <div className="absolute left-0 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
+            {isOpen && !disabled && (
+                <div className="absolute left-0 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed] max-h-60 overflow-y-auto">
                     <ul className="py-1">
-                        {states.map((option, index) => (
+                        {options.map((option) => (
                             <li
-                                key={index}
+                                key={option.id}
                                 className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
                                 onClick={() => {
-                                    setSelectedOption(option);
+                                    onSelect(option);
                                     setIsOpen(false);
                                 }}
                             >
-                                {option.label}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const LocalGovernmentDropdown = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<{ label: string } | null>(null);
-
-    return (
-        <div className="relative w-[400px]">
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
-            >
-                <p className={`${selectedOption ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
-                    {selectedOption ? selectedOption.label : "Local Government"}
-                </p>
-                <ChevronDown
-                    size={24}
-                    className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                    color="#BDBDBD"
-                />
-            </div>
-
-            {isOpen && (
-                <div className="absolute left-0 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
-                    <ul className="py-1">
-                        {localGovernments.map((option, index) => (
-                            <li
-                                key={index}
-                                className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
-                                onClick={() => {
-                                    setSelectedOption(option);
-                                    setIsOpen(false);
-                                }}
-                            >
-                                {option.label}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const CouncilDropdown = () => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<{ label: string } | null>(null);
-
-    return (
-        <div className="relative w-[400px]">
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
-            >
-                <p className={`${selectedOption ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
-                    {selectedOption ? selectedOption.label : "Local council area"}
-                </p>
-                <ChevronDown
-                    size={24}
-                    className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                    color="#BDBDBD"
-                />
-            </div>
-
-            {isOpen && (
-                <div className="absolute left-0 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
-                    <ul className="py-1">
-                        {councils.map((option, index) => (
-                            <li
-                                key={index}
-                                className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
-                                onClick={() => {
-                                    setSelectedOption(option);
-                                    setIsOpen(false);
-                                }}
-                            >
-                                {option.label}
+                                {option.name}
                             </li>
                         ))}
                     </ul>
@@ -210,6 +127,85 @@ const OnboardMarket = () => {
     const [isMarketModalOpen, setIsMarketModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
+    // State for locations
+    const [states, setStates] = useState<Location[]>([]);
+    const [lgas, setLgas] = useState<Location[]>([]);
+    const [wards, setWards] = useState<Location[]>([]);
+    const [selectedState, setSelectedState] = useState<Location | null>(null);
+    const [selectedLga, setSelectedLga] = useState<Location | null>(null);
+    const [selectedWard, setSelectedWard] = useState<Location | null>(null);
+    const [isLoading, setIsLoading] = useState({
+        states: true,
+        lgas: false,
+        wards: false
+    });
+
+    // Fetch states on component mount
+    useEffect(() => {
+        const fetchStates = async () => {
+            try {
+                const response = await axios.get('https://api.digitalmarke.bdic.ng/api/states/all');
+                setStates(response.data);
+            } catch (error) {
+                console.error("Error fetching states:", error);
+            } finally {
+                setIsLoading(prev => ({...prev, states: false}));
+            }
+        };
+
+        fetchStates();
+    }, []);
+
+    // Fetch LGAs when state is selected
+    useEffect(() => {
+        if (!selectedState) {
+            setLgas([]);
+            setSelectedLga(null);
+            return;
+        }
+
+        const fetchLGAs = async () => {
+            setIsLoading(prev => ({...prev, lgas: true}));
+            try {
+                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/local-governments/by-state/${selectedState.id}`);
+                setLgas(response.data);
+            } catch (error) {
+                console.error("Error fetching LGAs:", error);
+            } finally {
+                setIsLoading(prev => ({...prev, lgas: false}));
+            }
+        };
+
+        fetchLGAs();
+    }, [selectedState]);
+
+    // Fetch wards when LGA is selected
+    useEffect(() => {
+        if (!selectedLga) {
+            setWards([]);
+            setSelectedWard(null);
+            return;
+        }
+
+        const fetchWards = async () => {
+            setIsLoading(prev => ({...prev, wards: true}));
+            try {
+                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/council-wards/by-local-government/${selectedLga.id}`);
+                setWards(response.data);
+            } catch (error) {
+                console.error("Error fetching wards:", error);
+            } finally {
+                setIsLoading(prev => ({...prev, wards: false}));
+            }
+        };
+
+        fetchWards();
+    }, [selectedLga]);
+
+    const handleChange = (field: keyof typeof formData) => (value: string) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
     const handleOpenMarketModal = () => {
         setIsMarketModalOpen(true);
     };
@@ -225,10 +221,6 @@ const OnboardMarket = () => {
 
     const handleCloseSuccessModal = () => {
         setIsSuccessModalOpen(false);
-    };
-
-    const handleChange = (field: keyof typeof formData) => (value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     return (
@@ -248,9 +240,29 @@ const OnboardMarket = () => {
                 </div>
                 <div className="flex flex-col w-[400px] h-[438px] gap-[38px] ">
                     <div className="flex flex-col gap-[14px]">
-                        <StateDropDown/>
-                        <LocalGovernmentDropdown/>
-                        <CouncilDropdown/>
+                        <LocationDropdown
+                            options={states}
+                            selectedOption={selectedState}
+                            onSelect={setSelectedState}
+                            placeholder="State"
+                            isLoading={isLoading.states}
+                        />
+                        <LocationDropdown
+                            options={lgas}
+                            selectedOption={selectedLga}
+                            onSelect={setSelectedLga}
+                            placeholder="Local Government"
+                            isLoading={isLoading.lgas}
+                            disabled={!selectedState}
+                        />
+                        <LocationDropdown
+                            options={wards}
+                            selectedOption={selectedWard}
+                            onSelect={setSelectedWard}
+                            placeholder="Local council area"
+                            isLoading={isLoading.wards}
+                            disabled={!selectedLga}
+                        />
                         <InputField
                             id="location"
                             label="Location"
