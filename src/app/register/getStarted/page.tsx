@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
+import axios from 'axios';
 import topGraphics from '../../../../public/assets/images/topGraphics.png';
 import farmGoLogo from '../../../../public/assets/images/farmGoLogo.png';
 import limeArrow from '../../../../public/assets/images/green arrow.png';
@@ -9,6 +10,7 @@ import onboardImage from '../../../../public/assets/images/getStartedImg.svg';
 import emailIcon from '../../../../public/assets/images/sms.svg';
 import eyeOpen from '../../../../public/assets/images/eye.svg';
 import eyeClosed from '../../../../public/assets/images/eye.svg';
+import Toast from "@/components/toast";
 
 type FormField = {
     id: keyof FormData;
@@ -71,18 +73,22 @@ const GetStarted = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [toast, setToast] = useState<{
+        show: boolean;
+        type: "success" | "error";
+        message: string;
+        subMessage: string;
+    } | null>(null);
 
-    // Handle responsive detection
     useEffect(() => {
         const handleResize = () => {
             setIsMobile(window.innerWidth < 768);
         };
 
         handleResize();
-
         window.addEventListener('resize', handleResize);
 
-        // Clean up
         return () => {
             window.removeEventListener('resize', handleResize);
         };
@@ -128,21 +134,132 @@ const GetStarted = () => {
         return (focusedFields[field.id] || form[field.id]) && field.type === 'password';
     };
 
-    const handleSubmit = async () => {
-            // Redirect to verification page on success
-        router.push("/register/emailVerification");
+    const validateForm = (): boolean => {
+        if (!form.firstName || !form.lastName || !form.email || !form.password || !form.confirmPassword) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Missing information",
+                subMessage: "Please fill all required fields"
+            });
+            return false;
+        }
 
+        if (form.password !== form.confirmPassword) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Password mismatch",
+                subMessage: "Passwords don't match"
+            });
+            return false;
+        }
+
+        const allCriteriaMet = Object.values(passwordValid).every(valid => valid);
+        if (!allCriteriaMet) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Invalid password",
+                subMessage: "Password does not meet all requirements"
+            });
+            return false;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(form.email)) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Invalid email",
+                subMessage: "Please provide a valid email address"
+            });
+            return false;
+        }
+
+        return true;
+    };
+
+    const registerUser = async () => {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://digitalmarke.bdic.ng';
+
+        try {
+            const formData = new FormData();
+            formData.append('email', form.email);
+            formData.append('surname', form.lastName);
+            formData.append('otherName', form.firstName);
+            formData.append('password', form.password);
+
+            const response = await axios.post(`${API_URL}/api/users/register`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            return { success: true, data: response.data };
+        } catch (error) {
+            let errorMessage = "Registration failed. Please try again.";
+
+            if (axios.isAxiosError(error)) {
+                errorMessage = error.response?.data?.message || error.message;
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            setToast({
+                show: true,
+                type: "error",
+                message: "Registration Error",
+                subMessage: errorMessage
+            });
+
+            return { success: false, error: errorMessage };
+        }
+    };
+
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
+
+        setIsLoading(true);
+
+        const result = await registerUser();
+
+        if (result.success) {
+            setToast({
+                show: true,
+                type: "success",
+                message: "Registration successful",
+                subMessage: "Redirecting to verification page"
+            });
+
+            setTimeout(() => {
+                router.push("/register/emailVerification");
+            }, 1500);
+        }
+
+        setIsLoading(false);
+    };
+
+    const closeToast = () => {
+        setToast(null);
     };
 
     return (
         <div className="relative min-h-screen overflow-hidden">
-            {/* Show top graphics only on desktop */}
             <div className="absolute z-20 left-[660px] top-[1px] hidden md:block">
                 <Image src={topGraphics} alt="Decorative graphics" width={570} height={300} priority />
             </div>
 
+            {toast && (
+                <Toast
+                    type={toast.type}
+                    message={toast.message}
+                    subMessage={toast.subMessage}
+                    onClose={closeToast}
+                />
+            )}
+
             <div className="flex min-h-screen relative z-10">
-                {/* Left Panel - Form */}
                 <div className="w-full md:w-[65%] pb-[40px] flex flex-col bg-white">
                     <div className={`mt-[40px] md:mt-[60px] mx-auto md:ml-[102px] md:mx-0 ${isMobile ? 'ml-[102px]' : 'ml-[102px]'}`}>
                         <Image src={farmGoLogo} alt="FarmGo logo" width={90} height={45} />
@@ -163,8 +280,6 @@ const GetStarted = () => {
                         <h1 className="mt-[40px] text-[#022B23] text-[20px] font-medium">
                             Get started by providing your details below.
                         </h1>
-
-
 
                         <div className="mt-[20px] w-full md:w-[400px]">
                             {formFields.map((field) => (
@@ -235,11 +350,11 @@ const GetStarted = () => {
 
                             <button
                                 onClick={handleSubmit}
-                                className={`w-full cursor-pointer bg-[#022B23] h-[52px] flex justify-center items-center gap-[9px] mt-[40px] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] '
-                                `}
+                                disabled={isLoading}
+                                className={`w-full cursor-pointer bg-[#022B23] h-[52px] flex justify-center items-center gap-[9px] mt-[40px] text-[#C6EB5F] rounded-[12px] hover:bg-[#011C17] ${isLoading ? 'opacity-70' : ''}`}
                             >
-                                <p>Continue</p>
-                                <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />
+                                <p>{isLoading ? 'Processing...' : 'Continue'}</p>
+                                {!isLoading && <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />}
                             </button>
 
                             <p className="text-[14px] mt-[10px] text-[#7C7C7C]">
@@ -255,7 +370,6 @@ const GetStarted = () => {
                     </div>
                 </div>
 
-                {/* Right Panel - Graphics - Hidden on mobile */}
                 <div className="hidden md:flex bg-[#022B23] w-[35%] flex-col justify-between relative">
                     <div className="pl-[20px] pt-[171px]">
                         <p className="mb-[15px] text-[#FFEEBE] text-[20px] font-medium">Get started</p>

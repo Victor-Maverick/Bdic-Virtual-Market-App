@@ -9,6 +9,7 @@ import eyeClosed from "../../../public/assets/images/eye.svg";
 import loginImg from '@/../public/assets/images/loginImg.svg';
 import {useRouter} from "next/navigation";
 import axios from 'axios';
+import Toast from "@/components/toast";
 
 type FormField = {
     id: keyof FormData;
@@ -27,47 +28,6 @@ const formFields: FormField[] = [
     { id: 'password', label: 'Password', type: 'password' },
 ];
 
-const Toast = ({
-                   type,
-                   message,
-                   subMessage,
-                   onClose,
-               }: {
-    type: "success" | "error";
-    message: string;
-    subMessage: string;
-    onClose: () => void;
-}) => {
-    return (
-        <div className={`fixed top-6 right-6 w-[243px] bg-white ${type === "success" ? 'h-auto' : 'h-[138px]'} rounded-md shadow-lg z-50 border border-[#ededed]`}>
-            <div className="flex w-full gap-[16px] px-[16px] py-[12px]">
-                <div
-                    className={`flex items-center justify-center w-6 h-6 rounded-full ${
-                        type === "success" ? "bg-green-100" : "bg-red-100"
-                    }`}
-                >
-                    <div
-                        className={`w-3 h-3 rounded-full ${
-                            type === "success" ? "bg-green-500" : "bg-red-500"
-                        }`}
-                    ></div>
-                </div>
-                <div className="flex-1">
-                    <p className="text-[#001234] text-[12px] font-medium">{message}</p>
-                    <p className="text-[11px] text-[#707070] font-medium">{subMessage}</p>
-                    {type === "error" && (
-                        <button
-                            onClick={onClose}
-                            className="mt-[10px] text-[#022B23] text-[12px] font-medium"
-                        >
-                            Try again
-                        </button>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const Login = () => {
     const [form, setForm] = useState<FormData>({
@@ -159,6 +119,7 @@ const Login = () => {
             } else {
                 setToastType("error");
                 setToastMessage("Login failed");
+                console.log(response.data)
                 setToastSubMessage(response.data.message || "Invalid email or password");
                 setShowToast(true);
             }
