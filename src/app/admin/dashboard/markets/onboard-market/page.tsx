@@ -12,6 +12,8 @@ import axios from 'axios';
 interface Location {
     id: number;
     name: string;
+    stateId?: number; // For LGAs
+    localGovernmentId?: number; // For wards
 }
 
 const InputField = ({
@@ -129,6 +131,8 @@ const OnboardMarket = () => {
 
     // State for locations
     const [states, setStates] = useState<Location[]>([]);
+    const [allLgas, setAllLgas] = useState<Location[]>([]);
+    const [allWards, setAllWards] = useState<Location[]>([]);
     const [lgas, setLgas] = useState<Location[]>([]);
     const [wards, setWards] = useState<Location[]>([]);
     const [selectedState, setSelectedState] = useState<Location | null>(null);
@@ -156,7 +160,41 @@ const OnboardMarket = () => {
         fetchStates();
     }, []);
 
-    // Fetch LGAs when state is selected
+    // Fetch ALL LGAs on component mount
+    useEffect(() => {
+        const fetchAllLGAs = async () => {
+            setIsLoading(prev => ({...prev, lgas: true}));
+            try {
+                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/local-governments/all`);
+                setAllLgas(response.data);
+            } catch (error) {
+                console.error("Error fetching all LGAs:", error);
+            } finally {
+                setIsLoading(prev => ({...prev, lgas: false}));
+            }
+        };
+
+        fetchAllLGAs();
+    }, []);
+
+    // Fetch ALL wards on component mount
+    useEffect(() => {
+        const fetchAllWards = async () => {
+            setIsLoading(prev => ({...prev, wards: true}));
+            try {
+                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/council-wards/council-wards/all`);
+                setAllWards(response.data);
+            } catch (error) {
+                console.error("Error fetching all wards:", error);
+            } finally {
+                setIsLoading(prev => ({...prev, wards: false}));
+            }
+        };
+
+        fetchAllWards();
+    }, []);
+
+    // Filter LGAs when state is selected
     useEffect(() => {
         if (!selectedState) {
             setLgas([]);
@@ -164,22 +202,12 @@ const OnboardMarket = () => {
             return;
         }
 
-        const fetchLGAs = async () => {
-            setIsLoading(prev => ({...prev, lgas: true}));
-            try {
-                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/local-governments/by-state/${selectedState.id}`);
-                setLgas(response.data);
-            } catch (error) {
-                console.error("Error fetching LGAs:", error);
-            } finally {
-                setIsLoading(prev => ({...prev, lgas: false}));
-            }
-        };
+        const filteredLgas = allLgas.filter(lga => lga.stateId === selectedState.id);
+        setLgas(filteredLgas);
+        setSelectedLga(null);
+    }, [selectedState, allLgas]);
 
-        fetchLGAs();
-    }, [selectedState]);
-
-    // Fetch wards when LGA is selected
+    // Filter wards when LGA is selected
     useEffect(() => {
         if (!selectedLga) {
             setWards([]);
@@ -187,26 +215,21 @@ const OnboardMarket = () => {
             return;
         }
 
-        const fetchWards = async () => {
-            setIsLoading(prev => ({...prev, wards: true}));
-            try {
-                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/council-wards/by-local-government/${selectedLga.id}`);
-                setWards(response.data);
-            } catch (error) {
-                console.error("Error fetching wards:", error);
-            } finally {
-                setIsLoading(prev => ({...prev, wards: false}));
-            }
-        };
-
-        fetchWards();
-    }, [selectedLga]);
+        const filteredWards = allWards.filter(ward => ward.localGovernmentId === selectedLga.id);
+        setWards(filteredWards);
+        setSelectedWard(null);
+    }, [selectedLga, allWards]);
 
     const handleChange = (field: keyof typeof formData) => (value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleOpenMarketModal = () => {
+        // Validate required fields
+        if (!selectedState || !selectedLga || !selectedWard || !formData.marketName) {
+            alert("Please fill all required fields");
+            return;
+        }
         setIsMarketModalOpen(true);
     };
 
@@ -215,19 +238,40 @@ const OnboardMarket = () => {
     };
 
     const handleMarketModalContinue = () => {
+        // Here you would typically submit the data to your API
         setIsMarketModalOpen(false);
         setIsSuccessModalOpen(true);
     };
 
     const handleCloseSuccessModal = () => {
         setIsSuccessModalOpen(false);
+        // Reset form after successful submission
+        setSelectedState(null);
+        setSelectedLga(null);
+        setSelectedWard(null);
+        setFormData({
+            location: "",
+            marketName: ""
+        });
     };
 
     return (
         <>
             <div className="text-[#707070] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[56px] w-full border-b-[0.5px] border-[#ededed]">
-                <Image src={arrowBack} alt={'image'} width={24} height={24} className="cursor-pointer" onClick={()=>{router.push("/admin/dashboard/markets")}}/>
-                <p className="cursor-pointer" onClick={()=>{router.push("/admin/dashboard/markets")}}>Back to market management</p>
+                <Image
+                    src={arrowBack}
+                    alt="Back arrow"
+                    width={24}
+                    height={24}
+                    className="cursor-pointer"
+                    onClick={() => router.push("/admin/dashboard/markets")}
+                />
+                <p
+                    className="cursor-pointer"
+                    onClick={() => router.push("/admin/dashboard/markets")}
+                >
+                    Back to market management
+                </p>
             </div>
             <div className="text-[#022B23] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
                 <p>Onboard new market</p>
@@ -235,10 +279,12 @@ const OnboardMarket = () => {
             <div className="pt-[69px] pl-[174px] flex gap-[158px]">
                 <div className="flex flex-col gap-[7px] w-[268px]">
                     <p className="text-[#022B23] text-[14px] font-medium">Market onboarding</p>
-                    <p className="text-[#707070] leading-tight text-[14px] font-medium">Onboard a new new market
-                        <br/>within the platform.</p>
+                    <p className="text-[#707070] leading-tight text-[14px] font-medium">
+                        Onboard a new new market
+                        <br/>within the platform.
+                    </p>
                 </div>
-                <div className="flex flex-col w-[400px] h-[438px] gap-[38px] ">
+                <div className="flex flex-col w-[400px] h-[438px] gap-[38px]">
                     <div className="flex flex-col gap-[14px]">
                         <LocationDropdown
                             options={states}
@@ -278,13 +324,17 @@ const OnboardMarket = () => {
                             placeholder="Market name"
                         />
                     </div>
-                    <div onClick={handleOpenMarketModal} className="flex h-[52px] cursor-pointer text-[14px] rounded-[12px] font-semibold text-[#C6EB5F] bg-[#022B23] w-full items-center justify-center gap-[9px]">
+                    <div
+                        onClick={handleOpenMarketModal}
+                        className="flex h-[52px] cursor-pointer text-[14px] rounded-[12px] font-semibold text-[#C6EB5F] bg-[#022B23] w-full items-center justify-center gap-[9px]"
+                    >
                         <p>Continue</p>
-                        <Image src={arrowRight} alt={'image'}/>
+                        <Image src={arrowRight} alt="Continue arrow"/>
                     </div>
                 </div>
             </div>
 
+            {/* Modals - unchanged from original */}
             <OnboardMarketModal
                 isOpen={isMarketModalOpen}
                 onClose={handleCloseMarketModal}
@@ -296,7 +346,7 @@ const OnboardMarket = () => {
                 onClose={handleCloseSuccessModal}
             />
         </>
-    )
-}
+    );
+};
 
 export default OnboardMarket;
