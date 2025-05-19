@@ -145,7 +145,7 @@ const Login = () => {
                 password: form.password
             });
 
-            console.log('API Response:', response.data); // Log the response data
+            console.log('API Response:', response.data);
 
             if (response.status === 200) {
                 setToastType("success");
@@ -153,7 +153,6 @@ const Login = () => {
                 setToastSubMessage("You are being redirected to your dashboard");
                 setShowToast(true);
 
-                // Redirect after 2 seconds
                 setTimeout(() => {
                     router.push("/admin/dashboard/markets");
                 }, 2000);
@@ -163,16 +162,24 @@ const Login = () => {
                 setToastSubMessage(response.data.message || "Invalid email or password");
                 setShowToast(true);
             }
-        } catch (error: any) {
-            console.error('Login error:', error.response?.data || error.message);
+        } catch (error: unknown) {
+            console.error('Login error:', error instanceof Error ? error.message : 'Unknown error');
 
             setToastType("error");
             setToastMessage("Login failed");
-            setToastSubMessage(
-                error.response?.data?.message ||
-                error.message ||
-                "Unable to connect to the server"
-            );
+
+            if (axios.isAxiosError(error)) {
+                setToastSubMessage(
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Unable to connect to the server"
+                );
+            } else if (error instanceof Error) {
+                setToastSubMessage(error.message || "An unexpected error occurred");
+            } else {
+                setToastSubMessage("An unexpected error occurred");
+            }
+
             setShowToast(true);
         } finally {
             setIsLoading(false);

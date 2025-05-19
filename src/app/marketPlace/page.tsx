@@ -1,7 +1,7 @@
 'use client'
 import React from 'react';
 import BannerSection from "@/components/bannerSection";
-import Image from 'next/image';
+import Image, {StaticImageData} from 'next/image';
 import FeaturedCategories from "@/components/featuredCategories";
 import MarketProductCard from "@/components/marketProductCard";
 import tableFan from '@/../public/assets/images/table fan.png'
@@ -170,7 +170,7 @@ const StoreSection = () => {
         { id: 10, image: store2 },
     ], []);
 
-    const PictureCard = ({ image }: { image: string }) => {
+    const PictureCard = ({ image }: { image: StaticImageData }) => {
         return (
             <div
                 onClick={()=>{router.push("/marketPlace/store")}}
