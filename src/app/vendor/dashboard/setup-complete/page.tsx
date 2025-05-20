@@ -36,7 +36,7 @@ const SetupComplete = () => {
             // Append logo image if available (assuming it's stored as a Blob URL or file data in localStorage)
             if (logoImage) {
                 const blobResponse = await fetch(logoImage);
-                const blob = await blobResponse.blob();
+
                 formData.append('logoImage', blob, 'logo.jpg');
             }
 
