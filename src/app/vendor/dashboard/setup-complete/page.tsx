@@ -7,39 +7,88 @@ import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import doneImg from "../../../../../public/assets/images/doneImg.png";
 import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
 import { addShop } from "@/utils/api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
+// Define interfaces for our data structures
+interface ShopInfo {
+    shopName: string;
+    shopAddress: string;
+    shopNumber: string;
+    marketId: number;
+    marketSectionId: number;
+    cacNumber: string;
+    taxIdNumber: string;
+    logoImage?: string | null;
+}
+
+interface PersonalInfo {
+    homeAddress: string;
+    street: string;
+    NIN: string;
+    lgaId: number;
+}
+
+interface BankInfo {
+    bankName: string;
+    accountNumber: string;
+}
 
 const SetupComplete = () => {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [summaryData, setSummaryData] = useState({
+        shopInfo: null as ShopInfo | null,
+        personalInfo: null as PersonalInfo | null,
+        bankInfo: null as BankInfo | null
+    });
+
+    // Load data from localStorage on component mount
+    useEffect(() => {
+        try {
+            const shopInfoStr = localStorage.getItem('shopInfo');
+            const personalInfoStr = localStorage.getItem('personalInfo');
+            const bankInfoStr = localStorage.getItem('bankInfo');
+
+            setSummaryData({
+                shopInfo: shopInfoStr ? JSON.parse(shopInfoStr) : null,
+                personalInfo: personalInfoStr ? JSON.parse(personalInfoStr) : null,
+                bankInfo: bankInfoStr ? JSON.parse(bankInfoStr) : null
+            });
+        } catch (err) {
+            console.error('Error loading data from localStorage', err);
+            setError('Error loading your information. Please go back and try again.');
+        }
+    }, []);
 
     const handleContinue = async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const dto = JSON.parse(localStorage.getItem('dto') || '{}');
-            const logoImage = localStorage.getItem('logoImage');
-
-
-
-            const formData = new FormData();
-
-            // Append plain dto object as-is (assuming backend accepts JSON object via FormData)
-            formData.append('dto', JSON.stringify(dto));
-
-            // Append logo image if available (assuming it's stored as a Blob URL or file data in localStorage)
-            if (logoImage) {
-
-                formData.append('logoImage', logoImage);
+            // Validate that we have all required data
+            if (!summaryData.shopInfo || !summaryData.personalInfo || !summaryData.bankInfo) {
+                throw new Error('Missing required information. Please complete all setup steps.');
             }
 
-            // Send to API
-            const apiResponse = await addShop(formData);
-            console.log('Shop added successfully:', apiResponse);
+            // For now, we'll use a placeholder value
+            const userId = 1; // Replace with actual userId from your auth system
 
+            // Submit shop data to API
+            await addShop({
+                shopInfo: summaryData.shopInfo,
+                personalInfo: summaryData.personalInfo,
+                bankInfo: summaryData.bankInfo,
+                userId
+            });
+
+            // Clear setup data from localStorage (optional, but good practice)
+            // localStorage.removeItem('shopInfo');
+            // localStorage.removeItem('personalInfo');
+            // localStorage.removeItem('bankInfo');
+
+            // Navigate to payment page
             router.push('/vendor/dashboard/payment');
         } catch (error) {
             console.error('Error submitting form:', error);

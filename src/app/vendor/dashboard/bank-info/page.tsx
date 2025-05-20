@@ -7,22 +7,33 @@ import {ChevronDown} from "lucide-react";
 import {useRouter} from "next/navigation";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import greenTick from '../../../../../public/assets/images/green tick.png'
-import {useState} from "react"
+import {useState, useEffect} from "react"
 import dashSlideImg from '@/../public/assets/images/dashSlideImg.png'
 
 const banks = [
-    { label: "UNITED BANK 0F AFRICA" },
-    { label: "FIRST BANK OF NIGERIA" },
-    { label: "GT BANK" },
-    { label: "FIDELITY BANK" },
-    { label: "ZENITH BANK" },
+    { id: 1, label: "UNITED BANK 0F AFRICA" },
+    { id: 2, label: "FIRST BANK OF NIGERIA" },
+    { id: 3, label: "GT BANK" },
+    { id: 4, label: "FIDELITY BANK" },
+    { id: 5, label: "ZENITH BANK" },
 ];
-const DropDown = () => {
-    const [selectedOption, setSelectedOption] = useState<{ label: string } | null>(null);
+
+interface BankOption {
+    id: number;
+    label: string;
+}
+
+const DropDown = ({
+                      selectedOption,
+                      setSelectedOption
+                  }: {
+    selectedOption: BankOption | null;
+    setSelectedOption: (option: BankOption | null) => void;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="relative ">
+        <div className="relative">
             <div
                 onClick={() => setIsOpen(!isOpen)}
                 className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
@@ -40,9 +51,9 @@ const DropDown = () => {
             {isOpen && (
                 <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
                     <ul className="py-1">
-                        {banks.map((option, index) => (
+                        {banks.map((option) => (
                             <li
-                                key={index}
+                                key={option.id}
                                 className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
                                 onClick={() => {
                                     setSelectedOption(option);
@@ -108,65 +119,89 @@ const InputField = ({
     );
 };
 
-const BankInfo =()=>{
-    const [formData, setFormData] = useState({
-        accountNumber: "",
+const BankInfo = () => {
+    const [accountNumber, setAccountNumber] = useState("");
+    const [selectedBank, setSelectedBank] = useState<BankOption | null>(null);
+    const [formValid, setFormValid] = useState(false);
 
-
-    });
     const router = useRouter();
-    const handleChange = (field: keyof typeof formData) => (value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
+
+    // Validate the form whenever inputs change
+    useEffect(() => {
+        setFormValid(!!selectedBank && accountNumber.length >= 10);
+    }, [selectedBank, accountNumber]);
+
     const handleContinue = () => {
+        if (!formValid) {
+            alert("Please complete all required fields");
+            return;
+        }
+
+        // Save bank info to localStorage
+        const bankInfo = {
+            bankName: selectedBank?.label,
+            accountNumber,
+        };
+
+        localStorage.setItem('bankInfo', JSON.stringify(bankInfo));
         router.push('/vendor/dashboard/setup-complete');
     };
-    const handleBack = ()=>{
-        router.push("/vendor/dashboard/bank-info");
-    }
-    const returnToShoInfo =()=>{
+
+    const handleBack = () => {
+        router.push("/vendor/dashboard/personal-info");
+    };
+
+    const returnToShopInfo = () => {
         router.push("/vendor/dashboard/shop-info");
-    }
+    };
+
     return (
         <>
             <DashboardHeader />
-            <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Get started by setting up your shop"}
-                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'} />
+            <DashboardSubHeader
+                welcomeText={"Hey, welcome"}
+                description={"Get started by setting up your shop"}
+                background={'#ECFDF6'}
+                image={dashSlideImg}
+                textColor={'#05966F'}
+            />
             <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
                 <Image src={arrow} alt={'arrow image'} className="cursor-pointer" onClick={handleBack}/>
                 <p className="text-[14px] font-normal">
-                    <span className="cursor-pointer" onClick={returnToShoInfo}>Shop information //</span> <span className="cursor-pointer" onClick={handleBack}>Vendor information //</span> <span  className="cursor-pointer font-medium">Bank details</span>
+                    <span className="cursor-pointer" onClick={returnToShopInfo}>Shop information //</span>
+                    <span className="cursor-pointer" onClick={handleBack}>Vendor information //</span>
+                    <span className="cursor-pointer font-medium">Bank details</span>
                 </p>
             </div>
             <div className="flex ml-[366px] w-auto mt-16 gap-25">
                 <div className="flex flex-col w-[268px] h-[67px] gap-[10px]">
-                    <p className="text-[#022B23] text-[16px] font-medium">Vendor information</p>
+                    <p className="text-[#022B23] text-[16px] font-medium">Bank details</p>
                     <p className="text-[#707070] font-medium text-[14px]">
-                        Information about yourself
+                        Provide your bank account details for receiving payments
                     </p>
                 </div>
                 <div className="flex flex-col w-[400px] h-auto gap-[38px]">
                     <div className="flex flex-col gap-[10px]">
-                        <DropDown/>
+                        <DropDown selectedOption={selectedBank} setSelectedOption={setSelectedBank} />
                         <InputField
                             id="accountNumber"
                             label="Account number"
-                            value={formData.accountNumber}
-                            onChange={handleChange('accountNumber')}
+                            value={accountNumber}
+                            onChange={setAccountNumber}
                             placeholder="Account number"
                         />
                         <div className="flex-col flex ">
-                            <div className="h-[40px] flex justify-between font-medium text-[#121212] w-full rounded-[8px]  items-center px-[18px] text-[14px] bg-[#ECFDF6]">
+                            <div className="h-[40px] flex justify-between font-medium text-[#121212] w-full rounded-[8px] items-center px-[18px] text-[14px] bg-[#ECFDF6]">
                                 <p>Terngu paul</p>
-                                <Image src={greenTick} alt={'image'}/>
+                                <Image src={greenTick} alt={'verified account name'}/>
                             </div>
                         </div>
-
-
                     </div>
                     <div
-                        className="flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
-                        onClick={handleContinue}
+                        className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] ${
+                            formValid ? "cursor-pointer hover:bg-[#033a30]" : "opacity-70 cursor-not-allowed"
+                        } transition-colors`}
+                        onClick={formValid ? handleContinue : undefined}
                     >
                         <p className="text-[#C6EB5F] font-semibold text-[14px]">Complete KYC & setup shop</p>
                         <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
@@ -175,6 +210,6 @@ const BankInfo =()=>{
             </div>
         </>
     )
-}
+};
 
 export default BankInfo;
