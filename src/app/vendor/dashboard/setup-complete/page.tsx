@@ -1,14 +1,14 @@
-'use client'
+'use client';
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
 import Image from "next/image";
 import arrow from "../../../../../public/assets/images/arrow-right.svg";
-import {useRouter} from "next/navigation";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
-import doneImg from '../../../../../public/assets/images/doneImg.png'
+import doneImg from "../../../../../public/assets/images/doneImg.png";
 import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
 import { addShop } from "@/utils/api";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 const SetupComplete = () => {
     const router = useRouter();
@@ -16,106 +16,59 @@ const SetupComplete = () => {
     const [error, setError] = useState<string | null>(null);
 
     const handleContinue = async () => {
+        setIsLoading(true);
+        setError(null);
+
         try {
-            setIsLoading(true);
-            setError(null);
+            const dto = JSON.parse(localStorage.getItem('dto') || '{}');
+            const logoImage = localStorage.getItem('logoImage');
 
-            // Get all saved data from localStorage
-            const shopInfo = JSON.parse(localStorage.getItem('shopInfo') || '{}');
-            const personalInfo = JSON.parse(localStorage.getItem('personalInfo') || '{}');
-            const bankInfo = JSON.parse(localStorage.getItem('bankInfo') || '{}');
-
-            // Log what we have from localStorage (for debugging)
-            console.log('Shop Info:', shopInfo);
-            console.log('Personal Info:', personalInfo);
-            console.log('Bank Info:', bankInfo);
-
-            // Validate required fields
-            if (!shopInfo.shopName || !personalInfo.NIN || !bankInfo.accountNumber) {
+            // Validate required dto fields
+            if (!dto.name || !dto.nin || !dto.accountNumber) {
                 throw new Error('Missing required information. Please complete all previous steps.');
             }
 
-            // Create FormData object
             const formData = new FormData();
 
-            // Create the DTO object with all required fields matching the expected backend structure
-            const dto = {
-                name: shopInfo.shopName || '',
-                address: shopInfo.shopAddress || '',
-                shopNumber: shopInfo.shopNumber || '',
-                homeAddress: personalInfo.homeAddress || '',
-                streetName: personalInfo.street || '',
-                cacNumber: shopInfo.cacNumber || '',
-                taxIdNumber: shopInfo.taxIdNumber || '',
-                nin: personalInfo.NIN || '',
-                bankName: bankInfo.bankName || '',
-                accountNumber: bankInfo.accountNumber || '',
-                marketId: shopInfo.marketId || 0,
-                marketSectionId: shopInfo.marketSectionId || 0,
-                userId: parseInt(localStorage.getItem('userId') || '1'), // Convert to number
-                statusId: 1, // Assuming 1 is for pending status
-            };
-
-            console.log('DTO to be sent:', dto);
-
-            // Append stringified JSON to FormData
-            // Important: Make sure this matches exactly what the backend expects
+            // Append plain dto object as-is (assuming backend accepts JSON object via FormData)
             formData.append('dto', JSON.stringify(dto));
 
-            // Add logo image if available
-            if (shopInfo.logoImage) {
-                try {
-                    // Convert data URL to blob
-                    const response = await fetch(shopInfo.logoImage);
-                    const blob = await response.blob();
-
-                    // Append blob to FormData with filename - ensure the field name matches backend expectation
-                    formData.append('logoImage', blob, 'logo.jpg');
-                    console.log('Logo image added to FormData');
-                } catch (imageError) {
-                    console.error('Error processing logo image:', imageError);
-                    // Continue without the image if there's an error
-                }
+            // Append logo image if available (assuming it's stored as a Blob URL or file data in localStorage)
+            if (logoImage) {
+                const blobResponse = await fetch(logoImage);
+                const blob = await blobResponse.blob();
+                formData.append('logoImage', blob, 'logo.jpg');
             }
 
-            // Call the API
+            // Send to API
             const apiResponse = await addShop(formData);
             console.log('Shop added successfully:', apiResponse);
 
-            // Redirect to payment page
             router.push('/vendor/dashboard/payment');
         } catch (error) {
-            console.error('Error adding shop:', error);
-            setError(error instanceof Error ? error.message : 'Failed to complete setup. Please try again.');
+            console.error('Error submitting form:', error);
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleBack = () => {
-        router.push("/vendor/dashboard/bank-info");
-    };
-
-    const returnToShopInfo = () => {
-        router.push("/vendor/dashboard/shop-info");
-    };
-
-    const returnToPersonalInfo = () => {
-        router.push("/vendor/dashboard/personal-info");
-    };
+    const handleBack = () => router.push("/vendor/dashboard/bank-info");
+    const returnToShopInfo = () => router.push("/vendor/dashboard/shop-info");
+    const returnToPersonalInfo = () => router.push("/vendor/dashboard/personal-info");
 
     return (
         <>
             <DashboardHeader />
             <DashboardSubHeader
-                welcomeText={"Hey, welcome"}
-                description={"Get started by setting up your shop"}
-                background={'#ECFDF6'}
+                welcomeText="Hey, welcome"
+                description="Get started by setting up your shop"
+                background="#ECFDF6"
                 image={dashSlideImg}
-                textColor={'#05966F'}
+                textColor="#05966F"
             />
             <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
-                <Image src={arrow} alt={'arrow image'} className="cursor-pointer" onClick={handleBack}/>
+                <Image src={arrow} alt="arrow image" className="cursor-pointer" onClick={handleBack} />
                 <p className="text-[14px] font-normal">
                     <span className="cursor-pointer" onClick={returnToShopInfo}>Shop information //</span>
                     <span className="cursor-pointer" onClick={returnToPersonalInfo}> Vendor information //</span>
@@ -133,15 +86,13 @@ const SetupComplete = () => {
                     </div>
                     <div className="flex flex-col w-[244px] py-[10px] px-[12px] border border-[#ededed] h-[87px] bg-[#FCFCFC] rounded-[12px] gap-[7px]">
                         <p className="text-[#707070] text-[14px] font-medium leading-tight">
-                            Pay a store activation fee<br/>
+                            Pay a store activation fee<br />
                             to continue
                         </p>
                         <p className="text-[#000000] font-semibold text-[20px]">
                             NGN 5,000.00
                         </p>
                     </div>
-
-                    {/* Show error message if exists */}
                     {error && (
                         <div className="w-[268px] mt-4 p-3 bg-red-50 border border-red-200 rounded-[12px] text-red-700 text-[14px]">
                             {error}
@@ -150,7 +101,7 @@ const SetupComplete = () => {
                 </div>
                 <div className="flex flex-col w-[400px] h-auto gap-[38px]">
                     <div className="flex flex-col items-center h-[218px] w-full justify-center">
-                        <Image src={doneImg} alt={'image'}/>
+                        <Image src={doneImg} alt="setup complete image" />
                     </div>
                     <button
                         className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors w-full ${
