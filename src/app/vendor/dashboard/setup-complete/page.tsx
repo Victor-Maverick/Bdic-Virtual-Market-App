@@ -23,10 +23,7 @@ const SetupComplete = () => {
             const dto = JSON.parse(localStorage.getItem('dto') || '{}');
             const logoImage = localStorage.getItem('logoImage');
 
-            // Validate required dto fields
-            if (!dto.name || !dto.nin || !dto.accountNumber) {
-                throw new Error('Missing required information. Please complete all previous steps.');
-            }
+
 
             const formData = new FormData();
 
