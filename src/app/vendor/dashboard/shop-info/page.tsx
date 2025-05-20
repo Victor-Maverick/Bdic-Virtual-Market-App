@@ -4,25 +4,21 @@ import DashboardHeader from "@/components/dashboardHeader";
 import uploadIcon from '../../../../../public/assets/images/uploadIcon.png'
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
-import { useState, useRef, ChangeEvent } from "react";
+import { useState, useRef, ChangeEvent, useEffect } from "react";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import { useRouter } from "next/navigation";
 import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
+import { fetchMarkets, fetchMarketSections } from "@/utils/api";
 
-const markets = [
-    { label: "WURUKUM MARKET" },
-    { label: "MODERN MARKET" },
-    { label: "WADATA MARKET" },
-    { label: "NORTHBANK MARKET" },
-];
+type Market = {
+    id: number;
+    name: string;
+};
 
-type InputFieldProps = {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    optional?: boolean;
+type MarketSection = {
+    id: number;
+    name: string;
+    marketId: number;
 };
 
 const InputField = ({
@@ -32,7 +28,14 @@ const InputField = ({
                         onChange,
                         placeholder,
                         optional = false,
-                    }: InputFieldProps) => {
+                    }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    optional?: boolean;
+}) => {
     const [isFocused, setIsFocused] = useState(false);
 
     return (
@@ -65,9 +68,16 @@ const InputField = ({
     );
 };
 
-const MarketDropdown = () => {
+const MarketDropdown = ({
+                            markets,
+                            selectedMarket,
+                            onSelect,
+                        }: {
+    markets: Market[];
+    selectedMarket: Market | null;
+    onSelect: (market: Market) => void;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<{ label: string } | null>(null);
 
     return (
         <div className="relative mt-[10px] mb-[10px]">
@@ -75,8 +85,8 @@ const MarketDropdown = () => {
                 onClick={() => setIsOpen(!isOpen)}
                 className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
             >
-                <p className={`${selectedOption ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
-                    {selectedOption ? selectedOption.label : "Market"}
+                <p className={`${selectedMarket ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
+                    {selectedMarket ? selectedMarket.name : "Market"}
                 </p>
                 <ChevronDown
                     size={24}
@@ -88,16 +98,69 @@ const MarketDropdown = () => {
             {isOpen && (
                 <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
                     <ul className="py-1">
-                        {markets.map((option, index) => (
+                        {markets.map((market) => (
                             <li
-                                key={index}
+                                key={market.id}
                                 className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
                                 onClick={() => {
-                                    setSelectedOption(option);
+                                    onSelect(market);
                                     setIsOpen(false);
                                 }}
                             >
-                                {option.label}
+                                {market.name}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const MarketSectionDropdown = ({
+                                   sections,
+                                   selectedSection,
+                                   onSelect,
+                                   disabled,
+                               }: {
+    sections: MarketSection[];
+    selectedSection: MarketSection | null;
+    onSelect: (section: MarketSection) => void;
+    disabled: boolean;
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="relative mt-[10px] mb-[10px]">
+            <div
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                className={`border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer ${
+                    disabled ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+            >
+                <p className={`${selectedSection ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
+                    {selectedSection ? selectedSection.name : "Shop line / Street name"}
+                </p>
+                <ChevronDown
+                    size={24}
+                    className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    color="#BDBDBD"
+                />
+            </div>
+
+            {isOpen && !disabled && (
+                <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
+                    <ul className="py-1">
+                        {sections.map((section) => (
+                            <li
+                                key={section.id}
+                                className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={() => {
+                                    onSelect(section);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {section.name}
                             </li>
                         ))}
                     </ul>
@@ -112,13 +175,51 @@ const Setup1 = () => {
     const [formData, setFormData] = useState({
         shopName: "",
         shopAddress: "",
-        shopLine: "",
         shopNumber: "",
         cacNumber: "",
         taxIdNumber: "",
     });
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+    const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+    const [selectedSection, setSelectedSection] = useState<MarketSection | null>(null);
+    const [markets, setMarkets] = useState<Market[]>([]);
+    const [marketSections, setMarketSections] = useState<MarketSection[]>([]);
+    const [filteredSections, setFilteredSections] = useState<MarketSection[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setIsLoading(true);
+                const [marketsData, sectionsData] = await Promise.all([
+                    fetchMarkets(),
+                    fetchMarketSections(),
+                ]);
+                setMarkets(marketsData);
+                setMarketSections(sectionsData);
+            } catch (error) {
+                console.error("Error fetching data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    useEffect(() => {
+        if (selectedMarket) {
+            const filtered = marketSections.filter(
+                (section) => section.marketId === selectedMarket.id
+            );
+            setFilteredSections(filtered);
+            setSelectedSection(null);
+        } else {
+            setFilteredSections([]);
+            setSelectedSection(null);
+        }
+    }, [selectedMarket, marketSections]);
 
     const handleChange = (field: keyof typeof formData) => (value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -160,18 +261,41 @@ const Setup1 = () => {
     };
 
     const handleContinue = () => {
-        if (!formData.shopName || !formData.shopAddress) {
+        if (!formData.shopName || !formData.shopAddress || !selectedMarket || !selectedSection) {
             alert("Please fill in all required fields");
             return;
         }
+
+        // Save data to localStorage or context for multi-step form
+        const shopInfo = {
+            ...formData,
+            marketId: selectedMarket.id,
+            marketSectionId: selectedSection.id,
+            logoImage: uploadedImage,
+        };
+        localStorage.setItem('shopInfo', JSON.stringify(shopInfo));
+
         router.push('/vendor/dashboard/personal-info');
     };
+
+    // Loading component to display while fetching data
+    const LoadingSpinner = () => (
+        <div className="flex justify-center items-center w-full py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#022B23]"></div>
+        </div>
+    );
 
     return (
         <>
             <DashboardHeader />
-            <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Get started by setting up your shop"}
-                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'} />            <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
+            <DashboardSubHeader
+                welcomeText={"Hey, welcome"}
+                description={"Get started by setting up your shop"}
+                background={'#ECFDF6'}
+                image={dashSlideImg}
+                textColor={'#05966F'}
+            />
+            <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
                 <p className="text-[14px] font-medium">
                     Shop information
                 </p>
@@ -184,111 +308,120 @@ const Setup1 = () => {
                     </p>
                 </div>
                 <div className="flex flex-col w-[400px]">
-                    <InputField
-                        id="shopName"
-                        label="Shop name"
-                        value={formData.shopName}
-                        onChange={handleChange('shopName')}
-                        placeholder="Shop name"
-                    />
-
-                    <div className="mt-[38px]">
-                        <p className="mb-[5px] text-[12px] font-medium text-[#6D6D6D]">
-                            Upload business logo<span className="text-[#B0B0B0]">(optional)</span>
-                        </p>
-                        <div
-                            className="flex flex-col gap-[8px] text-center items-center w-full h-[102px] rounded-[14px] bg-[#ECFDF6] justify-center border border-dashed border-[#022B23] cursor-pointer relative overflow-hidden"
-                            onClick={triggerFileInput}
-                        >
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleImageUpload}
-                                accept="image/*"
-                                className="hidden"
+                    {isLoading ? (
+                        <LoadingSpinner />
+                    ) : (
+                        <>
+                            <InputField
+                                id="shopName"
+                                label="Shop name"
+                                value={formData.shopName}
+                                onChange={handleChange('shopName')}
+                                placeholder="Shop name"
                             />
 
-                            {uploadedImage ? (
-                                <>
-                                    <div className="absolute inset-0 flex items-center justify-center">
-                                        <Image
-                                            src={uploadedImage}
-                                            alt="Uploaded logo"
-                                            width={96}
-                                            height={96}
-                                            className="rounded-lg object-cover w-[96px] h-[96px]"
-                                        />
-                                    </div>
-                                    <button
-                                        onClick={removeImage}
-                                        className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <Image src={uploadIcon} alt="Upload icon" width={24} height={24} />
-                                    <p className="text-[12px] font-medium text-[#022B23]">
-                                        <span className="underline">Upload</span> your company logo
-                                        <br />(2MB max)
-                                    </p>
-                                </>
-                            )}
-                        </div>
-                    </div>
+                            <div className="mt-[38px]">
+                                <p className="mb-[5px] text-[12px] font-medium text-[#6D6D6D]">
+                                    Upload business logo<span className="text-[#B0B0B0]">(optional)</span>
+                                </p>
+                                <div
+                                    className="flex flex-col gap-[8px] text-center items-center w-full h-[102px] rounded-[14px] bg-[#ECFDF6] justify-center border border-dashed border-[#022B23] cursor-pointer relative overflow-hidden"
+                                    onClick={triggerFileInput}
+                                >
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleImageUpload}
+                                        accept="image/*"
+                                        className="hidden"
+                                    />
 
-                    <MarketDropdown />
+                                    {uploadedImage ? (
+                                        <>
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <Image
+                                                    src={uploadedImage}
+                                                    alt="Uploaded logo"
+                                                    width={96}
+                                                    height={96}
+                                                    className="rounded-lg object-cover w-[96px] h-[96px]"
+                                                />
+                                            </div>
+                                            <button
+                                                onClick={removeImage}
+                                                className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Image src={uploadIcon} alt="Upload icon" width={24} height={24} />
+                                            <p className="text-[12px] font-medium text-[#022B23]">
+                                                <span className="underline">Upload</span> your company logo
+                                                <br />(2MB max)
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
 
-                    <InputField
-                        id="shopAddress"
-                        label="Shop address"
-                        value={formData.shopAddress}
-                        onChange={handleChange('shopAddress')}
-                        placeholder="Shop address"
-                    />
+                            <MarketDropdown
+                                markets={markets}
+                                selectedMarket={selectedMarket}
+                                onSelect={setSelectedMarket}
+                            />
 
-                    <InputField
-                        id="shopLine"
-                        label="Shop line / Street name"
-                        value={formData.shopLine}
-                        onChange={handleChange('shopLine')}
-                        placeholder="Shop line / Street name"
-                    />
+                            <InputField
+                                id="shopAddress"
+                                label="Shop address"
+                                value={formData.shopAddress}
+                                onChange={handleChange('shopAddress')}
+                                placeholder="Shop address"
+                            />
 
-                    <InputField
-                        id="shopNumber"
-                        label="Shop number"
-                        value={formData.shopNumber}
-                        onChange={handleChange('shopNumber')}
-                        placeholder="Shop number"
-                    />
+                            <MarketSectionDropdown
+                                sections={filteredSections}
+                                selectedSection={selectedSection}
+                                onSelect={setSelectedSection}
+                                disabled={!selectedMarket}
+                            />
 
-                    <InputField
-                        id="cacNumber"
-                        label="CAC number"
-                        value={formData.cacNumber}
-                        onChange={handleChange('cacNumber')}
-                        placeholder="CAC number"
-                    />
+                            <InputField
+                                id="shopNumber"
+                                label="Shop number"
+                                value={formData.shopNumber}
+                                onChange={handleChange('shopNumber')}
+                                placeholder="Shop number"
+                            />
 
-                    <InputField
-                        id="taxIdNumber"
-                        label="TAXID number"
-                        value={formData.taxIdNumber}
-                        onChange={handleChange('taxIdNumber')}
-                        placeholder="TAXID number"
-                    />
+                            <InputField
+                                id="cacNumber"
+                                label="CAC number"
+                                value={formData.cacNumber}
+                                onChange={handleChange('cacNumber')}
+                                placeholder="CAC number"
+                            />
 
-                    <div
-                        className="flex mt-[30px] mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
-                        onClick={handleContinue}
-                    >
-                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue to vendor information</p>
-                        <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
-                    </div>
+                            <InputField
+                                id="taxIdNumber"
+                                label="TAXID number"
+                                value={formData.taxIdNumber}
+                                onChange={handleChange('taxIdNumber')}
+                                placeholder="TAXID number"
+                            />
+
+                            <div
+                                className="flex mt-[30px] mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
+                                onClick={handleContinue}
+                            >
+                                <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue to vendor information</p>
+                                <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </>

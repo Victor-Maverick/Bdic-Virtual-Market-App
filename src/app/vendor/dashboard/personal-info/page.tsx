@@ -1,33 +1,42 @@
 'use client'
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import arrow from '../../../../../public/assets/images/arrow-right.svg'
 import Image from 'next/image'
-import {useState} from "react";
+import arrow from '../../../../../public/assets/images/arrow-right.svg'
 import {ChevronDown} from "lucide-react";
 import {useRouter} from "next/navigation";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
+import { useState, useEffect } from "react";
+import { fetchLocalGovernments } from "@/utils/api";
 
-const localGovernments = [
-    { label: "APA" },
-    { label: "AGATU" },
-    { label: "MAKURDI" },
-    { label: "GBOKO" },
-    { label: "VANDEIKYA" },
-];
-const DropDown = () => {
+type LocalGovernment = {
+    id: number;
+    name: string;
+    stateId: number;
+};
+
+const DropDown = ({
+                      options,
+                      selectedOption,
+                      onSelect,
+                      placeholder,
+                  }: {
+    options: LocalGovernment[];
+    selectedOption: LocalGovernment | null;
+    onSelect: (option: LocalGovernment) => void;
+    placeholder: string;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [selectedOption, setSelectedOption] = useState<{ label: string } | null>(null);
 
     return (
-        <div className="relative ">
+        <div className="relative">
             <div
                 onClick={() => setIsOpen(!isOpen)}
                 className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
             >
                 <p className={`${selectedOption ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-medium`}>
-                    {selectedOption ? selectedOption.label : "L.G.A of residence"}
+                    {selectedOption ? selectedOption.name : placeholder}
                 </p>
                 <ChevronDown
                     size={24}
@@ -39,16 +48,16 @@ const DropDown = () => {
             {isOpen && (
                 <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
                     <ul className="py-1">
-                        {localGovernments.map((option, index) => (
+                        {options.map((option) => (
                             <li
-                                key={index}
+                                key={option.id}
                                 className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
                                 onClick={() => {
-                                    setSelectedOption(option);
+                                    onSelect(option);
                                     setIsOpen(false);
                                 }}
                             >
-                                {option.label}
+                                {option.name}
                             </li>
                         ))}
                     </ul>
@@ -58,15 +67,6 @@ const DropDown = () => {
     );
 };
 
-type InputFieldProps = {
-    id: string;
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    optional?: boolean;
-};
-
 const InputField = ({
                         id,
                         label,
@@ -74,7 +74,14 @@ const InputField = ({
                         onChange,
                         placeholder,
                         optional = false,
-                    }: InputFieldProps) => {
+                    }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    optional?: boolean;
+}) => {
     const [isFocused, setIsFocused] = useState(false);
 
     return (
@@ -107,31 +114,66 @@ const InputField = ({
     );
 };
 
-
-
-const Setup2 =()=>{
+const Setup2 = () => {
     const router = useRouter();
     const [formData, setFormData] = useState({
         homeAddress: "",
         street: "",
         NIN: "",
-
     });
+    const [filteredLgas, setFilteredLgas] = useState<LocalGovernment[]>([]);
+    const [selectedLga, setSelectedLga] = useState<LocalGovernment | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const lgas = await fetchLocalGovernments();
+                // Filter for Benue state (stateId = 7)
+                const benueLgas = lgas.filter((lga: { stateId: number; }) => lga.stateId === 7);
+                setFilteredLgas(benueLgas);
+            } catch (error) {
+                console.error("Error fetching local governments:", error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
     const handleChange = (field: keyof typeof formData) => (value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+
     const handleBack = () => {
         router.push('/vendor/dashboard/shop-info');
     };
+
     const handleContinue = () => {
+        if (!formData.homeAddress || !formData.street || !formData.NIN || !selectedLga) {
+            alert("Please fill in all required fields");
+            return;
+        }
+
+        // Save personal info to localStorage or context
+        const personalInfo = {
+            ...formData,
+            lgaId: selectedLga.id,
+        };
+        localStorage.setItem('personalInfo', JSON.stringify(personalInfo));
+
         router.push('/vendor/dashboard/bank-info');
     };
 
     return (
         <>
             <DashboardHeader />
-            <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Get started by setting up your shop"}
-                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'} />            <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
+            <DashboardSubHeader
+                welcomeText={"Hey, welcome"}
+                description={"Get started by setting up your shop"}
+                background={'#ECFDF6'}
+                image={dashSlideImg}
+                textColor={'#05966F'}
+            />
+            <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
                 <Image src={arrow} alt={'arrow image'} className="cursor-pointer" onClick={handleBack}/>
                 <p className="cursor-pointer text-[14px] font-normal">
                     <span onClick={handleBack}>Shop information //</span><span className="cursor-pointer font-medium">Vendor information</span>
@@ -154,7 +196,12 @@ const Setup2 =()=>{
                         </div>
                     </div>
                     <div className="flex flex-col gap-[10px]">
-                        <DropDown/>
+                        <DropDown
+                            options={filteredLgas}
+                            selectedOption={selectedLga}
+                            onSelect={setSelectedLga}
+                            placeholder="L.G.A of residence"
+                        />
                         <InputField
                             id="homeAddress"
                             label="Home address"
@@ -187,7 +234,7 @@ const Setup2 =()=>{
                 </div>
             </div>
         </>
-    )
-}
+    );
+};
 
 export default Setup2;

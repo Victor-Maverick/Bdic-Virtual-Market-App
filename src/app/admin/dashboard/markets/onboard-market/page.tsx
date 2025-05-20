@@ -256,101 +256,103 @@ const OnboardMarket = () => {
 
     return (
         <>
-            <div className="text-[#707070] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[56px] w-full border-b-[0.5px] border-[#ededed]">
-                <Image
-                    src={arrowBack}
-                    alt="Back arrow"
-                    width={24}
-                    height={24}
-                    className="cursor-pointer"
-                    onClick={() => router.push("/admin/dashboard/markets")}
-                />
-                <p
-                    className="cursor-pointer"
-                    onClick={() => router.push("/admin/dashboard/markets")}
-                >
-                    Back to market management
-                </p>
-            </div>
-            <div className="text-[#022B23] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
-                <p>Onboard new market</p>
-            </div>
-            <div className="pt-[69px] pl-[174px] flex gap-[158px]">
-                <div className="flex flex-col gap-[7px] w-[268px]">
-                    <p className="text-[#022B23] text-[14px] font-medium">Market onboarding</p>
-                    <p className="text-[#707070] leading-tight text-[14px] font-medium">
-                        Onboard a new new market
-                        <br/>within the platform.
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+                <div className="text-[#707070] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[56px] w-full border-b-[0.5px] border-[#ededed]">
+                    <Image
+                        src={arrowBack}
+                        alt="Back arrow"
+                        width={24}
+                        height={24}
+                        className="cursor-pointer"
+                        onClick={() => router.push("/admin/dashboard/markets")}
+                    />
+                    <p
+                        className="cursor-pointer"
+                        onClick={() => router.push("/admin/dashboard/markets")}
+                    >
+                        Back to market management
                     </p>
                 </div>
-                <div className="flex flex-col w-[400px] h-[438px] gap-[38px]">
-                    <div className="flex flex-col gap-[14px]">
-                        <LocationDropdown
-                            options={states}
-                            selectedOption={selectedState}
-                            onSelect={setSelectedState}
-                            placeholder="State"
-                            isLoading={isLoading.states}
-                        />
-                        <LocationDropdown
-                            options={lgas}
-                            selectedOption={selectedLga}
-                            onSelect={setSelectedLga}
-                            placeholder="Local Government"
-                            isLoading={isLoading.lgas}
-                            disabled={!selectedState}
-                        />
-                        <LocationDropdown
-                            options={wards}
-                            selectedOption={selectedWard}
-                            onSelect={setSelectedWard}
-                            placeholder="Local council area"
-                            isLoading={isLoading.wards}
-                            disabled={!selectedLga}
-                        />
-                        <InputField
-                            id="location"
-                            label="Location"
-                            value={formData.location}
-                            onChange={handleChange('location')}
-                            placeholder="Location"
-                        />
-                        <InputField
-                            id="marketName"
-                            label="Market name"
-                            value={formData.marketName}
-                            onChange={handleChange('marketName')}
-                            placeholder="Market name"
-                        />
+                <div className="text-[#022B23] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
+                    <p>Onboard new market</p>
+                </div>
+                <div className="pt-[69px] pl-[174px] flex gap-[158px]">
+                    <div className="flex flex-col gap-[7px] w-[268px]">
+                        <p className="text-[#022B23] text-[14px] font-medium">Market onboarding</p>
+                        <p className="text-[#707070] leading-tight text-[14px] font-medium">
+                            Onboard a new new market
+                            <br/>within the platform.
+                        </p>
                     </div>
-                    <div
-                        onClick={handleOpenMarketModal}
-                        className="flex h-[52px] cursor-pointer text-[14px] rounded-[12px] font-semibold text-[#C6EB5F] bg-[#022B23] w-full items-center justify-center gap-[9px]"
-                    >
-                        <p>Continue</p>
-                        <Image src={arrowRight} alt="Continue arrow"/>
+                    <div className="flex flex-col w-[400px] h-[438px] gap-[38px]">
+                        <div className="flex flex-col gap-[14px]">
+                            <LocationDropdown
+                                options={states}
+                                selectedOption={selectedState}
+                                onSelect={setSelectedState}
+                                placeholder="State"
+                                isLoading={isLoading.states}
+                            />
+                            <LocationDropdown
+                                options={lgas}
+                                selectedOption={selectedLga}
+                                onSelect={setSelectedLga}
+                                placeholder="Local Government"
+                                isLoading={isLoading.lgas}
+                                disabled={!selectedState}
+                            />
+                            <LocationDropdown
+                                options={wards}
+                                selectedOption={selectedWard}
+                                onSelect={setSelectedWard}
+                                placeholder="Local council area"
+                                isLoading={isLoading.wards}
+                                disabled={!selectedLga}
+                            />
+                            <InputField
+                                id="location"
+                                label="Location"
+                                value={formData.location}
+                                onChange={handleChange('location')}
+                                placeholder="Location"
+                            />
+                            <InputField
+                                id="marketName"
+                                label="Market name"
+                                value={formData.marketName}
+                                onChange={handleChange('marketName')}
+                                placeholder="Market name"
+                            />
+                        </div>
+                        <div
+                            onClick={handleOpenMarketModal}
+                            className="flex h-[52px] cursor-pointer text-[14px] rounded-[12px] font-semibold text-[#C6EB5F] bg-[#022B23] w-full items-center justify-center gap-[9px]"
+                        >
+                            <p>Continue</p>
+                            <Image src={arrowRight} alt="Continue arrow"/>
+                        </div>
                     </div>
                 </div>
+
+                <OnboardMarketModal
+                    isOpen={isMarketModalOpen}
+                    onClose={() => setIsMarketModalOpen(false)}
+                    onSuccess={handleSuccess}
+                    marketData={{
+                        name: formData.marketName,
+                        address: formData.location,
+                        councilWardId: selectedWard?.id
+                    }}
+                />
+
+                <OnboardMarketSuccessModal
+                    isOpen={isSuccessModalOpen}
+                    onClose={() => {
+                        setIsSuccessModalOpen(false);
+                        resetForm();
+                    }}
+                />
             </div>
-
-            <OnboardMarketModal
-                isOpen={isMarketModalOpen}
-                onClose={() => setIsMarketModalOpen(false)}
-                onSuccess={handleSuccess}
-                marketData={{
-                    name: formData.marketName,
-                    address: formData.location,
-                    councilWardId: selectedWard?.id
-                }}
-            />
-
-            <OnboardMarketSuccessModal
-                isOpen={isSuccessModalOpen}
-                onClose={() => {
-                    setIsSuccessModalOpen(false);
-                    resetForm();
-                }}
-            />
         </>
     );
 };
