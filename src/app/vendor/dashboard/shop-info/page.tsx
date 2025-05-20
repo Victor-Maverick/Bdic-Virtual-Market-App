@@ -1,4 +1,5 @@
 'use client'
+import DashboardSubHeader from "@/components/dashboardSubHeader";
 import DashboardHeader from "@/components/dashboardHeader";
 import uploadIcon from '../../../../../public/assets/images/uploadIcon.png'
 import Image from "next/image";
@@ -8,7 +9,6 @@ import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import { useRouter } from "next/navigation";
 import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
 import { fetchMarkets, fetchMarketSections } from "@/utils/api";
-import DashboardSubHeader from "@/components/dashboardSubHeader";
 
 type Market = {
     id: number;

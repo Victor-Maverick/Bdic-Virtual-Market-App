@@ -54,11 +54,7 @@ export const fetchLocalGovernments = async () => {
 
 export const addShop = async (formData: FormData) => {
     try {
-        const response = await axios.post(`${API_BASE_URL}/shops/add`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        const response = await axios.post(`${API_BASE_URL}/shops/add`, formData);
         return response.data;
     } catch (error: unknown) {
         if (error instanceof AxiosError) {
