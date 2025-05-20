@@ -1,13 +1,11 @@
-// utils/api.ts
 import axios, { AxiosError } from 'axios';
 
 const API_BASE_URL = 'https://api.digitalmarke.bdic.ng/api';
 
+// Base Axios instance WITHOUT global Content-Type header
 const api = axios.create({
     baseURL: API_BASE_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    // Let each request determine its own headers
 });
 
 export const fetchMarkets = async () => {
@@ -54,6 +52,7 @@ export const fetchLocalGovernments = async () => {
 
 export const addShop = async (formData: FormData) => {
     try {
+        // Use native axios for FormData to avoid custom headers
         const response = await axios.post(`${API_BASE_URL}/shops/add`, formData);
         return response.data;
     } catch (error: unknown) {
