@@ -181,7 +181,7 @@ const GetStarted = () => {
     };
 
     const registerUser = async () => {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://digitalmarke.bdic.ng';
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.digitalmarke.bdic.ng';
 
         try {
             const formData = new FormData();
