@@ -256,7 +256,7 @@ const OnboardMarket = () => {
 
     return (
         <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+            <div className="">
                 <div className="text-[#707070] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[56px] w-full border-b-[0.5px] border-[#ededed]">
                     <Image
                         src={arrowBack}
