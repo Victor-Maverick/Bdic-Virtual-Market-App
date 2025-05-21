@@ -9,6 +9,7 @@ import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
 import { addShop } from "@/utils/api";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Toast from "@/components/toast";
 
 interface ShopInfo {
     shopName: string;
@@ -75,13 +76,18 @@ interface CredoConfig {
 const SetupComplete = () => {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [summaryData, setSummaryData] = useState({
         shopInfo: null as ShopInfo | null,
         personalInfo: null as PersonalInfo | null,
         bankInfo: null as BankInfo | null
     });
     const credoHandler = useRef<CredoWidgetHandler | null>(null);
+
+    // Toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastSubMessage, setToastSubMessage] = useState("");
 
     useEffect(() => {
         if (document.querySelector('script[src="https://pay.credocentral.com/inline.js"]')) {
@@ -92,7 +98,9 @@ const SetupComplete = () => {
         script.src = 'https://pay.credocentral.com/inline.js';
         script.async = true;
         script.onload = () => console.log('Credo script loaded successfully');
-        script.onerror = () => setError('Failed to load payment processor');
+        script.onerror = () => {
+            showErrorToast('Payment Error', 'Failed to load payment processor');
+        };
         document.body.appendChild(script);
 
         return () => {
@@ -113,9 +121,35 @@ const SetupComplete = () => {
             });
         } catch (err) {
             console.error('Error loading data from localStorage', err);
-            setError('Error loading your information. Please go back and try again.');
+            showErrorToast('Setup Error', 'Error loading your information. Please go back and try again.');
         }
     }, []);
+
+    const showSuccessToast = (message: string, subMessage: string) => {
+        setToastType("success");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+
+        setTimeout(() => {
+            setShowToast(false);
+        }, 5000);
+    };
+
+    const showErrorToast = (message: string, subMessage: string) => {
+        setToastType("error");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+
+        setTimeout(() => {
+            setShowToast(false);
+        }, 5000);
+    };
+
+    const handleCloseToast = () => {
+        setShowToast(false);
+    };
 
     const initializeCredo = (): boolean => {
         if (typeof window !== 'undefined' && window.CredoWidget) {
@@ -143,9 +177,12 @@ const SetupComplete = () => {
                 callBack: (response: CredoPaymentResponse) => {
                     console.log('Payment response:', response);
                     if (response.status === 'success') {
-                        router.push(response.callbackUrl);
+                        showSuccessToast('Payment Successful', 'You are being redirected to your dashboard');
+                        setTimeout(() => {
+                            router.push(response.callbackUrl);
+                        }, 2000);
                     } else {
-                        setError(`Payment failed: ${response.message}`);
+                        showErrorToast('Payment Failed', response.message);
                         setIsLoading(false);
                     }
                 },
@@ -155,9 +192,8 @@ const SetupComplete = () => {
         return false;
     };
 
-    const handleContinue = async () => {
+    const handleSkip = async () => {
         setIsLoading(true);
-        setError(null);
 
         try {
             if (!summaryData.shopInfo || !summaryData.personalInfo || !summaryData.bankInfo) {
@@ -176,15 +212,56 @@ const SetupComplete = () => {
             localStorage.removeItem('personalInfo');
             localStorage.removeItem('bankInfo');
 
-            const initialized = initializeCredo();
-            if (initialized && credoHandler.current) {
-                credoHandler.current.openIframe();
-            } else {
-                throw new Error('Payment service could not be initialized. Please try again.');
-            }
+            showSuccessToast('Setup Complete', 'You have successfully skipped payment. Redirecting to dashboard...');
+
+            setTimeout(() => {
+                router.push("/vendor/dashboard2");
+            }, 2000);
+
         } catch (error) {
             console.error('Error:', error);
-            setError(error instanceof Error ? error.message : 'An unexpected error occurred.');
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+            showErrorToast('Setup Error', errorMessage);
+            setIsLoading(false);
+        }
+    }
+
+    const handleContinue = async () => {
+        setIsLoading(true);
+
+        try {
+            if (!summaryData.shopInfo || !summaryData.personalInfo || !summaryData.bankInfo) {
+                throw new Error('Missing required information. Please complete all setup steps.');
+            }
+
+            const userId = 1; // Replace with actual userId from your auth system
+            await addShop({
+                shopInfo: summaryData.shopInfo,
+                personalInfo: summaryData.personalInfo,
+                bankInfo: summaryData.bankInfo,
+                userId
+            });
+
+            showSuccessToast('Shop Added', 'Opening payment window in a moment...');
+
+            localStorage.removeItem('shopInfo');
+            localStorage.removeItem('personalInfo');
+            localStorage.removeItem('bankInfo');
+
+            // Delay opening the payment window by 5 seconds to allow toast to be visible
+            setTimeout(() => {
+                const initialized = initializeCredo();
+                if (initialized && credoHandler.current) {
+                    credoHandler.current.openIframe();
+                } else {
+                    throw new Error('Payment service could not be initialized. Please try again.');
+                }
+            }, 5000);
+
+        } catch (error) {
+            console.error('Error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+            showErrorToast('Setup Error', errorMessage);
             setIsLoading(false);
         }
     };
@@ -195,6 +272,15 @@ const SetupComplete = () => {
 
     return (
         <>
+            {showToast && (
+                <Toast
+                    type={toastType}
+                    message={toastMessage}
+                    subMessage={toastSubMessage}
+                    onClose={handleCloseToast}
+                />
+            )}
+
             <DashboardHeader />
             <DashboardSubHeader
                 welcomeText="Hey, welcome"
@@ -229,35 +315,34 @@ const SetupComplete = () => {
                             NGN 5,000.00
                         </p>
                     </div>
-                    {error && (
-                        <div className="w-[268px] mt-4 p-3 bg-red-50 border border-red-200 rounded-[12px] text-red-700 text-[14px]">
-                            {error}
-                        </div>
-                    )}
+
                 </div>
                 <div className="flex flex-col w-[400px] h-auto gap-[38px]">
                     <div className="flex flex-col items-center h-[218px] w-full justify-center">
                         <Image src={doneImg} alt="setup complete image" />
                     </div>
-                    <button
-                        className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors w-full ${
-                            isLoading ? 'opacity-70 cursor-not-allowed' : ''
-                        }`}
-                        onClick={handleContinue}
-                        disabled={isLoading}
-                    >
-                        {isLoading ? (
-                            <div className="flex items-center gap-2">
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                <p className="text-[#C6EB5F] font-semibold text-[14px]">Processing...</p>
-                            </div>
-                        ) : (
-                            <>
-                                <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue to payment</p>
-                                <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
-                            </>
-                        )}
-                    </button>
+                    <div>
+                        <button
+                            className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors w-full ${
+                                isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                            }`}
+                            onClick={handleContinue}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                    <p className="text-[#C6EB5F] font-semibold text-[14px]">Processing...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue to payment</p>
+                                    <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                                </>
+                            )}
+                        </button>
+                        <p onClick={handleSkip} className="text-[14px] mb-[30px] cursor-pointer text-center font-medium text-[#707070]">Skip for now</p>
+                    </div>
                 </div>
             </div>
         </>
