@@ -127,7 +127,7 @@ const SetupComplete = () => {
             const paymentResponse: InitializePaymentResponse = response.data;
             console.log('Payment response:', paymentResponse);
 
-            if (paymentResponse.status !== 'success' || !paymentResponse.data) {
+            if (paymentResponse.status !== '200' || !paymentResponse.data) {
                 throw new Error(paymentResponse.errorMessage || paymentResponse.message || 'Payment initialization failed');
             }
 
