@@ -3,6 +3,7 @@ import { useState, useRef, ChangeEvent, useEffect } from "react";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import axios from 'axios';
 import uploadIcon from "../../../public/assets/images/uploadIcon.png";
 import galleryImg from '../../../public/assets/images/galleryImg.svg';
 import limeArrow from "../../../public/assets/images/green arrow.png";
@@ -26,7 +27,13 @@ type ProductFormData = {
     quantity: string;
     provider: string;
     position: string;
-    category?: string;
+    categoryId?: string;
+    categoryName?: string;
+};
+
+type Category = {
+    id: string;
+    name: string;
 };
 
 type InputFieldProps = {
@@ -56,7 +63,6 @@ type Product = {
 };
 
 const ProductActionsDropdown = ({
-
                                     children
                                 }: {
     productId: number;
@@ -191,6 +197,59 @@ const ProductTableRow = ({
     );
 };
 
+const CategoryDropDown = ({
+                              categories,
+                              selected,
+                              onSelect,
+                              className = "",
+                              loading = false
+                          }: {
+    categories: Category[];
+    selected: string;
+    onSelect: (categoryId: string, categoryName: string) => void;
+    className?: string;
+    loading?: boolean;
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className={`relative ${className}`}>
+            <div
+                onClick={() => !loading && setIsOpen(!isOpen)}
+                className={`border-[1.5px] rounded-[14px] h-[44px] flex justify-between px-[18px] border-[#D1D1D1] items-center ${loading ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+            >
+                <p className="text-[#BDBDBD] text-[16px] font-medium">
+                    {loading ? 'Loading categories...' : selected}
+                </p>
+                <ChevronDown
+                    size={18}
+                    className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    color="#D1D1D1"
+                />
+            </div>
+
+            {isOpen && !loading && (
+                <div className="absolute left-0 mt-2 w-full bg-white rounded-md shadow-lg z-10 border border-[#ededed] max-h-60 overflow-y-auto">
+                    <ul className="py-1">
+                        {categories.map((category) => (
+                            <li
+                                key={category.id}
+                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={() => {
+                                    onSelect(category.id, category.name);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {category.name}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const DropDown = ({
                       options,
                       selected,
@@ -282,10 +341,16 @@ const InputField = ({
     );
 };
 
-const PreviewView = ({ formData, onBack }: {
+const PreviewView = ({
+                         formData,
+                         onBack,
+                         onPublish,
+                         isPublishing
+                     }: {
     formData: ProductFormData;
     onBack: () => void;
     onPublish: () => void;
+    isPublishing: boolean;
 }) => {
     const otherImages = [
         {id: 1, image: iPhone},
@@ -295,6 +360,10 @@ const PreviewView = ({ formData, onBack }: {
     ];
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const handlePublish = () => {
+        onPublish();
+        setIsModalOpen(true);
+    };
 
     return (
         <>
@@ -328,14 +397,20 @@ const PreviewView = ({ formData, onBack }: {
                             <p className="text-[#6D6D6D] text-[12px] font-medium">Quantity</p>
                             <p className="text-[#121212] text-[14px] font-medium">{formData.quantity}</p>
                         </div>
+                        <div className="w-full bg-[#F7F7F7] py-[8px] flex flex-col gap-[2px] h-[58px] rounded-[14px] border-[0.5px] border-[#E4E4E4] pl-[18px]">
+                            <p className="text-[#6D6D6D] text-[12px] font-medium">Category</p>
+                            <p className="text-[#121212] text-[14px] font-medium">{formData.categoryName || 'No category selected'}</p>
+                        </div>
                     </div>
 
                     <div
-                        className="flex mt-[100px] mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
-                        onClick={() => setIsModalOpen(true)}
+                        className={`flex mt-[100px] mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors ${isPublishing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={handlePublish}
                     >
-                        <p  className="text-[#C6EB5F]  font-semibold text-[14px]">Publish product to store</p>
-                        <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                        <p className="text-[#C6EB5F] font-semibold text-[14px]">
+                            {isPublishing ? 'Publishing...' : 'Publish product to store'}
+                        </p>
+                        {!isPublishing && <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />}
                     </div>
                 </div>
                 <div className="flex w-[500px] text-[#022B23] gap-[24px] text-[14px] font-medium flex-col pt-[109px]">
@@ -369,7 +444,6 @@ const PreviewView = ({ formData, onBack }: {
                 />
             )}
         </>
-
     );
 };
 
@@ -425,21 +499,29 @@ const NewProductView = () => {
     );
     const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
     const [selectedFilter, setSelectedFilter] = useState("Last 24 Hrs");
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [loadingCategories, setLoadingCategories] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
     const [formData, setFormData] = useState<ProductFormData>({
         productName: "",
         price: "",
         description: "",
         quantity: "",
         provider: "",
-        position: ""
+        position: "",
+        categoryId: "",
+        categoryName: ""
     });
-    const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+    const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+    const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
+    const [sideImages, setSideImages] = useState<File[]>([]);
+    const [sideImagePreviews, setSideImagePreviews] = useState<string[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const sideImageInputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const productsPerPage = 5;
 
     const timeFilters = ["Last 24 Hrs", "Last 7 days", "Last 30 days", "Last 90 days"];
-    const categories = ["ELECTRONICS", "FASHION", "HOME AND OFFICE"];
     const products = [
         { id: 1, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
         { id: 2, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Disabled", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
@@ -457,6 +539,26 @@ const NewProductView = () => {
     const indexOfLastProduct = currentPage * productsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
     const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+
+    // Fetch categories on component mount
+    useEffect(() => {
+        const fetchCategories = async () => {
+            setLoadingCategories(true);
+            try {
+                const response = await axios.get('https://api.digitalmarke.bdic.ng/api/categories/all');
+                if (response.data && Array.isArray(response.data)) {
+                    setCategories(response.data);
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+                // You might want to show a toast notification or error message here
+            } finally {
+                setLoadingCategories(false);
+            }
+        };
+
+        fetchCategories();
+    }, []);
 
     const goToNextPage = () => {
         if (currentPage < totalPages) {
@@ -478,16 +580,46 @@ const NewProductView = () => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const handleCategorySelect = (categoryId: string, categoryName: string) => {
+        setFormData(prev => ({
+            ...prev,
+            categoryId,
+            categoryName
+        }));
+    };
+
     const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            setUploadedImage(file);
             const reader = new FileReader();
             reader.onload = (event) => {
                 if (event.target?.result) {
-                    setUploadedImage(event.target.result as string);
+                    setUploadedImagePreview(event.target.result as string);
                 }
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSideImageUpload = (index: number) => (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const newSideImages = [...sideImages];
+            const newPreviews = [...sideImagePreviews];
+
+            newSideImages[index] = file;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (event.target?.result) {
+                    newPreviews[index] = event.target.result as string;
+                    setSideImagePreviews(newPreviews);
+                }
+            };
+            reader.readAsDataURL(file);
+
+            setSideImages(newSideImages);
         }
     };
 
@@ -495,15 +627,47 @@ const NewProductView = () => {
         fileInputRef.current?.click();
     };
 
+    const triggerSideImageInput = (index: number) => {
+        sideImageInputRefs.current[index]?.click();
+    };
+
     const removeImage = (e: React.MouseEvent) => {
         e.stopPropagation();
         setUploadedImage(null);
+        setUploadedImagePreview(null);
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
     };
 
+    const removeSideImage = (index: number) => (e: React.MouseEvent) => {
+        e.stopPropagation();
+        const newSideImages = [...sideImages];
+        const newPreviews = [...sideImagePreviews];
+
+        newSideImages[index] = null as any;
+        newPreviews[index] = '';
+
+        setSideImages(newSideImages.filter(Boolean));
+        setSideImagePreviews(newPreviews);
+
+        if (sideImageInputRefs.current[index]) {
+            sideImageInputRefs.current[index]!.value = "";
+        }
+    };
+
     const handlePreview = () => {
+        // Validate required fields
+        if (!formData.productName || !formData.price || !formData.description || !formData.quantity || !formData.categoryId) {
+            alert('Please fill in all required fields');
+            return;
+        }
+
+        if (!uploadedImage) {
+            alert('Please upload a main product image');
+            return;
+        }
+
         setViewMode('preview');
     };
 
@@ -511,23 +675,67 @@ const NewProductView = () => {
         setViewMode('edit');
     };
 
-    const handlePublish = () => {
-        // Here you would typically make an API call to save the product
-        console.log('Publishing product:', formData);
+    const handlePublish = async () => {
+        setIsPublishing(true);
 
-        // Reset form after publish
-        setFormData({
-            productName: "",
-            price: "",
-            description: "",
-            quantity: "",
-            provider: "",
-            position: ""
-        });
-        setUploadedImage(null);
-        setViewMode('edit');
+        try {
+            const formDataToSend = new FormData();
 
-        // Stay on the same tab (New-item) but you could add a success message
+            // Add form fields
+            formDataToSend.append('name', formData.productName);
+            formDataToSend.append('price', formData.price);
+            formDataToSend.append('description', formData.description);
+            formDataToSend.append('quantity', formData.quantity);
+            formDataToSend.append('categoryId', formData.categoryId || '');
+            formDataToSend.append('shopId', '1'); // You might want to make this dynamic
+
+            // Add main image
+            if (uploadedImage) {
+                formDataToSend.append('mainImageUrl', uploadedImage);
+            }
+
+            // Add side images
+            sideImages.forEach((image, index) => {
+                if (image) {
+                    formDataToSend.append(`sideImage${index + 1}Url`, image);
+                }
+            });
+
+            const response = await axios.post(
+                'https://api.digitalmarke.bdic.ng/api/products/add',
+                formDataToSend,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }
+            );
+
+            console.log('Product published successfully:', response.data);
+
+            // Reset form after successful publish
+            setFormData({
+                productName: "",
+                price: "",
+                description: "",
+                quantity: "",
+                provider: "",
+                position: "",
+                categoryId: "",
+                categoryName: ""
+            });
+            setUploadedImage(null);
+            setUploadedImagePreview(null);
+            setSideImages([]);
+            setSideImagePreviews([]);
+            setViewMode('edit');
+
+        } catch (error) {
+            console.error('Error publishing product:', error);
+            alert('Failed to publish product. Please try again.');
+        } finally {
+            setIsPublishing(false);
+        }
     };
 
     const renderNewItemView = () => {
@@ -537,6 +745,7 @@ const NewProductView = () => {
                     formData={formData}
                     onBack={handleBackToEdit}
                     onPublish={handlePublish}
+                    isPublishing={isPublishing}
                 />
             );
         }
@@ -556,10 +765,11 @@ const NewProductView = () => {
                             onChange={handleChange('productName')}
                             placeholder="Product name"
                         />
-                        <DropDown
-                            options={categories}
-                            selected={formData.category || "Category"}
-                            onSelect={(option) => handleChange('category')(option)}
+                        <CategoryDropDown
+                            categories={categories}
+                            selected={formData.categoryName || "Category"}
+                            onSelect={handleCategorySelect}
+                            loading={loadingCategories}
                         />
                         <InputField
                             id="price"
@@ -590,11 +800,11 @@ const NewProductView = () => {
                                     accept="image/*"
                                     className="hidden"
                                 />
-                                {uploadedImage ? (
+                                {uploadedImagePreview ? (
                                     <>
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <Image
-                                                src={uploadedImage}
+                                                src={uploadedImagePreview}
                                                 alt="Uploaded logo"
                                                 width={96}
                                                 height={96}
@@ -626,13 +836,46 @@ const NewProductView = () => {
                                 Other images: <span className="text-[#B0B0B0]">(Max 4) <span className="text-[#FF5050] font-medium text-[12px]">*</span></span>
                             </label>
                             <div className="flex gap-2">
-                                {[1, 2, 3, 4].map((item) => (
-                                    <div
-                                        key={item}
-                                        className="border-[1.5px] border-[#1E1E1E] bg-[#F6F6F6] border-dashed rounded-[14px] h-[80px] w-[97px] flex flex-col items-center justify-center cursor-pointer"
-                                    >
-                                        <Image src={galleryImg} alt={'image'}/>
-                                        <span className="text-[#1E1E1E] text-[12px] font-medium underline">Add</span>
+                                {[0, 1, 2, 3].map((index) => (
+                                    <div key={index} className="relative">
+                                        <input
+                                            type="file"
+                                            ref={(el) => {
+                                                sideImageInputRefs.current[index] = el;
+                                            }}
+                                            onChange={handleSideImageUpload(index)}
+                                            accept="image/*"
+                                            className="hidden"
+                                        />
+                                        <div
+                                            className="border-[1.5px] border-[#1E1E1E] bg-[#F6F6F6] border-dashed rounded-[14px] h-[80px] w-[97px] flex flex-col items-center justify-center cursor-pointer relative overflow-hidden"
+                                            onClick={() => triggerSideImageInput(index)}
+                                        >
+                                            {sideImagePreviews[index] ? (
+                                                <>
+                                                    <Image
+                                                        src={sideImagePreviews[index]}
+                                                        alt={`Side image ${index + 1}`}
+                                                        width={97}
+                                                        height={80}
+                                                        className="object-cover w-full h-full"
+                                                    />
+                                                    <button
+                                                        onClick={removeSideImage(index)}
+                                                        className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Image src={galleryImg} alt={'image'} width={20} height={20} />
+                                                    <span className="text-[#1E1E1E] text-[12px] font-medium underline">Add</span>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
