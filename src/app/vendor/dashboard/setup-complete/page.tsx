@@ -7,10 +7,9 @@ import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import doneImg from "../../../../../public/assets/images/doneImg.png";
 import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
 import { addShop } from "@/utils/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/toast";
-import axios from "axios";
 
 interface ShopInfo {
     shopName: string;
@@ -35,19 +34,43 @@ interface BankInfo {
     accountNumber: string;
 }
 
-interface PaymentData {
-    authorizationUrl: string;
-    reference: string;
-    credoReference: string;
+interface CredoPaymentResponse {
+    status: 'success' | 'failed' | 'pending';
+    message: string;
+    transactionRef: string;
+    paymentRef: string;
+    amount: number;
+    currency: string;
+    paymentMethod: string;
+    callbackUrl: string;
 }
 
-interface InitializePaymentResponse {
-    status: string;
-    message: string;
-    data?: PaymentData;
-    execTime?: number;
-    error?: unknown[];
-    errorMessage?: string;
+interface CredoWidgetHandler {
+    openIframe: () => void;
+}
+
+declare global {
+    interface Window {
+        CredoWidget: {
+            setup: (config: CredoConfig) => CredoWidgetHandler;
+        };
+    }
+}
+
+interface CredoConfig {
+    key: string;
+    customerFirstName: string;
+    customerLastName: string;
+    email: string;
+    amount: number;
+    currency: string;
+    renderSize: number;
+    channels: string[];
+    reference: string;
+    customerPhoneNumber: string;
+    callbackUrl: string;
+    onClose: () => void;
+    callBack: (response: CredoPaymentResponse) => void;
 }
 
 const SetupComplete = () => {
@@ -58,12 +81,34 @@ const SetupComplete = () => {
         personalInfo: null as PersonalInfo | null,
         bankInfo: null as BankInfo | null
     });
+    const credoHandler = useRef<CredoWidgetHandler | null>(null);
 
     // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastType, setToastType] = useState<"success" | "error">("success");
     const [toastMessage, setToastMessage] = useState("");
     const [toastSubMessage, setToastSubMessage] = useState("");
+
+    useEffect(() => {
+        if (document.querySelector('script[src="https://pay.credocentral.com/inline.js"]')) {
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://pay.credocentral.com/inline.js';
+        script.async = true;
+        script.onload = () => console.log('Credo script loaded successfully');
+        script.onerror = () => {
+            showErrorToast('Payment Error', 'Failed to load payment processor');
+        };
+        document.body.appendChild(script);
+
+        return () => {
+            if (document.body.contains(script)) {
+                document.body.removeChild(script);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         try {
@@ -108,44 +153,49 @@ const SetupComplete = () => {
         setShowToast(false);
     };
 
-    // Initialize payment with backend API
-    const initializePayment = async () => {
-        try {
-            const shopEmail = 'ameliageorge@gmail.com';
+    // Generate unique reference for payment
+    const generateReference = () => {
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 8).toUpperCase();
+        return `CREDO-${timestamp}-${randomString}`;
+    };
 
-            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/payments/initialize', {
-                email: shopEmail,
+    const setupCredoWidget = (): boolean => {
+        if (typeof window !== 'undefined' && window.CredoWidget) {
+            const reference = generateReference();
+
+            credoHandler.current = window.CredoWidget.setup({
+                key: '0PUB0931xUD0FtB6L3dESGTgRN5FUzU8',
+                customerFirstName: 'Tergnu',
+                customerLastName: 'Paul',
+                email: 'ameliageorge215@gmail.com',
                 amount: 500000, // Amount in kobo (NGN 5,000.00)
                 currency: 'NGN',
-                callbackUrl: `${window.location.origin}/vendor/dashboard2`
-            }, {
-                headers: {
-                    'Content-Type': 'application/json',
-                }
+                renderSize: 0,
+                channels: ['card', 'bank'],
+                reference: reference,
+                customerPhoneNumber: summaryData.shopInfo?.shopNumber || '08000000000',
+                callbackUrl: `${window.location.origin}/vendor/dashboard2`,
+                onClose: () => {
+                    console.log('Widget Closed');
+                    setIsLoading(false);
+                },
+                callBack: (response: CredoPaymentResponse) => {
+                    console.log('Payment response:', response);
+                    if (response.status === 'success') {
+                        showSuccessToast('Payment Successful', 'You are being redirected to your dashboard');
+                        setTimeout(() => {
+                            router.push('/vendor/dashboard2');
+                        }, 2000);
+                    } else {
+                        showErrorToast('Payment Failed', response.message);
+                        setIsLoading(false);
+                    }
+                },
             });
-
-            const paymentResponse: InitializePaymentResponse = response.data;
-            console.log('Payment response:', paymentResponse);
-
-            if (paymentResponse.status !== '200' || !paymentResponse.data) {
-                throw new Error(paymentResponse.errorMessage || paymentResponse.message || 'Payment initialization failed');
-            }
-
-            return paymentResponse.data;
-        } catch (error) {
-            console.error('Payment initialization error:', error);
-
-            // Handle axios error response
-            if (axios.isAxiosError(error)) {
-                const errorMessage = error.response?.data?.message || error.message || 'Failed to initialize payment';
-                showErrorToast('Payment Error', errorMessage);
-                throw new Error(errorMessage);
-            }
-
-            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
-            showErrorToast('Payment Error', errorMessage);
-            throw error;
+            return true;
         }
+        return false;
     };
 
     const handleSkip = async () => {
@@ -204,21 +254,13 @@ const SetupComplete = () => {
             localStorage.removeItem('personalInfo');
             localStorage.removeItem('bankInfo');
 
-            // Wait 5 seconds to show the success toast, then initialize payment
-            setTimeout(async () => {
-                try {
-                    const paymentData = await initializePayment();
-
-                    // Redirect to the authorization URL
-                    if (paymentData.authorizationUrl) {
-                        window.location.href = paymentData.authorizationUrl;
-                    } else {
-                        throw new Error('No authorization URL received from payment service');
-                    }
-                } catch (error) {
-                    console.error('Payment initialization error:', error);
-                    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during payment initialization.';
-                    showErrorToast('Payment Error', errorMessage);
+            // Wait 5 seconds to show the success toast, then open payment widget
+            setTimeout(() => {
+                const initialized = setupCredoWidget();
+                if (initialized && credoHandler.current) {
+                    credoHandler.current.openIframe();
+                } else {
+                    showErrorToast('Payment Error', 'Payment service could not be initialized. Please try again.');
                     setIsLoading(false);
                 }
             }, 5000);
