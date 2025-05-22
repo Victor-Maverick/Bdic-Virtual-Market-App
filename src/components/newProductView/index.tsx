@@ -645,10 +645,11 @@ const NewProductView = () => {
         const newSideImages = [...sideImages];
         const newPreviews = [...sideImagePreviews];
 
-        newSideImages[index] = null as any;
-        newPreviews[index] = '';
+        // Remove the item at the specified index
+        newSideImages.splice(index, 1);
+        newPreviews.splice(index, 1);
 
-        setSideImages(newSideImages.filter(Boolean));
+        setSideImages(newSideImages);
         setSideImagePreviews(newPreviews);
 
         if (sideImageInputRefs.current[index]) {
