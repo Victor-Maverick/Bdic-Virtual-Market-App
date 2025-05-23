@@ -353,11 +353,9 @@ const PreviewView = ({
     onPublish: () => void;
     isPublishing: boolean;
 }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
+    // Remove the local modal state and handler since we'll manage it from parent
     const handlePublish = () => {
         onPublish();
-        setIsModalOpen(true);
     };
 
     return (
@@ -453,16 +451,9 @@ const PreviewView = ({
                 </div>
             </div>
 
-            {isModalOpen && (
-                <ProductAddedModal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                />
-            )}
         </>
     );
 };
-
 const TextAreaField = ({
                            id,
                            label,
@@ -695,6 +686,10 @@ const NewProductView = () => {
         setViewMode('edit');
     };
 
+    // Add this state variable with your other useState declarations
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+// Updated handlePublish function
     const handlePublish = async () => {
         setIsPublishing(true);
 
@@ -733,6 +728,9 @@ const NewProductView = () => {
 
             console.log('Product published successfully:', response.data);
 
+            // Show success modal immediately after successful API call
+            setIsModalOpen(true);
+
             // Reset form after successful publish
             setFormData({
                 productName: "",
@@ -758,9 +756,9 @@ const NewProductView = () => {
         }
     };
 
-    const renderNewItemView = () => {
-        if (viewMode === 'preview') {
-            return (
+    if (viewMode === 'preview') {
+        return (
+            <>
                 <PreviewView
                     formData={formData}
                     uploadedImagePreview={uploadedImagePreview}
@@ -769,8 +767,18 @@ const NewProductView = () => {
                     onPublish={handlePublish}
                     isPublishing={isPublishing}
                 />
-            );
-        }
+                {isModalOpen && (
+                    <ProductAddedModal
+                        isOpen={isModalOpen}
+                        onClose={() => setIsModalOpen(false)}
+                        productImage={uploadedImagePreview}
+                    />
+                )}
+            </>
+
+    );
+    }
+    const renderNewItemView = () => {
 
         return (
             <div className="flex justify-between px-55">
