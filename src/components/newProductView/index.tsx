@@ -741,7 +741,6 @@ const NewProductView = () => {
                 categoryName: ""
             });
             setUploadedImage(null);
-            setUploadedImagePreview(null);
             setSideImages([]);
             setSideImagePreviews([]);
             setViewMode('edit');
