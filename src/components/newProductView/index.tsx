@@ -18,7 +18,7 @@ import iPhone from '../../../public/assets/images/blue14.png';
 import arrowBack from '../../../public/assets/images/arrow-right.svg';
 import arrowRight from '../../../public/assets/images/grey right arrow.png';
 import displayImg from '../../../public/assets/images/iphone14Img.svg'
-import ProductAddedModal from "@/components/productAddedModal";
+import {ProductAddedModal} from "@/components/productAddedModal";
 
 type ProductFormData = {
     productName: string;
@@ -767,13 +767,6 @@ const NewProductView = () => {
                     onPublish={handlePublish}
                     isPublishing={isPublishing}
                 />
-                {isModalOpen && (
-                    <ProductAddedModal
-                        isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
-                        productImage={uploadedImagePreview}
-                    />
-                )}
             </>
 
     );
@@ -1158,6 +1151,17 @@ const NewProductView = () => {
             <div className="">
                 {activeView === 'New-item' ? renderNewItemView() : renderProductsManagementView()}
             </div>
+            <ProductAddedModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                productImage={uploadedImagePreview}
+                onGoToProducts={() => {
+                    setIsModalOpen(false);
+                    setActiveView('Products-management');
+                    router.push('/vendor/dashboard/shop?tab=product');
+                }}
+            />
+
         </div>
     );
 };
