@@ -249,7 +249,7 @@ const Dropdown = <T extends { id: number; name: string }>({
         <div className="relative">
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className="bg-[#F9F9F9] border border-[#EDEDED] rounded-[8px] h-[52px] flex justify-between px-[18px] items-center cursor-pointer min-w-[180px]"
+                className="bg-[#F9F9F9] border border-[#EDEDED] rounded-[8px] h-[52px] flex justify-between px-[18px] items-center cursor-pointer"
             >
                 <p className={`${selectedItem ? "text-[#121212]" : "text-[#707070]"} text-[14px] font-normal`}>
                     {selectedItem ? selectedItem.name : placeholder}
@@ -408,18 +408,22 @@ const MarketPlace = () => {
                         <div className="flex justify-end mb-[2px] gap-[8px] items-center">
                             <SearchBar/>
                             <div className="flex items-center p-[2px] border-[0.5px] border-[#ededed]">
-                                <Dropdown
-                                    items={states}
-                                    selectedItem={selectedState}
-                                    onSelect={setSelectedState}
-                                    placeholder="Benue State"
-                                />
-                                <Dropdown
-                                    items={markets}
-                                    selectedItem={selectedMarket}
-                                    onSelect={setSelectedMarket}
-                                    placeholder="Wurukum market"
-                                />
+                                <div className="w-[121px]">
+                                    <Dropdown
+                                        items={states}
+                                        selectedItem={selectedState}
+                                        onSelect={setSelectedState}
+                                        placeholder="Benue State"
+                                    />
+                                </div>
+                                <div className="w-[171px]">
+                                    <Dropdown
+                                        items={markets}
+                                        selectedItem={selectedMarket}
+                                        onSelect={setSelectedMarket}
+                                        placeholder="Wurukum market"
+                                    />
+                                </div>
                             </div>
                         </div>
                         <BannerSection/>
