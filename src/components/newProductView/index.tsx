@@ -416,8 +416,6 @@ const PreviewView = ({
                                 <Image
                                     src={uploadedImagePreview}
                                     alt="Product display"
-                                    width={360}
-                                    height={360}
                                     className="object-contain w-full h-full"
                                 />
                             ) : (
