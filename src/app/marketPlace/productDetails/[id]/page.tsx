@@ -3,23 +3,23 @@ import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
 import NavigationBar from "@/components/navigationBar";
 import Image from "next/image";
-import vendorImg from '../../../../public/assets/images/vendorImg.svg'
-import verify from '../../../../public/assets/images/verify.svg'
-import locationImg from '../../../../public/assets/images/location.png'
-import shopImg from '../../../../public/assets/images/shop.png'
-import chatIcon from '../../../../public/assets/images/chatIcon.png'
-import bag from '../../../../public/assets/images/market-place-bag.png'
-import wishlist from '../../../../public/assets/images/wishHeart.png'
-import tableFan from "../../../../public/assets/images/table fan.png";
-import wirelessCharger from "../../../../public/assets/images/wireless charger.png";
-import jblSpeaker from "../../../../public/assets/images/jbl.png";
-import smartWatch from "../../../../public/assets/images/smartwatch.png";
-import hardDrive from "../../../../public/assets/images/samsung.png";
+import vendorImg from '../../../../../public/assets/images/vendorImg.svg'
+import verify from '../../../../../public/assets/images/verify.svg'
+import locationImg from '../../../../../public/assets/images/location.png'
+import shopImg from '../../../../../public/assets/images/shop.png'
+import chatIcon from '../../../../../public/assets/images/chatIcon.png'
+import bag from '../../../../../public/assets/images/market-place-bag.png'
+import wishlist from '../../../../../public/assets/images/wishHeart.png'
+import tableFan from "../../../../../public/assets/images/table fan.png";
+import wirelessCharger from "../../../../../public/assets/images/wireless charger.png";
+import jblSpeaker from "../../../../../public/assets/images/jbl.png";
+import smartWatch from "../../../../../public/assets/images/smartwatch.png";
+import hardDrive from "../../../../../public/assets/images/samsung.png";
 import MarketProductCard from "@/components/marketProductCard";
-import blueGreenCircle from '../../../../public/assets/images/blueGreenCircle.png'
-import redPurpleCircle from '../../../../public/assets/images/purpleRedCircle.png'
-import orangeCircle from '../../../../public/assets/images/orangeCirlce.png'
-import greenVerify from '../../../../public/assets/images/limeVerify.png'
+import blueGreenCircle from '../../../../../public/assets/images/blueGreenCircle.png'
+import redPurpleCircle from '../../../../../public/assets/images/purpleRedCircle.png'
+import orangeCircle from '../../../../../public/assets/images/orangeCirlce.png'
+import greenVerify from '../../../../../public/assets/images/limeVerify.png'
 import {useRouter} from "next/navigation";
 import { Star } from "lucide-react";
 import axios from "axios";
@@ -50,6 +50,13 @@ interface Review {
     date: string;
 }
 
+interface PageProps {
+    params: {
+        id: string; // URL params are always strings
+    };
+    searchParams: Record<string, string | string[] | undefined>;
+}
+
 const renderStars = (rating: number) => {
     return [...Array(5)].map((_, i) => {
         let fillColor = "none";
@@ -77,7 +84,7 @@ const renderStars = (rating: number) => {
     });
 };
 
-const ProductDetails = ({ params }: { params: { id: string } }) => {
+const ProductDetails = ({ params }: PageProps) => {
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
