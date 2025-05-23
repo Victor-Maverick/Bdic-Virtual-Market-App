@@ -379,7 +379,7 @@ const MarketPlace = () => {
         <>
             <MarketPlaceHeader/>
             <div className="flex-col w-full border-t-[0.5px] border-[#ededed]">
-                <div className="flex h-[595px] pt-[10px] px-25">
+                <div className="flex justify-between h-[595px] pt-[10px] px-25">
                     <div className="w-[20%] flex flex-col drop-shadow-sm h-full">
                         <div className="rounded-t-[8px] gap-[8px] h-[52px] px-[10px] font-medium text-[16px] flex  items-center bg-[#022B23]">
                             <Image src={categoryImg} alt={'image'}/>
@@ -407,18 +407,20 @@ const MarketPlace = () => {
                     <div className="flex flex-col h-full w-[80%]">
                         <div className="flex justify-end mb-[2px] gap-[8px] items-center">
                             <SearchBar/>
-                            <Dropdown
-                                items={states}
-                                selectedItem={selectedState}
-                                onSelect={setSelectedState}
-                                placeholder="Benue State"
-                            />
-                            <Dropdown
-                                items={markets}
-                                selectedItem={selectedMarket}
-                                onSelect={setSelectedMarket}
-                                placeholder="Wurukum market"
-                            />
+                            <div className="flex items-center p-[2px] border-[0.5px] border-[#ededed]">
+                                <Dropdown
+                                    items={states}
+                                    selectedItem={selectedState}
+                                    onSelect={setSelectedState}
+                                    placeholder="Benue State"
+                                />
+                                <Dropdown
+                                    items={markets}
+                                    selectedItem={selectedMarket}
+                                    onSelect={setSelectedMarket}
+                                    placeholder="Wurukum market"
+                                />
+                            </div>
                         </div>
                         <BannerSection/>
                     </div>
