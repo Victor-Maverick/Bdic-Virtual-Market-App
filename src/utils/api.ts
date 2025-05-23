@@ -2,10 +2,8 @@ import axios, { AxiosError } from 'axios';
 
 const API_BASE_URL = 'https://api.digitalmarke.bdic.ng/api';
 
-// Base Axios instance WITHOUT global Content-Type header
 const api = axios.create({
     baseURL: API_BASE_URL,
-    // Let each request determine its own headers
 });
 
 export const fetchMarkets = async () => {
@@ -19,6 +17,20 @@ export const fetchMarkets = async () => {
             console.error('Unexpected error fetching markets:', error);
         }
         throw new Error('Failed to fetch markets');
+    }
+};
+
+export const fetchStates = async () => {
+    try {
+        const response = await api.get('/states/all');
+        return response.data;
+    } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+            console.error('Error fetching states:', error.message);
+        } else {
+            console.error('Unexpected error fetching states:', error);
+        }
+        throw new Error('Failed to fetch states');
     }
 };
 
@@ -50,7 +62,7 @@ export const fetchLocalGovernments = async () => {
     }
 };
 
-// Based on your API curl example, we need to submit data as individual form fields
+// add Shop
 export const addShop = async (shopData: {
     shopInfo: {
         shopName: string;

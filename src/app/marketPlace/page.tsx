@@ -4,22 +4,8 @@ import BannerSection from "@/components/bannerSection";
 import Image, {StaticImageData} from 'next/image';
 import FeaturedCategories from "@/components/featuredCategories";
 import MarketProductCard from "@/components/marketProductCard";
-import tableFan from '@/../public/assets/images/table fan.png'
-import wirelessCharger from '@/../public/assets/images/wireless charger.png'
-import jblSpeaker from '@/../public/assets/images/jbl.png'
-import smartWatch from '@/../public/assets/images/smartwatch.png'
-import hardDrive from '@/../public/assets/images/samsung.png'
-import nikeDunk from '@/../public/assets/images/nike dunk low.png'
-import airForce from '@/../public/assets/images/airforce.svg'
-import reebok from '@/../public/assets/images/reebok.png'
 import marketIcon from '@/../public/assets/images/market element.png'
 import searchImg from '@/../public/assets/images/search-normal.png'
-import yeezy from '@/../public/assets/images/yeezy.png'
-import tomatoes from '@/../public/assets/images/tomatoes.png'
-import cucumber from '@/../public/assets/images/cucumber.png'
-import carrots from '@/../public/assets/images/carrots.png'
-import bellPeppers from '../../../public/assets/images/bell peppers.png'
-import onions from '@/../public/assets/images/onions.png'
 import books from '@/../public/assets/images/books.png'
 import eraser from '@/../public/assets/images/eraser.png'
 import pencils from '@/../public/assets/images/pencils.png'
@@ -27,7 +13,7 @@ import highlightSet from '@/../public/assets/images/highlight set.png'
 import fashionIcon from '@/../public/assets/images/fashionIcon.png'
 import neckTie from '@/../public/assets/images/men tie.png'
 import skirtImg from '@/../public/assets/images/skirt.png'
-import { useState, useEffect, Key} from "react";
+import { useState, useEffect} from "react";
 import axios from 'axios';
 import Footer from "@/components/footer";
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
@@ -46,17 +32,23 @@ import filterImg from '@/../public/assets/images/filter.svg'
 import {useRouter} from "next/navigation";
 import store1 from '@/../public/assets/images/store1.png'
 import store2 from '@/../public/assets/images/store2.png'
+import {fetchMarkets, fetchStates} from "@/utils/api";
+import {ChevronDown} from "lucide-react";
 
 type Category = {
     label: string;
     icon: string;
 };
 
-interface StaticProduct{
+type Market = {
+    id: number;
     name: string;
-    image: StaticImageData;
-    price: number;
-}
+};
+
+type State = {
+    id: number;
+    name: string;
+};
 
 interface Product {
     id: number;
@@ -75,11 +67,14 @@ interface Product {
     categoryName: string;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-const ProductCard = ({image, price, name, isApiProduct = false})=>{
+const ProductCard = ({image, price, name, isApiProduct = false}: {
+    image: string | StaticImageData;
+    price: number | string;
+    name: string;
+    isApiProduct?: boolean;
+}) => {
     const router = useRouter();
-    const handleOpen = ()=>{
+    const handleOpen = () => {
         router.push(`/marketPlace/productDetails`);
     }
 
@@ -92,7 +87,7 @@ const ProductCard = ({image, price, name, isApiProduct = false})=>{
                     className="w-full h-[200px] object-cover rounded-t-[14px]"
                 />
             ) : (
-                <Image src={image} alt={'image'} className="w-full object-cover rounded-t-[14px]" />
+                <Image src={image} alt={'image'} className="w-full object-cover rounded-t-[14px]"/>
             )}
             <div className="mt-4 px-4 flex-col gap-[2px]">
                 <p className="font-normal text-[#1E1E1E]">{name}</p>
@@ -103,17 +98,17 @@ const ProductCard = ({image, price, name, isApiProduct = false})=>{
 }
 
 const categories: Category[] = [
-    { label: "Agriculture", icon: agricimg },
-    { label: "Electronics", icon: electronicIcon },
-    { label: "Healthcare", icon: hospitalIcon },
-    { label: "Kids", icon: babyIcon },
-    { label: "Skincare", icon: lotionIcon },
-    { label: "Cars", icon: carIcon },
-    { label: "Smartphones", icon: mobileIcon },
-    { label: "Fashion", icon: fashionIcon },
-    { label: "Home", icon: homeIcon },
-    { label: "Travel", icon: mapIcon },
-    { label: "Computing", icon: deviceIcon },
+    {label: "Agriculture", icon: agricimg},
+    {label: "Electronics", icon: electronicIcon},
+    {label: "Healthcare", icon: hospitalIcon},
+    {label: "Kids", icon: babyIcon},
+    {label: "Skincare", icon: lotionIcon},
+    {label: "Cars", icon: carIcon},
+    {label: "Smartphones", icon: mobileIcon},
+    {label: "Fashion", icon: fashionIcon},
+    {label: "Home", icon: homeIcon},
+    {label: "Travel", icon: mapIcon},
+    {label: "Computing", icon: deviceIcon},
 ];
 
 const SearchBar = () => (
@@ -123,10 +118,8 @@ const SearchBar = () => (
     </div>
 );
 
-
-const ProductGrid = ({products =[], apiProducts = []}: {products?: StaticProduct[], apiProducts?: Product[]}) => (
+const ProductGrid = ({apiProducts = []}: { apiProducts?: Product[] }) => (
     <div className="grid grid-cols-5 w-full gap-x-3 gap-y-[10px] px-25 py-[10px]">
-        {/* Render API products first */}
         {apiProducts.map((product: Product) => (
             <ProductCard
                 key={`api-${product.id}`}
@@ -136,23 +129,13 @@ const ProductGrid = ({products =[], apiProducts = []}: {products?: StaticProduct
                 isApiProduct={true}
             />
         ))}
-
-        {/* Then render static products */}
-        {products.map((product: { name: unknown; image: unknown; price: unknown; }, index: Key | null | undefined) => (
-            <ProductCard
-                key={`static-${index}`}
-                name={product.name}
-                image={product.image}
-                price={product.price}
-                isApiProduct={false}
-            />
-        ))}
     </div>
 );
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-const FlashSale = ({ countdown, featuredProducts }) => {
+const FlashSale = ({countdown, featuredProducts}: {
+    countdown: number;
+    featuredProducts: { name: string; image: StaticImageData; price: string }[]
+}) => {
     const formatTime = (timeInSeconds: number) => {
         const hours = Math.floor(timeInSeconds / 3600);
         const minutes = Math.floor((timeInSeconds % 3600) / 60);
@@ -181,9 +164,8 @@ const FlashSale = ({ countdown, featuredProducts }) => {
                 </div>
             </div>
             <div className="bg-[#FFFAEB] p-[10px] rounded-b-3xl">
-                {/* Grid container with 5 columns */}
                 <div className="grid grid-cols-5 gap-[6px]">
-                    {featuredProducts.map((product: { name: unknown; image: unknown; price: unknown; }, index: Key | null | undefined) => (
+                    {featuredProducts.map((product, index) => (
                         <MarketProductCard
                             height={330}
                             key={index}
@@ -202,28 +184,30 @@ const FlashSale = ({ countdown, featuredProducts }) => {
 const StoreSection = () => {
     const router = useRouter();
     const stores = React.useMemo(() => [
-        { id: 1, image: store1 },
-        { id: 2, image: store2 },
-        { id: 3, image: store1 },
-        { id: 4, image: store2 },
-        { id: 5, image: store1 },
-        { id: 6, image: store2 },
-        { id: 7, image: store1 },
-        { id: 8, image: store2 },
-        { id: 9, image: store1 },
-        { id: 10, image: store2 },
+        {id: 1, image: store1},
+        {id: 2, image: store2},
+        {id: 3, image: store1},
+        {id: 4, image: store2},
+        {id: 5, image: store1},
+        {id: 6, image: store2},
+        {id: 7, image: store1},
+        {id: 8, image: store2},
+        {id: 9, image: store1},
+        {id: 10, image: store2},
     ], []);
 
-    const PictureCard = ({ image }: { image: StaticImageData }) => {
+    const PictureCard = ({image}: { image: StaticImageData }) => {
         return (
             <div
-                onClick={()=>{router.push("/marketPlace/store")}}
+                onClick={() => {
+                    router.push("/marketPlace/store")
+                }}
                 className="w-full h-[200px] rounded-[14px] overflow-hidden">
                 <Image
                     src={image}
                     alt="store"
                     className="w-full h-full object-cover rounded-[14px]"
-                    priority // Disables lazy loading (if using Next.js)
+                    priority
                 />
             </div>
         );
@@ -240,7 +224,7 @@ const StoreSection = () => {
             <div className="bg-[#F9FDE8] mt-[6px] h-[440px] border border-[#C6EB5F] p-[10px]">
                 <div className="grid grid-cols-5 gap-[6px]">
                     {stores.map((product) => (
-                        <PictureCard key={product.id} image={product.image} />
+                        <PictureCard key={product.id} image={product.image}/>
                     ))}
                 </div>
             </div>
@@ -248,51 +232,80 @@ const StoreSection = () => {
     );
 };
 
+const Dropdown = <T extends { id: number; name: string }>({
+                                                              items,
+                                                              selectedItem,
+                                                              onSelect,
+                                                              placeholder,
+                                                          }: {
+    items: T[];
+    selectedItem: T | null;
+    onSelect: (item: T) => void;
+    placeholder: string;
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="relative">
+            <div
+                onClick={() => setIsOpen(!isOpen)}
+                className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
+            >
+                <p className={`${selectedItem ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
+                    {selectedItem ? selectedItem.name : placeholder}
+                </p>
+                <ChevronDown
+                    size={24}
+                    className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    color="#BDBDBD"
+                />
+            </div>
+
+            {isOpen && (
+                <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
+                    <ul className="py-1">
+                        {items.map((item) => (
+                            <li
+                                key={item.id}
+                                className="px-4 py-2 text-black hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={() => {
+                                    onSelect(item);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {item.name}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const MarketPlace = () => {
-    const [selectedMarket, setSelectedMarket] = useState<string>("Wurukum");
-    const [countdown, setCountdown] = useState<number>(24 * 60 * 60); // 24 hours in seconds
+    const [countdown, setCountdown] = useState<number>(24 * 60 * 60);
     const [apiProducts, setApiProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-
-    // Static products (keeping your existing ones)
-    const products: StaticProduct[] = [
-        { name: "Mini fan", image: tableFan, price: 23000 },
-        { name: "Wireless charger", image: wirelessCharger, price: 15000 },
-        { name: "Bluetooth speaker", image: jblSpeaker, price: 35000 },
-        { name: "Smart watch", image: smartWatch, price: 40000 },
-        { name: "Portable hard drive", image: hardDrive, price: 25000 },
-        { name: "Air Force 1", image: airForce, price: 32000 },
-        { name: "Nike dunk low", image: nikeDunk, price: 28000 },
-        { name: "Adidas superstar", image: nikeDunk, price: 25000 },
-        { name: "Yeezy", image: yeezy, price: 20000 },
-        { name: "Reebok classic leather", image: reebok, price: 20000 },
-        { name: "Tomatoes", image: tomatoes, price: 2000 },
-        { name: "Cucumbers", image: cucumber, price: 1500 },
-        { name: "Carrots", image: carrots, price: 1200 },
-        { name: "Bell pepper", image: bellPeppers, price: 2500 },
-        { name: "Onions", image: onions, price: 800 },
-        { name: "Pack of pen", image: books, price: 2000 },
-        { name: "Notebook", image: books, price: 1200 },
-        { name: "Eraser", image: eraser, price: 1200 },
-        { name: "Pencil case", image: pencils, price: 1200 },
-        { name: "Highlighter set", image: highlightSet, price: 1200}
-    ];
+    const [markets, setMarkets] = useState<Market[]>([]);
+    const [states, setStates] = useState<State[]>([]);
+    const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
+    const [selectedState, setSelectedState] = useState<State | null>(null);
 
     const featuredProducts = [
-        { name: "Pack of pen", image: books, price: "2,000" },
-        { name: "Notebook", image: books, price: "1,500" },
-        { name: "Eraser", image: eraser, price: "300" },
-        { name: "Pencil case", image: pencils, price: "800" },
-        { name: "Highlighter set", image: highlightSet, price: "1,200" },
-        { name: "Pack of pen", image: books, price: "2,000" },
-        { name: "Notebook", image: books, price: "1,500" },
-        { name: "Eraser", image: eraser, price: "300" },
-        { name: "Pencil case", image: pencils, price: "800" },
-        { name: "Highlighter set", image: highlightSet, price: "1,200" }
+        {name: "Pack of pen", image: books, price: "2,000"},
+        {name: "Notebook", image: books, price: "1,500"},
+        {name: "Eraser", image: eraser, price: "300"},
+        {name: "Pencil case", image: pencils, price: "800"},
+        {name: "Highlighter set", image: highlightSet, price: "1,200"},
+        {name: "Pack of pen", image: books, price: "2,000"},
+        {name: "Notebook", image: books, price: "1,500"},
+        {name: "Eraser", image: eraser, price: "300"},
+        {name: "Pencil case", image: pencils, price: "800"},
+        {name: "Highlighter set", image: highlightSet, price: "1,200"}
     ];
 
-    // Fetch products from API using axios
     const fetchProducts = async () => {
         try {
             setLoading(true);
@@ -321,8 +334,30 @@ const MarketPlace = () => {
         }
     };
 
+    const fetchData = async () => {
+        try {
+            const [marketsData, statesData] = await Promise.all([
+                fetchMarkets(),
+                fetchStates(),
+            ]);
+            setMarkets(marketsData);
+            setStates(statesData);
+
+            // Set default selections if data is available
+            if (marketsData.length > 0) {
+                setSelectedMarket(marketsData[0]);
+            }
+            if (statesData.length > 0) {
+                setSelectedState(statesData[0]);
+            }
+        } catch (error) {
+            console.error("Error fetching data:", error);
+        }
+    };
+
     useEffect(() => {
         fetchProducts();
+        fetchData();
     }, []);
 
     useEffect(() => {
@@ -370,43 +405,38 @@ const MarketPlace = () => {
                     </div>
                     <div className="flex flex-col h-full w-[80%]">
                         <div className="flex justify-end mb-[2px]">
-                            <SearchBar />
-                            <div className="flex ml-[20px] gap-[2px] p-[2px] h-[52px] items-center justify-between  border border-[#ededed] rounded-[4px]">
-                                <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px]">
-                                    <select className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] rounded-sm text-center w-full focus:outline-none">
-                                        <option>Benue State</option>
-                                        <option>Enugu State</option>
-                                        <option>Lagos State</option>
-                                    </select>
+                            <SearchBar/>
+                            <div className="flex ml-[20px] gap-[2px] p-[2px] h-[52px] items-center justify-between border border-[#ededed] rounded-[4px]">
+                                <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px] w-[200px]">
+                                    <Dropdown
+                                        items={states}
+                                        selectedItem={selectedState}
+                                        onSelect={setSelectedState}
+                                        placeholder="Select State"
+                                    />
                                 </div>
 
-                                <div className="relative">
-                                    <div className="flex items-center bg-[#F9F9F9] px-[8px] h-[48px] rounded-[4px]">
-                                        <Image src={marketIcon} alt="Market Icon" width={20} height={20} />
-                                        <select
-                                            className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] items-center pr-1 focus:outline-none"
-                                            onChange={(e) => setSelectedMarket(e.target.value)}
-                                            value={selectedMarket}
-                                        >
-                                            <option>Wurukum market</option>
-                                            <option>Gboko Market</option>
-                                            <option>Otukpo Market</option>
-                                        </select>
-                                    </div>
+                                <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px] w-[200px]">
+                                    <Dropdown
+                                        items={markets}
+                                        selectedItem={selectedMarket}
+                                        onSelect={setSelectedMarket}
+                                        placeholder="Select Market"
+                                    />
                                 </div>
                             </div>
                         </div>
-                        <BannerSection />
+                        <BannerSection/>
                     </div>
                 </div>
-                <FeaturedCategories />
+                <FeaturedCategories/>
 
                 <div className="flex items-center w-full justify-between h-[66px] px-25 border-y border-[#ededed]">
                     <div className="flex gap-[2px] p-0.5 border border-[#ededed] w-[313px] rounded-[2px]">
                         <div className="flex gap-[4px] h-[42px] w-[159px] bg-[#f9f9f9] rounded-[2px] items-center px-[8px] py-[14px]">
-                            <Image width={20} height={20} src={marketIcon} alt="Market Icon" />
+                            <Image width={20} height={20} src={marketIcon} alt="Market Icon"/>
                             <p className="text-[#1E1E1E] font-normal text-[14px]">
-                                {loading ? 'Loading...' : `${apiProducts.length + products.length} Products`}
+                                {loading ? 'Loading...' : `${apiProducts.length} Products`}
                             </p>
                         </div>
                         <div className="bg-[#f9f9f9] gap-[4px] text-[#1E1E1E] flex text-[14px] w-[148px] h-[42px] px-1 items-center justify-center rounded-[2px]">
@@ -435,7 +465,7 @@ const MarketPlace = () => {
                         </div>
                         <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
                             <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[46px] w-[100px]  text-center ">
-                                <Image src={neckTie} alt={''} />
+                                <Image src={neckTie} alt={''}/>
                                 <p className="text-center text-[14px]">Men</p>
                             </div>
                         </div>
@@ -454,7 +484,6 @@ const MarketPlace = () => {
                     </div>
                 </div>
 
-                {/* Show loading or error state */}
                 {loading && (
                     <div className="flex justify-center items-center py-10">
                         <p className="text-[#1E1E1E] text-lg">Loading products...</p>
@@ -473,19 +502,17 @@ const MarketPlace = () => {
                     </div>
                 )}
 
-                {/* Products Grid */}
                 {!loading && !error && (
-                    <ProductGrid products={products} apiProducts={apiProducts} />
+                    <ProductGrid apiProducts={apiProducts}/>
                 )}
 
                 <div className="flex-col px-25">
-                    <FlashSale countdown={countdown} featuredProducts={featuredProducts} />
+                    <FlashSale countdown={countdown} featuredProducts={featuredProducts}/>
                 </div>
                 <StoreSection/>
 
-                {/* Second Products Grid */}
                 {!loading && !error && (
-                    <ProductGrid products={products} apiProducts={[]} />
+                    <ProductGrid apiProducts={[]}/>
                 )}
             </div>
             <Footer/>
