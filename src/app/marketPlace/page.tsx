@@ -236,31 +236,28 @@ const Dropdown = <T extends { id: number; name: string }>({
                                                               items,
                                                               selectedItem,
                                                               onSelect,
-                                                              width,
                                                               placeholder,
                                                           }: {
     items: T[];
     selectedItem: T | null;
     onSelect: (item: T) => void;
-    width: number;
     placeholder: string;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div>
+        <div className="relative">
             <div
-                style={{width: width}}
                 onClick={() => setIsOpen(!isOpen)}
-                className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
+                className="bg-[#F9F9F9] border border-[#EDEDED] rounded-[8px] h-[52px] flex justify-between px-[18px] items-center cursor-pointer min-w-[180px]"
             >
-                <p className={`${selectedItem ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-normal`}>
+                <p className={`${selectedItem ? "text-[#121212]" : "text-[#707070]"} text-[14px] font-normal`}>
                     {selectedItem ? selectedItem.name : placeholder}
                 </p>
                 <ChevronDown
-                    size={24}
+                    size={16}
                     className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                    color="#BDBDBD"
+                    color="#707070"
                 />
             </div>
 
@@ -285,6 +282,7 @@ const Dropdown = <T extends { id: number; name: string }>({
         </div>
     );
 };
+
 
 const MarketPlace = () => {
     const [countdown, setCountdown] = useState<number>(24 * 60 * 60);
@@ -407,25 +405,20 @@ const MarketPlace = () => {
                         </div>
                     </div>
                     <div className="flex flex-col h-full w-[80%]">
-                        <div className="flex justify-end mb-[2px]">
+                        <div className="flex justify-end mb-[2px] gap-[8px] items-center">
                             <SearchBar/>
-                            <div className="flex ml-[20px] gap-[2px] p-[2px] h-[52px] items-center justify-between border border-[#ededed] rounded-[4px]">
-                                <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px] w-[200px]">
-                                    <Dropdown
-                                        items={states}
-                                        selectedItem={selectedState}
-                                        onSelect={setSelectedState}
-                                        placeholder="Select State" width={121}                                    />
-                                </div>
-
-                                <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px] w-[200px]">
-                                    <Dropdown
-                                        items={markets}
-                                        selectedItem={selectedMarket}
-                                        onSelect={setSelectedMarket}
-                                        placeholder="Select Market" width={177}                                    />
-                                </div>
-                            </div>
+                            <Dropdown
+                                items={states}
+                                selectedItem={selectedState}
+                                onSelect={setSelectedState}
+                                placeholder="Benue State"
+                            />
+                            <Dropdown
+                                items={markets}
+                                selectedItem={selectedMarket}
+                                onSelect={setSelectedMarket}
+                                placeholder="Wurukum market"
+                            />
                         </div>
                         <BannerSection/>
                     </div>
