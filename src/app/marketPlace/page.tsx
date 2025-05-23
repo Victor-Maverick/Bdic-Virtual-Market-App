@@ -28,6 +28,7 @@ import fashionIcon from '@/../public/assets/images/fashionIcon.png'
 import neckTie from '@/../public/assets/images/men tie.png'
 import skirtImg from '@/../public/assets/images/skirt.png'
 import { useState, useEffect, Key} from "react";
+import axios from 'axios';
 import Footer from "@/components/footer";
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import categoryImg from '@/../public/assets/images/categoryImg.svg'
@@ -51,20 +52,51 @@ type Category = {
     icon: string;
 };
 
+interface StaticProduct{
+    name: string;
+    image: StaticImageData;
+    price: number;
+}
+
+interface Product {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    quantity: number;
+    mainImageUrl: string;
+    sideImage1Url: string;
+    sideImage2Url: string;
+    sideImage3Url: string;
+    sideImage4Url: string;
+    shopId: number;
+    shopName: string;
+    categoryId: number;
+    categoryName: string;
+}
+
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
-const ProductCard = ({image,price,name})=>{
+const ProductCard = ({image, price, name, isApiProduct = false})=>{
     const router = useRouter();
     const handleOpen = ()=>{
         router.push(`/marketPlace/productDetails`);
     }
 
     return (
-        <div onClick={handleOpen}  className="cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed]">
-            <Image src={image} alt={'image'}  className="w-full object-cover rounded-t-[14px]" />
+        <div onClick={handleOpen} className="cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed]">
+            {isApiProduct ? (
+                <img
+                    src={`https://api.digitalmarke.bdic.ng${image}`}
+                    alt={name}
+                    className="w-full h-[200px] object-cover rounded-t-[14px]"
+                />
+            ) : (
+                <Image src={image} alt={'image'} className="w-full object-cover rounded-t-[14px]" />
+            )}
             <div className="mt-4 px-4 flex-col gap-[2px]">
-                <p className="font-normal  text-[#1E1E1E]">{name}</p>
-                <p className="font-semibold text-[20px]text-[#1E1E1E] mb-4 mt-1">₦{price}.00</p>
+                <p className="font-normal text-[#1E1E1E]">{name}</p>
+                <p className="font-semibold text-[20px] text-[#1E1E1E] mb-4 mt-1">₦{price}.00</p>
             </div>
         </div>
     )
@@ -91,16 +123,28 @@ const SearchBar = () => (
     </div>
 );
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-const ProductGrid = ({products}) => (
+
+const ProductGrid = ({products =[], apiProducts = []}: {products?: StaticProduct[], apiProducts?: Product[]}) => (
     <div className="grid grid-cols-5 w-full gap-x-3 gap-y-[10px] px-25 py-[10px]">
+        {/* Render API products first */}
+        {apiProducts.map((product: Product) => (
+            <ProductCard
+                key={`api-${product.id}`}
+                name={product.name}
+                image={product.mainImageUrl}
+                price={product.price}
+                isApiProduct={true}
+            />
+        ))}
+
+        {/* Then render static products */}
         {products.map((product: { name: unknown; image: unknown; price: unknown; }, index: Key | null | undefined) => (
             <ProductCard
-                key={index}
+                key={`static-${index}`}
                 name={product.name}
                 image={product.image}
                 price={product.price}
+                isApiProduct={false}
             />
         ))}
     </div>
@@ -205,30 +249,34 @@ const StoreSection = () => {
 };
 
 const MarketPlace = () => {
-    const [selectedMarket, setSelectedMarket] = useState("Wurukum");
-    const [countdown, setCountdown] = useState(24 * 60 * 60); // 24 hours in seconds
+    const [selectedMarket, setSelectedMarket] = useState<string>("Wurukum");
+    const [countdown, setCountdown] = useState<number>(24 * 60 * 60); // 24 hours in seconds
+    const [apiProducts, setApiProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
-    const products = [
-        { name: "Mini fan", image: tableFan, price: "23,000" },
-        { name: "Wireless charger", image: wirelessCharger, price: "15,000" },
-        { name: "Bluetooth speaker", image: jblSpeaker, price: "35,000" },
-        { name: "Smart watch", image: smartWatch, price: "40,000" },
-        { name: "Portable hard drive", image: hardDrive, price: "25,000" },
-        { name: "Air Force 1", image: airForce, price: "32,000" },
-        { name: "Nike dunk low", image: nikeDunk, price: "28,000" },
-        { name: "Adidas superstar", image: nikeDunk, price: "25,000" },
-        { name: "Yeezy", image: yeezy, price: "20,000" },
-        { name: "Reebok classic leather", image: reebok, price: "20,000" },
-        { name: "Tomatoes", image: tomatoes, price: "2,000" },
-        { name: "Cucumbers", image: cucumber, price: "1,500" },
-        { name: "Carrots", image: carrots, price: "1,200" },
-        { name: "Bell pepper", image: bellPeppers, price: "2,500" },
-        { name: "Onions", image: onions, price: "800" },
-        { name: "Pack of pen", image: books, price: "2,000" },
-        { name: "Notebook", image: books, price: "1,500" },
-        { name: "Eraser", image: eraser, price: "300" },
-        { name: "Pencil case", image: pencils, price: "800" },
-        { name: "Highlighter set", image: highlightSet, price: "1,200" }
+    // Static products (keeping your existing ones)
+    const products: StaticProduct[] = [
+        { name: "Mini fan", image: tableFan, price: 23000 },
+        { name: "Wireless charger", image: wirelessCharger, price: 15000 },
+        { name: "Bluetooth speaker", image: jblSpeaker, price: 35000 },
+        { name: "Smart watch", image: smartWatch, price: 40000 },
+        { name: "Portable hard drive", image: hardDrive, price: 25000 },
+        { name: "Air Force 1", image: airForce, price: 32000 },
+        { name: "Nike dunk low", image: nikeDunk, price: 28000 },
+        { name: "Adidas superstar", image: nikeDunk, price: 25000 },
+        { name: "Yeezy", image: yeezy, price: 20000 },
+        { name: "Reebok classic leather", image: reebok, price: 20000 },
+        { name: "Tomatoes", image: tomatoes, price: 2000 },
+        { name: "Cucumbers", image: cucumber, price: 1500 },
+        { name: "Carrots", image: carrots, price: 1200 },
+        { name: "Bell pepper", image: bellPeppers, price: 2500 },
+        { name: "Onions", image: onions, price: 800 },
+        { name: "Pack of pen", image: books, price: 2000 },
+        { name: "Notebook", image: books, price: 1200 },
+        { name: "Eraser", image: eraser, price: 1200 },
+        { name: "Pencil case", image: pencils, price: 1200 },
+        { name: "Highlighter set", image: highlightSet, price: 1200}
     ];
 
     const featuredProducts = [
@@ -243,6 +291,39 @@ const MarketPlace = () => {
         { name: "Pencil case", image: pencils, price: "800" },
         { name: "Highlighter set", image: highlightSet, price: "1,200" }
     ];
+
+    // Fetch products from API using axios
+    const fetchProducts = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const response = await axios.get('https://api.digitalmarke.bdic.ng/api/products/all', {
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.data.success && response.data.data) {
+                setApiProducts(response.data.data);
+            } else {
+                throw new Error(response.data.message || 'Failed to fetch products');
+            }
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.message || err.message || 'An error occurred while fetching products');
+            } else {
+                setError(err instanceof Error ? err.message : 'An error occurred while fetching products');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchProducts();
+    }, []);
 
     useEffect(() => {
         const countdownInterval = setInterval(() => {
@@ -324,7 +405,9 @@ const MarketPlace = () => {
                     <div className="flex gap-[2px] p-0.5 border border-[#ededed] w-[313px] rounded-[2px]">
                         <div className="flex gap-[4px] h-[42px] w-[159px] bg-[#f9f9f9] rounded-[2px] items-center px-[8px] py-[14px]">
                             <Image width={20} height={20} src={marketIcon} alt="Market Icon" />
-                            <p className="text-[#1E1E1E] font-normal text-[14px]">506,092 Products</p>
+                            <p className="text-[#1E1E1E] font-normal text-[14px]">
+                                {loading ? 'Loading...' : `${apiProducts.length + products.length} Products`}
+                            </p>
                         </div>
                         <div className="bg-[#f9f9f9] gap-[4px] text-[#1E1E1E] flex text-[14px] w-[148px] h-[42px] px-1 items-center justify-center rounded-[2px]">
                             <Image src={filterImg} alt={'image'} width={20} height={20} className="w-[20px] h-[20px]"/>
@@ -370,17 +453,44 @@ const MarketPlace = () => {
                         </div>
                     </div>
                 </div>
-                <ProductGrid products={products} />
+
+                {/* Show loading or error state */}
+                {loading && (
+                    <div className="flex justify-center items-center py-10">
+                        <p className="text-[#1E1E1E] text-lg">Loading products...</p>
+                    </div>
+                )}
+
+                {error && (
+                    <div className="flex justify-center items-center py-10">
+                        <p className="text-red-500 text-lg">Error: {error}</p>
+                        <button
+                            onClick={fetchProducts}
+                            className="ml-4 bg-[#022B23] text-white px-4 py-2 rounded"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                )}
+
+                {/* Products Grid */}
+                {!loading && !error && (
+                    <ProductGrid products={products} apiProducts={apiProducts} />
+                )}
+
                 <div className="flex-col px-25">
                     <FlashSale countdown={countdown} featuredProducts={featuredProducts} />
                 </div>
                 <StoreSection/>
-                <ProductGrid products={products} />
+
+                {/* Second Products Grid */}
+                {!loading && !error && (
+                    <ProductGrid products={products} apiProducts={[]} />
+                )}
             </div>
             <Footer/>
         </>
-
-);
+    );
 };
 
 export default MarketPlace;
