@@ -7,6 +7,7 @@ import ShopInformation from '@/components/productsView';
 import NewProductView from '@/components/newProductView';
 import ReviewsView from '@/components/reviewsView';
 
+
 const ShopClient = () => {
     const searchParams = useSearchParams();
     const initialTab = searchParams.get('tab') as 'shop-information' | 'products' | 'reviews' || 'shop-information';
@@ -58,3 +59,4 @@ const ShopClient = () => {
 };
 
 export default ShopClient;
+

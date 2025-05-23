@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, ChangeEvent, useEffect } from "react";
-import Image from "next/image";
+import Image, {StaticImageData} from "next/image";
 import { ChevronDown } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from 'axios';
@@ -47,8 +47,6 @@ type InputFieldProps = {
     type?: string;
 };
 
-import { StaticImageData } from 'next/image';
-
 type Product = {
     id: number;
     image: StaticImageData;
@@ -63,14 +61,13 @@ type Product = {
 };
 
 const ProductActionsDropdown = ({
-                                    children
+                                    children,
                                 }: {
     productId: number;
     children: React.ReactNode;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const triggerRef = useRef<HTMLDivElement>(null);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -91,7 +88,6 @@ const ProductActionsDropdown = ({
     return (
         <div className="relative" ref={dropdownRef}>
             <div
-                ref={triggerRef}
                 onClick={handleToggle}
                 className="cursor-pointer flex flex-col gap-[3px] items-center justify-center"
             >
@@ -196,6 +192,7 @@ const ProductTableRow = ({
         </div>
     );
 };
+
 
 const CategoryDropDown = ({
                               categories,
@@ -343,21 +340,19 @@ const InputField = ({
 
 const PreviewView = ({
                          formData,
+                         uploadedImagePreview,
+                         sideImagePreviews,
                          onBack,
                          onPublish,
                          isPublishing
                      }: {
     formData: ProductFormData;
+    uploadedImagePreview: string | null;
+    sideImagePreviews: string[];
     onBack: () => void;
     onPublish: () => void;
     isPublishing: boolean;
 }) => {
-    const otherImages = [
-        {id: 1, image: iPhone},
-        {id: 2, image: iPhone},
-        {id: 3, image: iPhone},
-        {id: 4, image: iPhone}
-    ];
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const handlePublish = () => {
@@ -378,6 +373,7 @@ const PreviewView = ({
                         <p className="text-[16px] font-medium text-[#022B23]">Preview and publish to shop</p>
                         <p className="text-[#707070] font-medium text-[14px]">View product detail before you publish</p>
                     </div>
+
                     <div className="w-[500px] flex flex-col h-[393px] gap-[24px]">
                         <div className="flex flex-col gap-[8px]">
                             <div className="w-full bg-[#F7F7F7] py-[8px] flex flex-col gap-[2px] h-[58px] rounded-[14px] border-[0.5px] border-[#E4E4E4] pl-[18px]">
@@ -413,34 +409,54 @@ const PreviewView = ({
                         {!isPublishing && <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />}
                     </div>
                 </div>
+
                 <div className="flex w-[500px] text-[#022B23] gap-[24px] text-[14px] font-medium flex-col pt-[109px]">
                     <div className="flex flex-col gap-[2px]">
                         <p>Display image</p>
                         <div className="w-full rounded-[24px] flex justify-center items-end bg-[#F9F9F9] h-[404px] mt-[5px]">
-                            <Image src={displayImg} alt="Default product" width={360} height={360} />
+                            {uploadedImagePreview ? (
+                                <Image
+                                    src={uploadedImagePreview}
+                                    alt="Product display"
+                                    width={360}
+                                    height={360}
+                                    className="object-contain w-full h-full"
+                                />
+                            ) : (
+                                <Image src={displayImg} alt="Default product" width={360} height={360} />
+                            )}
                         </div>
                     </div>
+
                     <div className="flex flex-col gap-[2px]">
                         <p>Other images</p>
                         <div className="w-full flex justify-between items-end h-[113px]">
-                            {otherImages.map((img) => (
-                                <div key={img.id} className="w-[113px] h-full bg-[#F9F9F9] rounded-[8px] overflow-hidden">
-                                    <Image
-                                        src={img.image}
-                                        alt={`Product image ${img.id}`}
-                                        width={100}
-                                        height={100}
-                                        className="w-full h-full object-cover"
-                                    />
+                            {sideImagePreviews.length > 0 ? (
+                                sideImagePreviews.map((img, index) => (
+                                    <div key={index} className="w-[113px] h-full bg-[#F9F9F9] rounded-[8px] overflow-hidden">
+                                        <Image
+                                            src={img}
+                                            alt={`Product image ${index + 1}`}
+                                            width={113}
+                                            height={113}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="w-full h-[113px] flex items-center justify-center text-[#BDBDBD]">
+                                    No additional images
                                 </div>
-                            ))}
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
+
             {isModalOpen && (
                 <ProductAddedModal
                     isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
                 />
             )}
         </>
@@ -520,7 +536,6 @@ const NewProductView = () => {
     const sideImageInputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const productsPerPage = 5;
-
     const timeFilters = ["Last 24 Hrs", "Last 7 days", "Last 30 days", "Last 90 days"];
     const products = [
         { id: 1, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
@@ -540,6 +555,8 @@ const NewProductView = () => {
     const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
     const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
 
+
+
     // Fetch categories on component mount
     useEffect(() => {
         const fetchCategories = async () => {
@@ -551,7 +568,6 @@ const NewProductView = () => {
                 }
             } catch (error) {
                 console.error('Error fetching categories:', error);
-                // You might want to show a toast notification or error message here
             } finally {
                 setLoadingCategories(false);
             }
@@ -559,22 +575,6 @@ const NewProductView = () => {
 
         fetchCategories();
     }, []);
-
-    const goToNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const goToPrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
-    const goToPage = (pageNumber: number) => {
-        setCurrentPage(pageNumber);
-    };
 
     const handleChange = (field: keyof ProductFormData) => (value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -608,6 +608,9 @@ const NewProductView = () => {
             const newSideImages = [...sideImages];
             const newPreviews = [...sideImagePreviews];
 
+            // Ensure we don't exceed 4 side images
+            if (newSideImages.length >= 4) return;
+
             newSideImages[index] = file;
 
             const reader = new FileReader();
@@ -640,12 +643,28 @@ const NewProductView = () => {
         }
     };
 
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const goToPrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const goToPage = (pageNumber: number) => {
+        setCurrentPage(pageNumber);
+    };
+
+
     const removeSideImage = (index: number) => (e: React.MouseEvent) => {
         e.stopPropagation();
         const newSideImages = [...sideImages];
         const newPreviews = [...sideImagePreviews];
 
-        // Remove the item at the specified index
         newSideImages.splice(index, 1);
         newPreviews.splice(index, 1);
 
@@ -688,7 +707,7 @@ const NewProductView = () => {
             formDataToSend.append('description', formData.description);
             formDataToSend.append('quantity', formData.quantity);
             formDataToSend.append('categoryId', formData.categoryId || '');
-            formDataToSend.append('shopId', '1'); // You might want to make this dynamic
+            formDataToSend.append('shopId', '1'); // Make this dynamic if needed
 
             // Add main image
             if (uploadedImage) {
@@ -744,6 +763,8 @@ const NewProductView = () => {
             return (
                 <PreviewView
                     formData={formData}
+                    uploadedImagePreview={uploadedImagePreview}
+                    sideImagePreviews={sideImagePreviews}
                     onBack={handleBackToEdit}
                     onPublish={handlePublish}
                     isPublishing={isPublishing}
@@ -806,7 +827,7 @@ const NewProductView = () => {
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <Image
                                                 src={uploadedImagePreview}
-                                                alt="Uploaded logo"
+                                                alt="Uploaded product"
                                                 width={96}
                                                 height={96}
                                                 className="rounded-lg object-cover w-[96px] h-[96px]"
@@ -901,6 +922,7 @@ const NewProductView = () => {
             </div>
         );
     };
+
 
     const renderProductsManagementView = () => (
         <div className="flex flex-col gap-[50px]">
@@ -1079,6 +1101,8 @@ const NewProductView = () => {
             </div>
         </div>
     );
+
+    // ... rest of the component implementation (ProductsManagementView, pagination, etc.) ...
 
     return (
         <div className="flex flex-col gap-[32px] py-[10px]">
