@@ -3,10 +3,6 @@ import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
 import NavigationBar from "@/components/navigationBar";
 import Image from "next/image";
-import iphoneBigImg from '../../../../public/assets/images/iphone14Img.svg'
-import blueIphone from '../../../../public/assets/images/blue iphone.svg'
-import iphone13 from '../../../../public/assets/images/iphone13.svg'
-import blue14 from '../../../../public/assets/images/blue14.png'
 import vendorImg from '../../../../public/assets/images/vendorImg.svg'
 import verify from '../../../../public/assets/images/verify.svg'
 import locationImg from '../../../../public/assets/images/location.png'
@@ -25,8 +21,34 @@ import redPurpleCircle from '../../../../public/assets/images/purpleRedCircle.pn
 import orangeCircle from '../../../../public/assets/images/orangeCirlce.png'
 import greenVerify from '../../../../public/assets/images/limeVerify.png'
 import {useRouter} from "next/navigation";
-
 import { Star } from "lucide-react";
+import axios from "axios";
+import { useEffect, useState } from "react";
+
+interface Product {
+    id: number;
+    name: string;
+    description: string;
+    price: number;
+    quantity: number;
+    mainImageUrl: string;
+    sideImage1Url: string;
+    sideImage2Url: string;
+    sideImage3Url: string;
+    sideImage4Url: string;
+    shopId: number;
+    shopName: string;
+    categoryId: number;
+    categoryName: string;
+}
+
+interface Review {
+    name: string;
+    image: string;
+    rating: number;
+    comment: string;
+    date: string;
+}
 
 const renderStars = (rating: number) => {
     return [...Array(5)].map((_, i) => {
@@ -34,7 +56,7 @@ const renderStars = (rating: number) => {
         let percentageFill = 0;
 
         if (i < Math.floor(rating)) {
-            fillColor = "#E5A000"; // Fully filled star
+            fillColor = "#E5A000";
             percentageFill = 100;
         } else if (i < Math.ceil(rating)) {
             percentageFill = Math.round((rating - i) * 100);
@@ -55,54 +77,46 @@ const renderStars = (rating: number) => {
     });
 };
 
-
-
-const suggestedProducts = [
-    { name: "Mini fan", image: tableFan, price: "23,000" },
-    { name: "Wireless charger", image: wirelessCharger, price: "15,000" },
-    { name: "Bluetooth speaker", image: jblSpeaker, price: "35,000" },
-    { name: "Smart watch", image: smartWatch, price: "40,000" },
-    { name: "Portable hard drive", image: hardDrive, price: "25,000" },
-]
-const reviews = [
-    {
-        name: "John Doe",
-        image: blueGreenCircle,
-        rating: 5,
-        comment: "I’ve been using the iPhone 14 for a few weeks now, and it’s been an absolute game-changer! The Super Retina XDR display is stunning, making everything look crisp and vibrant. The A15 Bionic chip keeps everything super fast, whether I’m gaming, multitasking, or streaming. Battery life is impressive I easily get through a full day with no worries. The camera takes incredible photos, even in low light, and the Cinematic Mode is a fun bonus! If you're looking for a reliable, powerful iPhone without the Pro price tag, this is it! Highly recommend!",
-        date: "March 12, 2024"
-    },
-    {
-        name: "Sarah Johnson",
-        image: redPurpleCircle,
-        rating: 4,
-        comment: "Really great device, but I wish the price was a bit lower.",
-        date: "March 10, 2024"
-    },
-    {
-        name: "Michael Smith",
-        image: orangeCircle,
-        rating: 5,
-        comment: "Best iPhone yet! Super fast and the display is stunning.",
-        date: "March 8, 2024"
-    },
-    {
-        name: "Emily Davis",
-        image: blueGreenCircle,
-        rating: 3,
-        comment: "Good phone, but I had some trouble with Face ID at night.",
-        date: "March 6, 2024"
-    }
-];
-
-
-const ProductDetails =()=>{
-    const rating = 3.5;
-    const totalReviews = 578;
+const ProductDetails = ({ params }: { params: { id: string } }) => {
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
-    const handleAddToCart =()=>{
-        router.push("/cart");
-    }
+
+    const rating = 4.5;
+    const totalReviews = 578;
+
+    const suggestedProducts = [
+        { name: "Mini fan", image: tableFan, price: "23,000" },
+        { name: "Wireless charger", image: wirelessCharger, price: "15,000" },
+        { name: "Bluetooth speaker", image: jblSpeaker, price: "35,000" },
+        { name: "Smart watch", image: smartWatch, price: "40,000" },
+        { name: "Portable hard drive", image: hardDrive, price: "25,000" },
+    ];
+
+    const reviews: Review[] = [
+        {
+            name: "John Doe",
+            image: blueGreenCircle.src,
+            rating: 5,
+            comment: "I've been using this product for a few weeks now, and it's been an absolute game-changer!",
+            date: "March 12, 2024"
+        },
+        {
+            name: "Sarah Johnson",
+            image: redPurpleCircle.src,
+            rating: 4,
+            comment: "Really great device, but I wish the price was a bit lower.",
+            date: "March 10, 2024"
+        },
+        {
+            name: "Michael Smith",
+            image: orangeCircle.src,
+            rating: 5,
+            comment: "Best product yet! Super fast and the display is stunning.",
+            date: "March 8, 2024"
+        }
+    ];
 
     const ratingsData = [
         { stars: 5, count: 488 },
@@ -112,76 +126,141 @@ const ProductDetails =()=>{
         { stars: 1, count: 0 },
     ];
 
-    return(
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/products/${params.id}`);
+                if (response.data.success && response.data.data) {
+                    setProduct(response.data.data);
+                } else {
+                    throw new Error(response.data.message || 'Failed to fetch product');
+                }
+            } catch (err) {
+                console.error('Error fetching product:', err);
+                setError(err instanceof Error ? err.message : 'An error occurred');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
+    }, [params.id]);
+
+    const handleAddToCart = () => {
+        router.push("/cart");
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p>Loading product details...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p>Error: {error}</p>
+            </div>
+        );
+    }
+
+    if (!product) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p>Product not found</p>
+            </div>
+        );
+    }
+
+    // Get all available product images
+    const productImages = [
+        product.mainImageUrl,
+        product.sideImage1Url,
+        product.sideImage2Url,
+        product.sideImage3Url,
+        product.sideImage4Url
+    ].filter(url => url); // Filter out empty/null URLs
+
+    return (
         <>
             <ProductDetailHeader/>
             <ProductDetailHeroBar/>
-            <NavigationBar page="//smart phone//" name="product name"/>
-            <div className="flex  gap-[10px] px-[100px]">
+            <NavigationBar page={`//${product.categoryName}//`} name={product.name}/>
+            <div className="flex gap-[10px] px-[100px]">
                 <div className="flex-col items-center">
                     <div className="w-[719px] h-[749px] bg-[#F9F9F9] items-end flex justify-center mb-[10px]">
-                        <Image src={iphoneBigImg} alt={'image'} height={698} width={698} />
+                        {productImages.length > 0 && (
+                            <Image
+                                src={`https://api.digitalmarke.bdic.ng${productImages[0]}`}
+                                alt={product.name}
+                                height={698}
+                                width={698}
+                                className="object-contain"
+                            />
+                        )}
                     </div>
                     <div className="flex items-center gap-[8px] mb-2">
-                        <div className="flex  w-[235px] h-[235px] bg-[#F9F9F9] justify-center items-end">
-                            <Image src={blue14} alt={'image'} width={225} height={235}/>
-                        </div>
-                        <div className="flex w-[235px] h-[235px] bg-[#F9F9F9] justify-center items-end">
-                            <Image src={iphone13} alt={'image'} width={225} height={238}/>
-                        </div>
-                        <div className="flex items-center w-[235px] h-[235px] bg-[#F9F9F9] justify-end">
-                            <Image src={blueIphone} alt={'image'} width={185} height={235}/>
-                        </div>
+                        {productImages.slice(1, 4).map((image, index) => (
+                            <div key={index} className="flex w-[235px] h-[235px] bg-[#F9F9F9] justify-center items-end">
+                                <Image
+                                    src={`https://api.digitalmarke.bdic.ng${image}`}
+                                    alt={product.name}
+                                    width={225}
+                                    height={235}
+                                    className="object-contain"
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
                 <div className="flex-col justify-start pt-[40px]">
-                    <p className="text-[36px]">Sea Blue iphone 14</p>
-                    <p className="font-semibold text-[26px]">₦850,000</p>
-                        <div className="p-0.5 border  border-[#f9f9f9] w-[94px]">
-                            <div className="w-[90px] h-[37px] bg-[#ededed] flex items-center justify-center">
-                                <p className="text-[14px]">Brand new</p>
-                            </div>
+                    <p className="text-[36px]">{product.name}</p>
+                    <p className="font-semibold text-[26px]">₦{product.price.toLocaleString()}</p>
+                    <div className="p-0.5 border border-[#f9f9f9] w-[94px]">
+                        <div className="w-[90px] h-[37px] bg-[#ededed] flex items-center justify-center">
+                            <p className="text-[14px]">Brand new</p>
                         </div>
+                    </div>
                     <div className="border-y border-[#ededed] py-[8px] px-[8px] mt-[30px]">
                         <p>Description</p>
                     </div>
-                    <p className="text-[14px] ">Experience the iPhone 14, designed for speed, clarity, and durability.
-                            With its 6.1-inch Super Retina XDR display, A15 Bionic chip, and advanced
-                            dual-camera system, every moment comes to life with stunning detail.
-                            Enjoy all-day battery life, iOS 16’s smart features, and seamless 5G connectivity. Built with Ceramic  Shield and water resistance, it&apos;s as tough as it is beautiful.
-                    </p>
+                    <p className="text-[14px]">{product.description}</p>
+
                     <div className="border border-[#ededed] rounded-3xl h-[260px] mt-[40px]">
                         <div className="flex items-center border-b border-[#ededed] px-[20px] pt-[10px] justify-between">
                             <div className="flex gap-[8px] pb-[8px]">
-                                <Image src={vendorImg} alt={'image'} width={40} height={40}/>
+                                <Image src={vendorImg} alt={'vendor'} width={40} height={40}/>
                                 <div className="flex-col">
                                     <p className="text-[12px] text-[#707070]">Vendor</p>
-                                    <p className="text-[16px] font-normal mt-[-4px]">Abba Technologies</p>
+                                    <p className="text-[16px] font-normal mt-[-4px]">{product.shopName}</p>
                                 </div>
                             </div>
                             <div className="w-[74px] p-[6px] gap-[4px] h-[30px] bg-[#C6EB5F] rounded-[8px] flex items-center">
-                                <Image src={verify} alt={'image'}/>
+                                <Image src={verify} alt={'verified'}/>
                                 <p className="text-[12px]">verified</p>
                             </div>
                         </div>
                         <div className="px-[20px] flex items-center gap-[4px] mt-[20px]">
-                            <Image src={locationImg} alt={'image'} width={18} height={18}/>
+                            <Image src={locationImg} alt={'location'} width={18} height={18}/>
                             <p className="text-[14px] font-light">Modern market, Makurdi, Benue State</p>
                         </div>
                         <div className="flex px-[20px] mt-[15px] gap-[18px]">
                             <div className="flex items-center gap-[4px]">
-                                <Image src={shopImg} alt={'image'} width={18} height={18}/>
-                                <p className="text-[14px] font-light">Abba Technologies Shop 2C</p>
+                                <Image src={shopImg} alt={'shop'} width={18} height={18}/>
+                                <p className="text-[14px] font-light">{product.shopName} Shop 2C</p>
                             </div>
                             <div className="flex items-center gap-[4px]">
-                                <Image src={shopImg} alt={'image'} width={18} height={18}/>
+                                <Image src={shopImg} alt={'shop'} width={18} height={18}/>
                                 <p className="text-[14px] font-light">Lagos line</p>
                             </div>
                         </div>
                         <div className="px-[20px] w-[300px] w-[48px] gap-[14px] mt-[50px] flex items-center">
                             <div className="flex items-center gap-[10px] justify-center bg-[#ffeebe] rounded-[14px] w-[165px] h-[48px]">
                                 <p className="text-[#461602] font-semibold text-[14px]">Text vendor</p>
-                                <Image src={chatIcon} alt={'image'}/>
+                                <Image src={chatIcon} alt={'chat'}/>
                             </div>
                             <div className="w-[121px] h-[48px] rounded-[12px] flex border-[2px] border-[#461602] justify-center items-center">
                                 <p className="text-[#461602] font-semibold text-[14px]">Call vendor</p>
@@ -194,11 +273,11 @@ const ProductDetails =()=>{
                                 <p className="text-[#C6EB5F] text-[14px] font-semibold">Buy now</p>
                             </div>
                             <div onClick={handleAddToCart} className="w-[127px] cursor-pointer flex items-center justify-center h-[48px] gap-[10px] rounded-[12px] border-[2px] border-[#022B23]">
-                                <p className="text-[#022B23] text-[15px] font-bold ">Add to cart</p>
-                                <Image src={bag} alt={'image'} width={18} height={18}/>
+                                <p className="text-[#022B23] text-[15px] font-bold">Add to cart</p>
+                                <Image src={bag} alt={'cart'} width={18} height={18}/>
                             </div>
                             <div className="h-[48px] w-[48px] border-[2px] border-[#022B23] rounded-[12px] flex ml-[20px] items-center justify-center">
-                                <Image src={wishlist} alt={'image'} width={26} height={26}/>
+                                <Image src={wishlist} alt={'wishlist'} width={26} height={26}/>
                             </div>
                         </div>
                     </div>
@@ -213,14 +292,14 @@ const ProductDetails =()=>{
                             key={index}
                             name={product.name}
                             image={product.image}
-                            price={product.price}  imageHeight={undefined}
+                            price={product.price}
+                            imageHeight={200}
                         />
                     ))}
                 </div>
-
             </div>
             <div className="flex-col px-[100px] mt-[40px]">
-                <p className="font-medium text-[18px] mb-[20px]" >Store and product reviews<span className="text-[#707070]"> (200+)</span></p>
+                <p className="font-medium text-[18px] mb-[20px]">Store and product reviews<span className="text-[#707070]"> (200+)</span></p>
                 <div className="flex gap-[15px]">
                     <div className="flex-col border-[0.5px] border-[#ededed] rounded-[14px] p-[10px] mb-4">
                         {reviews.map((review, index) => {
@@ -244,13 +323,13 @@ const ProductDetails =()=>{
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-[6px] mt-[10px]">
-                                        <Image src={review.image} alt={'image'} width={31} height={31} />
+                                        <Image src={review.image} alt={'reviewer'} width={31} height={31} />
                                         <p>{review.name}</p>
                                     </div>
                                     <p className="text-[#303030] text-[14px] mt-2">{review.comment}</p>
                                     <div className="w-[143px] mt-[10px] h-[30px] flex items-center justify-center gap-[4px] rounded-[8px]">
-                                        <Image src={greenVerify} alt={'image'} />
-                                        <p className=" text-[#52A43E]">verified purchase</p>
+                                        <Image src={greenVerify} alt={'verified'} />
+                                        <p className="text-[#52A43E]">verified purchase</p>
                                     </div>
                                 </div>
                             );
@@ -258,13 +337,11 @@ const ProductDetails =()=>{
                     </div>
                     <div className="bg-white rounded-[14px] h-[265px] w-[500px] border-[0.5px] border-[#ededed] p-[20px]">
                         <p className="font-medium text-[#0D0C22] text-[14px]">Store and product reviews</p>
-
                         <div className="flex items-center mt-0.5">
                             <span className="text-[32px] font-bold">{rating.toFixed(1)}</span>
                             <div className="flex ml-2 gap-[4px]">{renderStars(rating)}</div>
                         </div>
                         <p className="text-[#858585] text-[12px] mb-4 mt-1">({totalReviews} Reviews)</p>
-
                         <div className="mt-2 space-y-1">
                             {ratingsData.map(({ stars, count }) => (
                                 <div key={stars} className="flex items-center">
@@ -283,7 +360,7 @@ const ProductDetails =()=>{
                 </div>
             </div>
         </>
-    )
+    );
 }
 
-export default ProductDetails
+export default ProductDetails;

@@ -67,15 +67,16 @@ interface Product {
     categoryName: string;
 }
 
-const ProductCard = ({image, price, name, isApiProduct = false}: {
+const ProductCard = ({image, price, name, id, isApiProduct = false}: {
     image: string | StaticImageData;
     price: number | string;
     name: string;
+    id: number;
     isApiProduct?: boolean;
 }) => {
     const router = useRouter();
     const handleOpen = () => {
-        router.push(`/marketPlace/productDetails`);
+        router.push(`/marketPlace/productDetails/${id}`);
     }
 
     return (
@@ -96,7 +97,6 @@ const ProductCard = ({image, price, name, isApiProduct = false}: {
         </div>
     )
 }
-
 const categories: Category[] = [
     {label: "Agriculture", icon: agricimg},
     {label: "Electronics", icon: electronicIcon},
@@ -126,6 +126,7 @@ const ProductGrid = ({apiProducts = []}: { apiProducts?: Product[] }) => (
                 name={product.name}
                 image={product.mainImageUrl}
                 price={product.price}
+                id={product.id}
                 isApiProduct={true}
             />
         ))}
@@ -407,7 +408,7 @@ const MarketPlace = () => {
                     <div className="flex flex-col h-full w-[80%]">
                         <div className="flex justify-end mb-[2px] gap-[8px] items-center">
                             <SearchBar/>
-                            <div className="flex items-center p-[2px] border-[0.5px] border-[#ededed]">
+                            <div className="flex items-center rounded-[2px] gap-[2px] p-[2px] border-[0.5px] border-[#ededed]">
                                 <div className="w-[121px]">
                                     <Dropdown
                                         items={states}
@@ -519,5 +520,4 @@ const MarketPlace = () => {
         </>
     );
 };
-
 export default MarketPlace;
