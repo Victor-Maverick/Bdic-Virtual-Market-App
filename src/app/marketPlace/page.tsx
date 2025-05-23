@@ -81,7 +81,7 @@ const ProductCard = ({image, price, name, isApiProduct = false}: {
     return (
         <div onClick={handleOpen} className="cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed]">
             {isApiProduct ? (
-                <img
+                <Image
                     src={`https://api.digitalmarke.bdic.ng${image}`}
                     alt={name}
                     className="w-full h-[200px] object-cover rounded-t-[14px]"
@@ -236,18 +236,21 @@ const Dropdown = <T extends { id: number; name: string }>({
                                                               items,
                                                               selectedItem,
                                                               onSelect,
+                                                              width,
                                                               placeholder,
                                                           }: {
     items: T[];
     selectedItem: T | null;
     onSelect: (item: T) => void;
+    width: number;
     placeholder: string;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="relative">
+        <div>
             <div
+                style={{width: width}}
                 onClick={() => setIsOpen(!isOpen)}
                 className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
             >
@@ -412,8 +415,7 @@ const MarketPlace = () => {
                                         items={states}
                                         selectedItem={selectedState}
                                         onSelect={setSelectedState}
-                                        placeholder="Select State"
-                                    />
+                                        placeholder="Select State" width={121}                                    />
                                 </div>
 
                                 <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px] w-[200px]">
@@ -421,8 +423,7 @@ const MarketPlace = () => {
                                         items={markets}
                                         selectedItem={selectedMarket}
                                         onSelect={setSelectedMarket}
-                                        placeholder="Select Market"
-                                    />
+                                        placeholder="Select Market" width={177}                                    />
                                 </div>
                             </div>
                         </div>
