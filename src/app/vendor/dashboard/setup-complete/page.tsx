@@ -44,9 +44,7 @@ interface PaymentData {
 interface InitializePaymentResponse {
     status: string;
     message: string;
-    data?: {
-        data?: PaymentData;
-    };
+    data?: PaymentData;
     execTime?: number;
     error?: unknown[];
     errorMessage?: string;
@@ -147,9 +145,9 @@ const SetupComplete = () => {
             const paymentResponse = response.data;
 
             // Check if the response indicates success
-            if (paymentResponse.status === 'success' || paymentResponse.message === 'Successfully processed') {
-                // Extract authorization URL from nested data structure
-                const authorizationUrl = paymentResponse.data?.data?.authorizationUrl;
+            if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
+                // Extract authorization URL from data structure
+                const authorizationUrl = paymentResponse.data?.authorizationUrl;
 
                 if (!authorizationUrl) {
                     console.error('Authorization URL not found in response:', paymentResponse);
