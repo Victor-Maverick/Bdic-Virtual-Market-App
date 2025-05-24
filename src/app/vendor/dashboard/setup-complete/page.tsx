@@ -10,6 +10,7 @@ import { addShop } from "@/utils/api";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/toast";
+import axios from 'axios';
 
 interface ShopInfo {
     shopName: string;
@@ -43,10 +44,19 @@ interface PaymentData {
 interface InitializePaymentResponse {
     status: string;
     message: string;
-    data?: PaymentData;
+    data?: {
+        data?: PaymentData;
+    };
     execTime?: number;
     error?: unknown[];
     errorMessage?: string;
+}
+
+interface InitializePaymentRequest {
+    email: string;
+    amount: number;
+    currency: string;
+    callbackUrl: string;
 }
 
 const SetupComplete = () => {
@@ -107,40 +117,71 @@ const SetupComplete = () => {
         setShowToast(false);
     };
 
-    // Initialize payment with backend API
-    const initializePayment = async () => {
+    // Initialize payment with backend API using axios
+    const initializePayment = async (): Promise<string> => {
         try {
             const shopEmail = `ameliageorge215@gmail.com`;
 
-            const response = await fetch('https://api.digitalmarke.bdic.ng/api/payments/initialize', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: shopEmail,
-                    amount: 500000, // Amount in kobo (NGN 5,000.00)
-                    currency: 'NGN',
-                    callbackUrl: `${window.location.origin}/vendor/dashboard2`
-                })
-            });
+            const requestData: InitializePaymentRequest = {
+                email: shopEmail,
+                amount: 500000, // Amount in kobo (NGN 5,000.00)
+                currency: 'NGN',
+                callbackUrl: `${window.location.origin}/vendor/dashboard2`
+            };
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to initialize payment');
-            }
+            console.log('Initializing payment with data:', requestData);
 
-            const paymentResponse: InitializePaymentResponse = await response.json();
+            const response = await axios.post<InitializePaymentResponse>(
+                'https://api.digitalmarke.bdic.ng/api/payments/initialize',
+                requestData,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 30000, // 30 seconds timeout
+                }
+            );
 
-            if (paymentResponse.status !== 'success' || !paymentResponse.data) {
+            console.log('Payment initialization response:', response.data);
+
+            const paymentResponse = response.data;
+
+            // Check if the response indicates success
+            if (paymentResponse.status === 'success' || paymentResponse.message === 'Successfully processed') {
+                // Extract authorization URL from nested data structure
+                const authorizationUrl = paymentResponse.data?.data?.authorizationUrl;
+
+                if (!authorizationUrl) {
+                    console.error('Authorization URL not found in response:', paymentResponse);
+                    throw new Error('Payment initialization successful but authorization URL not found');
+                }
+
+                console.log('Authorization URL found:', authorizationUrl);
+                return authorizationUrl;
+            } else {
                 throw new Error(paymentResponse.errorMessage || paymentResponse.message || 'Payment initialization failed');
             }
 
-            return paymentResponse.data;
         } catch (error) {
             console.error('Payment initialization error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
-            showErrorToast('Payment Error', errorMessage);
+
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    // Server responded with error status
+                    const errorMessage = error.response.data?.message || error.response.data?.errorMessage || 'Server error occurred';
+                    showErrorToast('Payment Error', `${errorMessage} (Status: ${error.response.status})`);
+                } else if (error.request) {
+                    // Request was made but no response received
+                    showErrorToast('Payment Error', 'No response from payment server. Please check your connection.');
+                } else {
+                    // Something else happened
+                    showErrorToast('Payment Error', error.message);
+                }
+            } else {
+                const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+                showErrorToast('Payment Error', errorMessage);
+            }
+
             throw error;
         }
     };
@@ -187,6 +228,7 @@ const SetupComplete = () => {
                 throw new Error('Missing required information. Please complete all setup steps.');
             }
 
+            // First, add the shop
             const userId = 1; // Replace with actual userId from your auth system
             await addShop({
                 shopInfo: summaryData.shopInfo,
@@ -195,24 +237,29 @@ const SetupComplete = () => {
                 userId
             });
 
+            console.log('Shop added successfully');
             showSuccessToast('Shop Added', 'Initializing payment...');
 
+            // Clear localStorage after successful shop creation
             localStorage.removeItem('shopInfo');
             localStorage.removeItem('personalInfo');
             localStorage.removeItem('bankInfo');
 
-            // Call backend to initialize payment
-            const initPaymentData = await initializePayment();
+            // Initialize payment and get authorization URL
+            const authorizationUrl = await initializePayment();
 
-            // Redirect to the authorization URL
-            if (initPaymentData.authorizationUrl) {
-                window.location.href = initPaymentData.authorizationUrl;
-            } else {
-                throw new Error('No authorization URL received from payment processor');
-            }
+            console.log('Redirecting to payment URL:', authorizationUrl);
+
+            // Show success message and redirect to payment
+            showSuccessToast('Payment Initialized', 'Redirecting to payment page...');
+
+            setTimeout(() => {
+                // Redirect to the authorization URL
+                window.location.href = authorizationUrl;
+            }, 2000);
 
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error in handleContinue:', error);
             const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
             showErrorToast('Setup Error', errorMessage);
             setIsLoading(false);
