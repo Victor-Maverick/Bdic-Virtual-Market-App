@@ -171,7 +171,7 @@ const SetupComplete = () => {
     // Initialize payment with backend API
     const initializePayment = async () => {
         try {
-            const shopEmail = `${summaryData.shopInfo?.shopName.replace(/\s+/g, '')}@example.com` || 'customer@example.com';
+            const shopEmail = `ameliageorge215@gmail.com`;
 
             const response = await fetch('https://api.digitalmarke.bdic.ng/api/payments/initialize', {
                 method: 'POST',
