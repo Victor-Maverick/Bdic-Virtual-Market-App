@@ -7,6 +7,7 @@ import arrowDown from "../../../../../../public/assets/images/arrow-down.svg";
 import {useEffect, useRef, useState} from "react";
 import EditMarketLineModal from "@/components/editMarketLineModal";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
+import AddNewLineModal from "@/components/addNewLineModal"; // Import the new modal
 
 interface Market {
     id: number;
@@ -155,6 +156,20 @@ const MarketTableRow = ({ market, isLast }: { market: Market; isLast: boolean })
 
 const ViewMarket = () => {
     const router = useRouter();
+    const [isAddNewLineModalOpen, setIsAddNewLineModalOpen] = useState(false);
+
+    const handleOpenAddNewLineModal = () => {
+        setIsAddNewLineModalOpen(true);
+    };
+
+    const handleCloseAddNewLineModal = () => {
+        setIsAddNewLineModalOpen(false);
+    };
+
+    const handleAddNewLineContinue = () => {
+        setIsAddNewLineModalOpen(false);
+        // Optionally refresh the market data here
+    };
 
     return (
         <div className="w-full">
@@ -220,7 +235,12 @@ const ViewMarket = () => {
 
                 {/* Action Buttons */}
                 <div className="flex  gap-[6px] h-[48px] ">
-                    <div className="bg-[#022B23] flex items-center h-full justify-center w-[189px] text-[#C6EB5F] text-[14px] font-semibold  rounded-[12px]">Add new line</div>
+                    <div
+                        onClick={handleOpenAddNewLineModal}
+                        className="bg-[#022B23] flex items-center h-full justify-center w-[189px] text-[#C6EB5F] text-[14px] font-semibold  rounded-[12px] cursor-pointer hover:bg-[#033a30] transition-colors"
+                    >
+                        Add new line
+                    </div>
                     <div className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#022B23] text-[#022B23] px-4 py-2 rounded-[12px]">Update</div>
                     <div className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#FF5050] text-[#FF5050] px-4 py-2 rounded-[12px]">Deactivate</div>
                 </div>
@@ -271,6 +291,13 @@ const ViewMarket = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Add New Line Modal */}
+            <AddNewLineModal
+                isOpen={isAddNewLineModalOpen}
+                onClose={handleCloseAddNewLineModal}
+                onContinue={handleAddNewLineContinue}
+            />
         </div>
     )
 }

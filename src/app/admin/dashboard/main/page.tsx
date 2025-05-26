@@ -73,7 +73,7 @@ export default function DashboardOverview() {
                 </div>
             </div>
             <div className="flex w-full px-[20px] gap-[20px] mt-[20px] h-[110px]">
-                <div className="flex flex-col  w-[244px] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
+                <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#000000]">
                         <p className="text-[#FFFFFF] text-[12px]">Total transactions</p>
                     </div>
@@ -88,7 +88,7 @@ export default function DashboardOverview() {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col  w-[258px] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
+                <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#000000]">
                         <p className="text-[#FFFFFF] text-[12px]">Ads and promotion revenue</p>
                     </div>
@@ -103,7 +103,7 @@ export default function DashboardOverview() {
                         </div>
                     </div>
                 </div>
-                <div className="flex flex-col  w-[278px] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
+                <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#000000]">
                         <p className="text-[#FFFFFF] text-[12px]">Shop sales</p>
                     </div>
@@ -115,6 +115,21 @@ export default function DashboardOverview() {
                                 <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+8.75%</span> from yesterday</p>
                             </div>
                             <p className="text-[10px] text-[#022B23] underline font-medium">View details</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#FF5050] border-[0.5px] ">
+                    <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#FFF2F2]">
+                        <p className="text-[#FF5050] text-[12px]">Disputes</p>
+                    </div>
+                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
+                        <p className="text-[20px] text-[#022B23] font-medium">82</p>
+                        <div className="flex justify-between">
+                            <div className="flex items-center">
+                                <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]"/>
+                                <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+8.75%</span> from yesterday</p>
+                            </div>
+                            <p className="text-[10px] text-[#022B23] underline font-medium">View disputes</p>
                         </div>
                     </div>
                 </div>
