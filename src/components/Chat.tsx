@@ -1,268 +1,332 @@
-'use client'
-import { useEffect, useState, useRef } from 'react';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
+'use client';
 
+import React, { useState, useEffect, useRef, FormEvent } from 'react';
+
+// Types
 interface ChatMessage {
     sender: string;
     content: string;
-    type: 'CHAT' | 'JOIN' | 'LEAVE';
-    timestamp?: string;
+    type: 'JOIN' | 'LEAVE' | 'CHAT';
 }
 
-export default function Chat() {
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
-    const [input, setInput] = useState('');
-    const [isConnected, setIsConnected] = useState(false);
-    const [error, setError] = useState('');
-    const stompClient = useRef<Client | null>(null);
-    const username = useRef(`User${Math.floor(Math.random() * 1000)}`);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+interface StompFrame {
+    body: string;
+}
 
-    // Auto-scroll to bottom when new messages arrive
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+interface StompSubscription {
+    unsubscribe: () => void;
+}
+
+interface StompClient {
+    connect: (headers: Record<string, string>, onConnect: () => void, onError: (error: Error) => void) => void;
+    subscribe: (destination: string, callback: (message: StompFrame) => void) => StompSubscription;
+    send: (destination: string, headers: Record<string, string>, body: string) => void;
+    disconnect?: () => void;
+}
+
+interface SockJSConstructor {
+    new (url: string): unknown;
+}
+
+interface StompConstructor {
+    over: (socket: unknown) => StompClient;
+}
+
+// Declare global SockJS and Stomp for WebSocket connections
+declare global {
+    interface Window {
+        SockJS: SockJSConstructor;
+        Stomp: StompConstructor;
+    }
+}
+
+const ChatComponent: React.FC = () => {
+    // State management
+    const [username, setUsername] = useState<string>('');
+    const [currentUsername, setCurrentUsername] = useState<string | null>(null);
+    const [message, setMessage] = useState<string>('');
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [isConnected, setIsConnected] = useState<boolean>(false);
+    const [isConnecting, setIsConnecting] = useState<boolean>(false);
+    const [connectionError, setConnectionError] = useState<string>('');
+    const [showChat, setShowChat] = useState<boolean>(false);
+
+    // Refs
+    const stompClientRef = useRef<StompClient | null>(null);
+    const messageAreaRef = useRef<HTMLUListElement>(null);
+
+    // Avatar colors
+    const colors = [
+        '#2196F3', '#32c787', '#00BCD4', '#ff5652',
+        '#ffc107', '#ff85af', '#FF9800', '#39bbb0'
+    ];
+
+    // Scroll to bottom of messages
+    const scrollToBottom = (): void => {
+        if (messageAreaRef.current) {
+            messageAreaRef.current.scrollTop = messageAreaRef.current.scrollHeight;
+        }
     };
 
+    // Generate avatar color based on username
+    const getAvatarColor = (messageSender: string): string => {
+        let hash = 0;
+        for (let i = 0; i < messageSender.length; i++) {
+            hash = 31 * hash + messageSender.charCodeAt(i);
+        }
+        const index = Math.abs(hash % colors.length);
+        return colors[index];
+    };
+
+    // Handle username form submission
+    const handleUsernameSubmit = (event: FormEvent<HTMLFormElement>): void => {
+        event.preventDefault();
+        const trimmedUsername = username.trim();
+
+        if (trimmedUsername) {
+            setCurrentUsername(trimmedUsername);
+            setShowChat(true);
+            setIsConnecting(true);
+            setConnectionError('');
+            connectToChat(trimmedUsername);
+        }
+    };
+
+    // Connect to WebSocket
+    const connectToChat = (user: string): void => {
+        if (typeof window !== 'undefined' && window.SockJS && window.Stomp) {
+            try {
+                const socket = new window.SockJS('https://api.digitalmarke.bdic.ng/ws');
+                stompClientRef.current = window.Stomp.over(socket);
+
+                stompClientRef.current.connect(
+                    {},
+                    () => onConnected(user),
+                    (error: Error) => onError(error)
+                );
+            } catch (error) {
+                console.error('Failed to create WebSocket connection:', error);
+                onError(error instanceof Error ? error : new Error('Unknown connection error'));
+            }
+        } else {
+            setConnectionError('WebSocket libraries not loaded. Please refresh the page.');
+            setIsConnecting(false);
+        }
+    };
+
+    // Handle successful connection
+    const onConnected = (user: string): void => {
+        if (stompClientRef.current) {
+            // Subscribe to public topic
+            stompClientRef.current.subscribe('/topic/public', onMessageReceived);
+
+            // Send join message
+            stompClientRef.current.send(
+                '/app/chat.addUser',
+                {},
+                JSON.stringify({ sender: user, type: 'JOIN' })
+            );
+
+            setIsConnected(true);
+            setIsConnecting(false);
+        }
+    };
+
+    // Handle connection error
+    const onError = (error: Error): void => {
+        console.error('WebSocket connection error:', error);
+        setConnectionError('Could not connect to WebSocket server. Please refresh this page to try again!');
+        setIsConnecting(false);
+        setIsConnected(false);
+    };
+
+    // Handle message form submission
+    const handleMessageSubmit = (event: FormEvent<HTMLFormElement>): void => {
+        event.preventDefault();
+        const messageContent = message.trim();
+
+        if (messageContent && stompClientRef.current && currentUsername) {
+            const chatMessage: ChatMessage = {
+                sender: currentUsername,
+                content: messageContent,
+                type: 'CHAT'
+            };
+
+            stompClientRef.current.send(
+                '/app/chat.sendMessage',
+                {},
+                JSON.stringify(chatMessage)
+            );
+            setMessage('');
+        }
+    };
+
+    // Handle received messages
+    const onMessageReceived = (payload: StompFrame): void => {
+        try {
+            const receivedMessage: ChatMessage = JSON.parse(payload.body);
+            setMessages(prev => [...prev, receivedMessage]);
+        } catch (error) {
+            console.error('Error parsing message:', error);
+        }
+    };
+
+    // Scroll to bottom when messages change
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
-    // Connect to WebSocket
+    // Load WebSocket libraries
     useEffect(() => {
-        const connectWebSocket = async () => {
-            try {
-                const socket = new SockJS('https://api.digitalmarke.bdic.ng/ws-chat');
+        const loadWebSocketLibraries = async (): Promise<void> => {
+            if (typeof window !== 'undefined') {
+                // Load SockJS
+                if (!window.SockJS) {
+                    const sockjsScript = document.createElement('script');
+                    sockjsScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js';
+                    document.head.appendChild(sockjsScript);
 
-                stompClient.current = new Client({
-                    webSocketFactory: () => socket,
-                    connectHeaders: {
-                        'username': username.current,
-                        'Accept-Version': '1.2'
-                    },
-                    reconnectDelay: 5000,
-                    heartbeatIncoming: 10000,
-                    heartbeatOutgoing: 10000,
-                    debug: (str) => console.debug('STOMP:', str),
+                    await new Promise((resolve) => {
+                        sockjsScript.onload = resolve;
+                    });
+                }
 
-                    onConnect: () => {
-                        console.log('Connected to WebSocket');
-                        setIsConnected(true);
-                        setError('');
+                // Load Stomp
+                if (!window.Stomp) {
+                    const stompScript = document.createElement('script');
+                    stompScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js';
+                    document.head.appendChild(stompScript);
 
-                        // Subscribe to public channel
-                        stompClient.current?.subscribe('/topic/public', (message) => {
-                            try {
-                                const newMessage: ChatMessage = JSON.parse(message.body);
-                                console.log('Received message:', newMessage);
-                                setMessages(prev => [...prev, newMessage]);
-                            } catch (e) {
-                                console.error('Error parsing message:', e);
-                                setError('Error parsing incoming message');
-                            }
-                        });
-
-                        // Notify others of user joining
-                        sendJoinMessage();
-                    },
-
-                    onStompError: (frame) => {
-                        console.error('STOMP error:', frame);
-                        setError(`STOMP error: ${frame.headers.message || 'Unknown error'}`);
-                        setIsConnected(false);
-                    },
-
-                    onWebSocketError: (event) => {
-                        console.error('WebSocket error:', event);
-                        setError('WebSocket connection error');
-                        setIsConnected(false);
-                    },
-
-                    onDisconnect: () => {
-                        console.log('Disconnected from WebSocket');
-                        setIsConnected(false);
-                    }
-                });
-
-                stompClient.current.activate();
-            } catch (error) {
-                console.error('Error connecting to WebSocket:', error);
-                setError('Failed to connect to chat server');
+                    await new Promise((resolve) => {
+                        stompScript.onload = resolve;
+                    });
+                }
             }
         };
 
-        connectWebSocket();
-
-        return () => {
-            if (stompClient.current?.connected) {
-                sendLeaveMessage();
-                stompClient.current.deactivate();
-            }
-        };
+        loadWebSocketLibraries();
     }, []);
 
-    const sendMessage = (message: ChatMessage) => {
-        if (!stompClient.current?.connected) {
-            setError('Not connected to chat server');
-            return;
+    // Render message item
+    const renderMessage = (msg: ChatMessage, index: number) => {
+        if (msg.type === 'JOIN' || msg.type === 'LEAVE') {
+            return (
+                <li key={index} className="w-full text-center clear-both">
+                    <p className="text-gray-500 text-sm break-words m-0">
+                        {msg.type === 'JOIN' ? `${msg.sender} joined!` : `${msg.sender} left!`}
+                    </p>
+                </li>
+            );
         }
 
-        try {
-            const chatMessage: ChatMessage = {
-                ...message,
-                timestamp: new Date().toISOString()
-            };
-
-            console.log('Sending message:', chatMessage);
-
-            stompClient.current.publish({
-                destination: '/app/chat.sendMessage',
-                body: JSON.stringify(chatMessage),
-                headers: {
-                    'content-type': 'application/json',
-                    'username': username.current
-                }
-            });
-        } catch (error) {
-            console.error('Error sending message:', error);
-            setError('Failed to send message');
-        }
-    };
-
-    const sendJoinMessage = () => {
-        sendMessage({
-            sender: username.current,
-            content: `${username.current} joined the chat`,
-            type: 'JOIN'
-        });
-    };
-
-    const sendLeaveMessage = () => {
-        sendMessage({
-            sender: username.current,
-            content: `${username.current} left the chat`,
-            type: 'LEAVE'
-        });
-    };
-
-    const handleSend = () => {
-        if (!input.trim()) return;
-
-        sendMessage({
-            sender: username.current,
-            content: input,
-            type: 'CHAT'
-        });
-        setInput('');
-    };
-
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
-        }
-    };
-
-    const reconnect = () => {
-        setError('');
-        if (stompClient.current) {
-            stompClient.current.deactivate();
-        }
-        // Trigger reconnection by reloading the component
-        window.location.reload();
+        return (
+            <li key={index} className="leading-6 py-2.5 px-5 m-0 border-b border-gray-100 pl-17 relative">
+                <i
+                    className="absolute w-10 h-10 overflow-hidden left-2.5 inline-block align-middle text-lg leading-10 text-white text-center rounded-full font-normal uppercase"
+                    style={{ backgroundColor: getAvatarColor(msg.sender) }}
+                >
+                    {msg.sender[0]}
+                </i>
+                <span className="text-gray-800 font-semibold">{msg.sender}</span>
+                <p className="text-gray-600 m-0">{msg.content}</p>
+            </li>
+        );
     };
 
     return (
-        <div className="flex flex-col h-screen max-w-md mx-auto p-4">
-            {/* Header */}
-            <div className="mb-4 text-center">
-                <h1 className="text-2xl font-bold text-gray-800">Chat Room</h1>
-                <p className="text-sm text-gray-600">Connected as: {username.current}</p>
-            </div>
-
-            {/* Connection Status */}
-            <div className={`p-2 mb-2 rounded text-white text-center transition-colors duration-300
-                ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}>
-                {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
-                {!isConnected && (
-                    <button
-                        onClick={reconnect}
-                        className="ml-2 px-2 py-1 bg-white text-red-500 rounded text-xs hover:bg-gray-100"
-                    >
-                        Reconnect
-                    </button>
-                )}
-            </div>
-
-            {/* Error Display */}
-            {error && (
-                <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-2 mb-2 rounded">
-                    <div className="flex justify-between items-center">
-                        <span>{error}</span>
-                        <button
-                            onClick={() => setError('')}
-                            className="text-red-500 hover:text-red-700"
-                        >
-                            ✕
-                        </button>
+        <div className="h-screen overflow-hidden bg-gray-100 font-sans">
+            {/* Username Page */}
+            {!showChat && (
+                <div id="username-page" className="text-center h-full flex items-center justify-center">
+                    <div className="bg-white shadow-lg rounded-sm w-full max-w-lg inline-block relative py-9 px-14 min-h-64">
+                        <h1 className="text-2xl font-normal mb-5">Type your username to enter the Chatroom</h1>
+                        <form onSubmit={handleUsernameSubmit}>
+                            <div className="mb-4">
+                                <input
+                                    type="text"
+                                    id="name"
+                                    placeholder="Username"
+                                    autoComplete="off"
+                                    className="w-full min-h-9 text-base border border-gray-300 pl-2.5 outline-none rounded"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="mt-2.5">
+                                <button
+                                    type="submit"
+                                    className="bg-green-500 shadow-md text-white border border-transparent text-sm outline-none leading-none whitespace-nowrap align-middle py-2.5 px-4 rounded-sm transition-all duration-200 cursor-pointer min-h-9 hover:bg-green-600"
+                                >
+                                    Start Chatting
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
 
-            {/* Message Area */}
-            <div className="flex-1 overflow-y-auto mb-4 border rounded p-2 bg-gray-50">
-                {messages.length === 0 ? (
-                    <div className="text-center text-gray-500 py-8">
-                        No messages yet. Start the conversation!
-                    </div>
-                ) : (
-                    messages.map((msg, i) => (
-                        <div key={i} className={`mb-3 ${msg.sender === username.current ? 'text-right' : ''}`}>
-                            {msg.type === 'JOIN' || msg.type === 'LEAVE' ? (
-                                <div className="text-center text-gray-500 text-sm italic py-1">
-                                    {msg.content}
-                                </div>
-                            ) : (
-                                <>
-                                    {msg.sender !== username.current && (
-                                        <div className="font-bold text-blue-600 text-sm mb-1">{msg.sender}</div>
-                                    )}
-                                    <div className={`inline-block px-3 py-2 rounded-lg max-w-xs break-words
-                                        ${msg.sender === username.current
-                                        ? 'bg-blue-500 text-white'
-                                        : 'bg-white border shadow-sm'}`}>
-                                        {msg.content}
-                                    </div>
-                                    <div className="text-xs text-gray-500 mt-1">
-                                        {msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}
-                                    </div>
-                                </>
-                            )}
+            {/* Chat Page */}
+            {showChat && (
+                <div id="chat-page" className="relative h-full">
+                    <div className="max-w-3xl mx-auto bg-white shadow-lg mt-8 h-[calc(100%-60px)] max-h-96 relative md:mt-8 sm:mx-2.5 sm:mt-2.5 sm:h-[calc(100%-30px)]">
+                        {/* Chat Header */}
+                        <div className="text-center py-4 border-b border-gray-200 sm:py-2.5">
+                            <h2 className="m-0 font-medium text-lg sm:text-base">Bdic Virtual Chat</h2>
                         </div>
-                    ))
-                )}
-                <div ref={messagesEndRef} />
-            </div>
 
-            {/* Input Area */}
-            <div className="flex gap-2">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Type a message..."
-                    className="flex-1 border rounded p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    disabled={!isConnected}
-                />
-                <button
-                    onClick={handleSend}
-                    disabled={!input.trim() || !isConnected}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-                >
-                    Send
-                </button>
-            </div>
+                        {/* Connecting Status */}
+                        {isConnecting && (
+                            <div className="pt-1.5 text-center text-gray-500 absolute top-16 w-full sm:top-15">
+                                Connecting...
+                            </div>
+                        )}
+
+                        {/* Connection Error */}
+                        {connectionError && (
+                            <div className="pt-1.5 text-center text-red-500 absolute top-16 w-full sm:top-15">
+                                {connectionError}
+                            </div>
+                        )}
+
+                        {/* Messages Area */}
+                        <ul
+                            ref={messageAreaRef}
+                            id="messageArea"
+                            className="list-none bg-white m-0 overflow-auto py-0 px-5 h-[calc(100%-150px)] sm:h-[calc(100%-120px)]"
+                        >
+                            {messages.map((msg, index) => renderMessage(msg, index))}
+                        </ul>
+
+                        {/* Message Form */}
+                        <form onSubmit={handleMessageSubmit} className="p-5">
+                            <div className="mb-4">
+                                <div className="clearfix">
+                                    <input
+                                        type="text"
+                                        id="message"
+                                        placeholder="Type a message..."
+                                        autoComplete="off"
+                                        className="float-left w-[calc(100%-85px)] min-h-9 text-base border border-gray-300 pl-2.5 outline-none sm:w-[calc(100%-70px)]"
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
+                                        disabled={!isConnected}
+                                    />
+                                    <button
+                                        type="submit"
+                                        className="float-left w-20 h-9 ml-1.5 bg-green-500 shadow-md text-white border border-transparent text-sm outline-none leading-none whitespace-nowrap align-middle py-2.5 px-4 rounded-sm transition-all duration-200 cursor-pointer hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed sm:w-16"
+                                        disabled={!isConnected}
+                                    >
+                                        Send
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
-}
+};
+
+export default ChatComponent;
