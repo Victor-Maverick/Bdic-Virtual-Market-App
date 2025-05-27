@@ -22,8 +22,8 @@ const DashboardHeader = () => {
                     }
                 });
 
-                if (response.status === 200 && response.data?.name) {
-                    setUserName(response.data.name);
+                if (response.status === 200) {
+                    setUserName(response.data.firstName);
                 }
             } catch (error) {
                 console.error('Error fetching profile:', error);
