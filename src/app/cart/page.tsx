@@ -3,6 +3,7 @@ import { useState } from "react";
 import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
 import NavigationBar from "@/components/navigationBar";
+import Toast from "@/components/toast";
 import cart from '../../../public/assets/images/black cart.png';
 import Image from "next/image";
 import arrow from '../../../public/assets/images/blackArrow.png';
@@ -11,11 +12,33 @@ import iphone from "../../../public/assets/images/iphone13.svg";
 import trash from '../../../public/assets/images/trash.png';
 import fan from "../../../public/assets/images/table fan.png";
 import pepper from "../../../public/assets/images/pepper.jpeg";
-import grayAddressIcon  from '../../../public/assets/images/greyAddressIcon.svg'
+import grayAddressIcon from '../../../public/assets/images/greyAddressIcon.svg'
 import whiteAddressIcon from "../../../public/assets/images/addressIcon.svg";
 import addIcon from '../../../public/assets/images/add-circle.svg'
 import limeArrow from '../../../public/assets/images/green arrow.png'
-import {useRouter} from 'next/navigation'
+import axios from 'axios';
+
+interface PaymentData {
+    authorizationUrl: string;
+    reference: string;
+    credoReference: string;
+}
+
+interface InitializePaymentResponse {
+    status: string;
+    message: string;
+    data?: PaymentData;
+    execTime?: number;
+    error?: unknown[];
+    errorMessage?: string;
+}
+
+interface InitializePaymentRequest {
+    email: string;
+    amount: number;
+    currency: string;
+    callbackUrl: string;
+}
 
 const initialProducts = [
     { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "850,000", quantity: 1 },
@@ -27,10 +50,157 @@ const initialProducts = [
 const Cart = () => {
     const [products, setProducts] = useState(initialProducts);
     const [hover, setHover] = useState(false);
-    const router = useRouter();
-    const handleClick =()=>{
-        router.push("/cart/checkOut");
-    }
+    const [isLoading, setIsLoading] = useState(false);
+    const [showPaymentSuccessModal, setShowPaymentSuccessModal] = useState(false);
+    const [authorizationUrl, setAuthorizationUrl] = useState('');
+
+    // Toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastSubMessage, setToastSubMessage] = useState("");
+
+    const showSuccessToast = (message: string, subMessage: string) => {
+        setToastType("success");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+
+        setTimeout(() => {
+            setShowToast(false);
+        }, 5000);
+    };
+
+    const showErrorToast = (message: string, subMessage: string) => {
+        setToastType("error");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+
+        setTimeout(() => {
+            setShowToast(false);
+        }, 5000);
+    };
+
+    const handleCloseToast = () => {
+        setShowToast(false);
+    };
+
+    // Calculate total amount
+    const calculateTotal = () => {
+        const subtotal = products.reduce((sum, product) => {
+            const price = parseFloat(product.price.replace(',', ''));
+            return sum + (price * product.quantity);
+        }, 0);
+        const delivery = 20000;
+        return subtotal + delivery;
+    };
+
+    // Initialize payment with backend API using axios
+    const initializePayment = async (): Promise<string> => {
+        try {
+            const customerEmail = `customer@digitalmarket.com`; // Replace with actual customer email
+            const totalAmount = calculateTotal();
+
+            const requestData: InitializePaymentRequest = {
+                email: customerEmail,
+                amount: totalAmount * 100, // Convert to kobo
+                currency: 'NGN',
+                callbackUrl: `/buyer/track-order`
+            };
+
+            console.log('Initializing payment with data:', requestData);
+
+            const response = await axios.post<InitializePaymentResponse>(
+                'https://api.digitalmarke.bdic.ng/api/payments/initialize',
+                requestData,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 30000, // 30 seconds timeout
+                }
+            );
+
+            console.log('Payment initialization response:', response.data);
+
+            const paymentResponse = response.data;
+
+            // Check if the response indicates success
+            if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
+                // Extract authorization URL from data structure
+                const authorizationUrl = paymentResponse.data?.authorizationUrl;
+
+                if (!authorizationUrl) {
+                    console.error('Authorization URL not found in response:', paymentResponse);
+                    throw new Error('Payment initialization successful but authorization URL not found');
+                }
+
+                console.log('Authorization URL found:', authorizationUrl);
+                return authorizationUrl;
+            } else {
+                throw new Error(paymentResponse.errorMessage || paymentResponse.message || 'Payment initialization failed');
+            }
+
+        } catch (error) {
+            console.error('Payment initialization error:', error);
+
+            if (axios.isAxiosError(error)) {
+                if (error.response) {
+                    // Server responded with error status
+                    const errorMessage = error.response.data?.message || error.response.data?.errorMessage || 'Server error occurred';
+                    showErrorToast('Payment Error', `${errorMessage} (Status: ${error.response.status})`);
+                } else if (error.request) {
+                    // Request was made but no response received
+                    showErrorToast('Payment Error', 'No response from payment server. Please check your connection.');
+                } else {
+                    // Something else happened
+                    showErrorToast('Payment Error', error.message);
+                }
+            } else {
+                const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+                showErrorToast('Payment Error', errorMessage);
+            }
+
+            throw error;
+        }
+    };
+
+    const handlePaymentSuccess = () => {
+        // Close the modal
+        setShowPaymentSuccessModal(false);
+        // Redirect to payment page
+        window.location.href = authorizationUrl;
+    };
+
+    const handleClick = async () => {
+        setIsLoading(true);
+
+        try {
+            // Validate cart has items
+            if (products.length === 0) {
+                throw new Error('Your cart is empty. Please add items before proceeding to payment.');
+            }
+
+            showSuccessToast('Processing Order', 'Initializing payment...');
+
+            // Initialize payment and get authorization URL
+            const url = await initializePayment();
+            setAuthorizationUrl(url);
+
+            console.log('Payment initialized successfully, showing success modal');
+
+            // Show success modal instead of immediately redirecting
+            setShowPaymentSuccessModal(true);
+            setIsLoading(false);
+
+        } catch (error) {
+            console.error('Error in handleClick:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+            showErrorToast('Payment Error', errorMessage);
+            setIsLoading(false);
+        }
+    };
 
     const updateQuantity = (index: number, change: number) => {
         setProducts((prevProducts) =>
@@ -42,8 +212,47 @@ const Cart = () => {
         );
     };
 
+    const removeProduct = (index: number) => {
+        setProducts((prevProducts) => prevProducts.filter((_, i) => i !== index));
+    };
+
     return (
         <>
+            {showToast && (
+                <Toast
+                    type={toastType}
+                    message={toastMessage}
+                    subMessage={toastSubMessage}
+                    onClose={handleCloseToast}
+                />
+            )}
+
+            {/* Payment Success Modal */}
+            {showPaymentSuccessModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded-2xl shadow-lg max-w-sm w-full text-center">
+                        <h2 className="text-lg font-semibold text-green-600 mb-4">Payment Initialized Successfully!</h2>
+                        <p className="text-gray-600 text-sm mb-6">
+                            You&#39;re about to be redirected to the payment page to complete your transaction.
+                        </p>
+                        <div className="flex justify-center gap-4">
+                            <button
+                                onClick={() => setShowPaymentSuccessModal(false)}
+                                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handlePaymentSuccess}
+                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                            >
+                                Proceed to Payment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <ProductDetailHeader />
             <ProductDetailHeroBar />
             <NavigationBar page="//smart phone//product name//" name="cart" />
@@ -111,8 +320,20 @@ const Cart = () => {
                                     </div>
 
                                     <div className="flex gap-[4px] items-center w-[20%] justify-end">
-                                        <Image src={trash} alt={'trash'} width={19} height={19} className="w-[19px] h-[19px]" />
-                                        <p className="text-[14px] text-[#707070] font-normal">Remove</p>
+                                        <Image
+                                            src={trash}
+                                            alt={'trash'}
+                                            width={19}
+                                            height={19}
+                                            className="w-[19px] h-[19px] cursor-pointer"
+                                            onClick={() => removeProduct(index)}
+                                        />
+                                        <p
+                                            className="text-[14px] text-[#707070] font-normal cursor-pointer"
+                                            onClick={() => removeProduct(index)}
+                                        >
+                                            Remove
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -125,7 +346,7 @@ const Cart = () => {
                     <div className="h-[215px] bg-[#F9F9F9] p-[24px] space-y-[10px]  rounded-[14px]">
                         <div className="flex justify-between items-center">
                             <p className="text-[#022B23] text-[14px] font-normal">Subtotal</p>
-                            <p className="text-[14px] font-semibold text-[#1E1E1E]">₦850,000.00</p>
+                            <p className="text-[14px] font-semibold text-[#1E1E1E]">₦{calculateTotal() - 20000}.00</p>
                         </div>
                         <div className="flex justify-between items-center">
                             <p className="text-[#022B23] text-[14px] font-normal">Discount</p>
@@ -141,7 +362,7 @@ const Cart = () => {
                         </div>
                         <div className="flex justify-between items-center mt-[20px]">
                             <p className="text-[#022B23] text-[18px] font-normal">Total</p>
-                            <p className="text-[18px] font-semibold text-[#1E1E1E]">₦870,000.00</p>
+                            <p className="text-[18px] font-semibold text-[#1E1E1E]">₦{calculateTotal().toLocaleString()}.00</p>
                         </div>
                     </div>
                     <div className="flex gap-[20px]">
@@ -201,10 +422,25 @@ const Cart = () => {
                                 </div>
                             </div>
                         </div>
-                        <div onClick={handleClick} className="bg-[#022B23] cursor-pointer w-full h-[56px] gap-[9px] mt-[10px] rounded-[12px] flex justify-center items-center">
-                            <p  className="text-[#C6EB5F] text-[14px] font-semibold">Continue to payment</p>
-                            <Image src={limeArrow} alt={'image'} className="w-[18px] h-[18px]"/>
-                        </div>
+                        <button
+                            onClick={handleClick}
+                            disabled={isLoading || products.length === 0}
+                            className={`bg-[#022B23] cursor-pointer w-full h-[56px] gap-[9px] mt-[10px] rounded-[12px] flex justify-center items-center hover:bg-[#033a30] transition-colors ${
+                                isLoading || products.length === 0 ? 'opacity-70 cursor-not-allowed' : ''
+                            }`}
+                        >
+                            {isLoading ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#C6EB5F]"></div>
+                                    <p className="text-[#C6EB5F] text-[14px] font-semibold">Processing...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-[#C6EB5F] text-[14px] font-semibold">Continue to payment</p>
+                                    <Image src={limeArrow} alt={'image'} className="w-[18px] h-[18px]"/>
+                                </>
+                            )}
+                        </button>
                     </div>
                 </div>
             </div>
