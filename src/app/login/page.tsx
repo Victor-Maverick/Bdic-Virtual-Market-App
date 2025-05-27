@@ -104,13 +104,15 @@ const Login = () => {
                 email: form.email,
                 password: form.password
             });
+            localStorage.setItem('authToken', response.data.token);
+            console.log("AuthToken: ",response.data.token)
+            console.log("AuthToken: ",response.data.data.token)
 
             if (response.status === 200) {
                 setToastType("success");
                 setToastMessage("Login successful");
                 setToastSubMessage("You are being redirected to your dashboard");
                 setShowToast(true);
-                localStorage.setItem('authToken', response.data.data.token);
                 setTimeout(() => {
                     router.push("/vendor/dashboard2/");
                 }, 2000);
