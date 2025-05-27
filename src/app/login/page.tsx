@@ -114,7 +114,7 @@ const Login = () => {
                 setShowToast(true);
 
                 setTimeout(() => {
-                    router.push("/admin/dashboard/markets");
+                    router.push("/vendor/dashboard2/");
                 }, 2000);
             } else {
                 setToastType("error");
