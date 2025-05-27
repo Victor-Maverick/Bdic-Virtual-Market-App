@@ -99,12 +99,11 @@ const Cart = () => {
     // Initialize payment with backend API using axios
     const initializePayment = async (): Promise<string> => {
         try {
-            const customerEmail = `customer@digitalmarket.com`; // Replace with actual customer email
             const totalAmount = calculateTotal();
 
             const requestData: InitializePaymentRequest = {
-                email: customerEmail,
-                amount: totalAmount * 100, // Convert to kobo
+                email: "victormsonter@gmail.com",
+                amount: totalAmount, // Convert to kobo
                 currency: 'NGN',
                 callbackUrl: `/buyer/track-order`
             };
