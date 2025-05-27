@@ -135,7 +135,7 @@ const ProductGrid = ({apiProducts = []}: { apiProducts?: Product[] }) => (
 
 const FlashSale = ({countdown, featuredProducts}: {
     countdown: number;
-    featuredProducts: { name: string; image: StaticImageData; price: string }[]
+    featuredProducts: {id:number; name: string; image: StaticImageData; price: string }[]
 }) => {
     const formatTime = (timeInSeconds: number) => {
         const hours = Math.floor(timeInSeconds / 3600);
@@ -168,6 +168,7 @@ const FlashSale = ({countdown, featuredProducts}: {
                 <div className="grid grid-cols-5 gap-[6px]">
                     {featuredProducts.map((product, index) => (
                         <MarketProductCard
+                            id={product.id}
                             height={330}
                             key={index}
                             name={product.name}
@@ -296,16 +297,16 @@ const MarketPlace = () => {
     const [selectedState, setSelectedState] = useState<State | null>(null);
 
     const featuredProducts = [
-        {name: "Pack of pen", image: books, price: "2,000"},
-        {name: "Notebook", image: books, price: "1,500"},
-        {name: "Eraser", image: eraser, price: "300"},
-        {name: "Pencil case", image: pencils, price: "800"},
-        {name: "Highlighter set", image: highlightSet, price: "1,200"},
-        {name: "Pack of pen", image: books, price: "2,000"},
-        {name: "Notebook", image: books, price: "1,500"},
-        {name: "Eraser", image: eraser, price: "300"},
-        {name: "Pencil case", image: pencils, price: "800"},
-        {name: "Highlighter set", image: highlightSet, price: "1,200"}
+        {id:1,name: "Pack of pen", image: books, price: "2,000"},
+        {id:2,name: "Notebook", image: books, price: "1,500"},
+        {id:3,name: "Eraser", image: eraser, price: "300"},
+        {id:4,name: "Pencil case", image: pencils, price: "800"},
+        {id:5,name: "Highlighter set", image: highlightSet, price: "1,200"},
+        {id:6,name: "Pack of pen", image: books, price: "2,000"},
+        {id:7,name: "Notebook", image: books, price: "1,500"},
+        {id:8,name: "Eraser", image: eraser, price: "300"},
+        {id:9,name: "Pencil case", image: pencils, price: "800"},
+        {id:10,name: "Highlighter set", image: highlightSet, price: "1,200"}
     ];
 
     const fetchProducts = async () => {

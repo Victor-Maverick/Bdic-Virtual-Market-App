@@ -16,25 +16,25 @@ import arrow from '../../../public/assets/images/grey right arrow.png'
 
 
 const products = [
-    { name: "Mini fan", image: tableFan, price: "23,000" },
-    { name: "Wireless charger", image: wirelessCharger, price: "15,000" },
-    { name: "Bluetooth speaker", image: jblSpeaker, price: "35,000" },
-    { name: "Smart watch", image: smartWatch, price: "40,000" },
-    { name: "Portable hard drive", image: hardDrive, price: "25,000" },
-    { name: "Air Force 1", image: airForce, price: "32,000" },
+    {id:1, name: "Mini fan", image: tableFan, price: "23,000" },
+    {id:2, name: "Wireless charger", image: wirelessCharger, price: "15,000" },
+    {id:3, name: "Bluetooth speaker", image: jblSpeaker, price: "35,000" },
+    {id:4, name: "Smart watch", image: smartWatch, price: "40,000" },
+    {id:5, name: "Portable hard drive", image: hardDrive, price: "25,000" },
+    {id:6, name: "Air Force 1", image: airForce, price: "32,000" },
 ];
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 const ProductGrid = ({products}) => (
     <div className="grid grid-cols-3 gap-x-[15px] gap-y-[15px] py-6">
-        {products.map((product: { name: unknown; image: unknown; price: unknown; }, index: Key | null | undefined) => (
+        {products.map((product: {id:number; name: unknown; image: unknown; price: unknown; }, index: Key | null | undefined) => (
             <MarketProductCard
                 key={index}
                 height={303}
                 name={product.name}
                 image={product.image}
-                price={product.price}  imageHeight={215}            />
+                price={product.price} imageHeight={215} id={product.id}            />
         ))}
     </div>
 );

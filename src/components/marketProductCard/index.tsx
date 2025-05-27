@@ -4,10 +4,10 @@ import {useRouter} from "next/navigation";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
-const MarketProductCard = ({image,name,price, height,imageHeight})=>{
+const MarketProductCard = ({image,name,price, height,imageHeight,id})=>{
     const router = useRouter();
     const handleOpen = ()=>{
-        router.push(`/marketPlace/productDetails`);
+        router.push(`/marketPlace/productDetails/${id}`);
     }
 
     return (

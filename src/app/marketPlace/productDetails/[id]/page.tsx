@@ -61,6 +61,7 @@ interface RatingData {
 }
 
 interface SuggestedProduct {
+    id: number;
     name: string;
     image: StaticImageData;
     price: string;
@@ -87,11 +88,11 @@ const ProductDetails = ({ params }: PageProps) => {
     const TOTAL_REVIEWS = 578;
 
     const suggestedProducts: SuggestedProduct[] = [
-        { name: "Mini fan", image: tableFan, price: "23,000" },
-        { name: "Wireless charger", image: wirelessCharger, price: "15,000" },
-        { name: "Bluetooth speaker", image: jblSpeaker, price: "35,000" },
-        { name: "Smart watch", image: smartWatch, price: "40,000" },
-        { name: "Portable hard drive", image: hardDrive, price: "25,000" },
+        {id: 1, name: "Mini fan", image: tableFan, price: "23,000" },
+        {id: 2, name: "Wireless charger", image: wirelessCharger, price: "15,000" },
+        {id: 3, name: "Bluetooth speaker", image: jblSpeaker, price: "35,000" },
+        {id: 4, name: "Smart watch", image: smartWatch, price: "40,000" },
+        {id: 5, name: "Portable hard drive", image: hardDrive, price: "25,000" },
     ];
 
     const reviews: Review[] = [
@@ -331,8 +332,7 @@ const ProductDetails = ({ params }: PageProps) => {
                             name={product.name}
                             image={product.image}
                             price={product.price}
-                            imageHeight={200}
-                        />
+                            imageHeight={200} id={product.id}                        />
                     ))}
                 </div>
             </div>
