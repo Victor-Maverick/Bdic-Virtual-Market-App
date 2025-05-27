@@ -18,7 +18,9 @@ const ProductDetailHeader = () => {
 
     return (
         <div className="flex justify-between items-center px-[100px] py-[18px]">
-            <Image src={farmGoLogo} alt={''} width={128} height={60} />
+            <Image
+                onClick={()=>router.push("/")}
+                src={farmGoLogo} alt={'logo'}/>
             <div className="flex items-center justify-evenly gap-[20px] text-[14px] font-semibold">
                 <div className="flex gap-[5px] items-center">
                     <Image src={box} alt={'image'} width={20} height={20}/>
