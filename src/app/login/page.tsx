@@ -105,14 +105,12 @@ const Login = () => {
                 password: form.password
             });
 
-            console.log('API Response:', response.data);
-
             if (response.status === 200) {
                 setToastType("success");
                 setToastMessage("Login successful");
                 setToastSubMessage("You are being redirected to your dashboard");
                 setShowToast(true);
-
+                localStorage.setItem('authToken', response.data.data.token);
                 setTimeout(() => {
                     router.push("/vendor/dashboard2/");
                 }, 2000);

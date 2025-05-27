@@ -1,24 +1,55 @@
 'use client'
 import farmGoLogo from '../../../public/assets/images/farmGoLogo.png'
 import profileImage from '../../../public/assets/images/profile-circle.png'
-
 import Image from "next/image";
-import {useRouter} from "next/navigation";
-const DashboardHeader = ()=>{
-    const router = useRouter();
-    return(
-        <div className="flex justify-between  items-center h-[78px] px-[100px] py-[18px]">
-            <Image
-                onClick={()=>router.push("/")}
-                src={farmGoLogo} alt={'logo'}/>
-            <div
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
-                className="flex gap-[6px] items-center justify-center text-white">
-                <Image src={profileImage} alt={'photo'}/>
-                <p className="text-[14px] text-[#171719] font-medium">Hey, <span className="font-semibold">Terngu</span></p>
+const DashboardHeader = () => {
+    const router = useRouter();
+    const [userName, setUserName] = useState<string>("User");
+
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) return;
+
+                const response = await axios.get('https://api.digitalmarke.bdic.ng/api/auth/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 200 && response.data?.name) {
+                    setUserName(response.data.name);
+                }
+            } catch (error) {
+                console.error('Error fetching profile:', error);
+                // Silently fail - keeps "User" as fallback
+            }
+        };
+
+        fetchUserProfile();
+    }, []);
+
+    return (
+        <div className="flex justify-between items-center h-[78px] px-[100px] py-[18px]">
+            <Image
+                onClick={() => router.push("/")}
+                src={farmGoLogo}
+                alt={'logo'}
+                className="cursor-pointer"
+            />
+            <div className="flex gap-[6px] items-center justify-center text-white">
+                <Image src={profileImage} alt={'photo'} />
+                <p className="text-[14px] text-[#171719] font-medium">
+                    Hey, <span className="font-semibold">{userName}</span>
+                </p>
             </div>
         </div>
-    )
-}
+    );
+};
 
 export default DashboardHeader;
