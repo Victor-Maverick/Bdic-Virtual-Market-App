@@ -8,9 +8,11 @@ const DashboardHeader = ()=>{
     const router = useRouter();
     return(
         <div className="flex justify-between  items-center h-[78px] px-[100px] py-[18px]">
-            <Image src={farmGoLogo} alt={'logo'}/>
-            <div
+            <Image
                 onClick={()=>router.push("/")}
+                src={farmGoLogo} alt={'logo'}/>
+            <div
+
                 className="flex gap-[6px] items-center justify-center text-white">
                 <Image src={profileImage} alt={'photo'}/>
                 <p className="text-[14px] text-[#171719] font-medium">Hey, <span className="font-semibold">Terngu</span></p>
