@@ -24,7 +24,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     const connect = (userId: string, onMessageReceived: (message: ChatMessage) => void) => {
         const stompClient = new Client({
-            webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+            webSocketFactory: () => new SockJS('https://api.digitalmarke/ws'),
             reconnectDelay: 5000,
             heartbeatIncoming: 4000,
             heartbeatOutgoing: 4000,

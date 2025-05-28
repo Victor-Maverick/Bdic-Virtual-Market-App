@@ -29,7 +29,7 @@ const ChatUI: React.FC<ChatUIProps> = ({ currentUser, recipient }) => {
         const fetchMessages = async () => {
             try {
                 const response = await axios.get(
-                    `https://api.digitalmarke/messages/${currentUser.id}/${recipient.id}`
+                    `https://api.digitalmarke/ws/messages/${currentUser.id}/${recipient.id}`
                 );
                 setMessages(response.data);
                 setLoading(false);
