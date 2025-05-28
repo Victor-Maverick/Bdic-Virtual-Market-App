@@ -5,7 +5,7 @@ import axios from 'axios';
 
 interface ChatUser {
     id: number;
-    name: string;
+    firstName: string;
     lastMessage?: string;
     lastMessageTime?: Date;
     unreadCount?: number;
