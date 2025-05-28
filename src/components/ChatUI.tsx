@@ -8,11 +8,11 @@ import {ChatMessage, MessageStatus} from "@/types/chat.types";
 interface ChatUIProps {
     currentUser: {
         id: number;
-        name: string;
+        firstName: string;
     };
     recipient: {
         id: number;
-        name: string;
+        firstName: string;
     };
 }
 
@@ -66,9 +66,9 @@ const ChatUI: React.FC<ChatUIProps> = ({ currentUser, recipient }) => {
 
         const message: ChatMessage = {
             senderId: currentUser.id,
-            senderName: currentUser.name,
+            senderName: currentUser.firstName,
             recipientId: recipient.id,
-            recipientName: recipient.name,
+            recipientName: recipient.firstName,
             content: newMessage,
             chatId: 0, // This will be set by the backend
             status: MessageStatus.RECEIVED,
@@ -105,7 +105,7 @@ const ChatUI: React.FC<ChatUIProps> = ({ currentUser, recipient }) => {
         <div className="flex flex-col h-full">
             {/* ChatUI header */}
             <div className="bg-gray-100 p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold">{recipient.name}</h2>
+                <h2 className="text-lg font-semibold">{recipient.firstName}</h2>
                 <div className="flex items-center">
                     <span className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></span>
                     <span className="ml-2 text-xs text-gray-500">

@@ -14,7 +14,7 @@ interface ChatUser {
 interface ChatListProps {
     currentUser: {
         id: number;
-        name: string;
+        firstName: string;
     };
     onSelectChat: (recipient: ChatUser) => void;
 }

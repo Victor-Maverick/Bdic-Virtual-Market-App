@@ -10,12 +10,12 @@ const ChatPage = () => {
     // In a real app, you would get the current user from your auth context
     const [currentUser] = useState({
         id: 1, // This should come from your auth system
-        name: 'Current User',
+        firstName: 'Current User',
     });
 
     const [selectedRecipient, setSelectedRecipient] = useState<{
         id: number;
-        name: string;
+        firstName: string;
     } | null>(null);
 
     return (
