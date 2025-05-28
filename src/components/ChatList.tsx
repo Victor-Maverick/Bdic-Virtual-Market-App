@@ -29,7 +29,7 @@ const ChatList: React.FC<ChatListProps> = ({ currentUser, onSelectChat }) => {
             try {
                 // In a real app, you would fetch the list of users the current user has chatted with
                 // For demo purposes, we'll use a mock API
-                const response = await axios.get('https://api.digitalmarke/api/users/all'); // You'll need to implement this endpoint
+                const response = await axios.get('https://api.digitalmarke.bdic.ng/api/users/all'); // You'll need to implement this endpoint
                 setUsers(response.data);
                 setLoading(false);
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
