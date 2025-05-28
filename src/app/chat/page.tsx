@@ -1,10 +1,47 @@
 
-import Chat from '@/components/Chat';
+'use client'
 
-export default function Home() {
+import React, { useState } from 'react';
+import ChatList from '../../components/ChatList';
+import ChatUI from '../../components/ChatUI';
+import { WebSocketProvider } from '@/context/WebSocketContext';
+
+const ChatPage = () => {
+    // In a real app, you would get the current user from your auth context
+    const [currentUser] = useState({
+        id: 1, // This should come from your auth system
+        name: 'Current User',
+    });
+
+    const [selectedRecipient, setSelectedRecipient] = useState<{
+        id: number;
+        name: string;
+    } | null>(null);
+
     return (
-        <main className="flex min-h-screen flex-col items-center justify-between p-24">
-            <Chat />
-        </main>
+        <WebSocketProvider>
+            <div className="flex h-screen bg-white">
+                {/* Sidebar with chat list */}
+                <div className="w-1/3 border-r border-gray-200">
+                    <ChatList
+                        currentUser={currentUser}
+                        onSelectChat={(recipient) => setSelectedRecipient(recipient)}
+                    />
+                </div>
+
+                {/* Main chat area */}
+                <div className="flex-1 flex flex-col">
+                    {selectedRecipient ? (
+                        <ChatUI currentUser={currentUser} recipient={selectedRecipient} />
+                    ) : (
+                        <div className="flex items-center justify-center h-full text-gray-500">
+                            Select a chat to start messaging
+                        </div>
+                    )}
+                </div>
+            </div>
+        </WebSocketProvider>
     );
-}
+};
+
+export default ChatPage;

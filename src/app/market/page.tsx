@@ -29,7 +29,7 @@ const Chat = () => {
                 </div>
             </div>
 
-            {/* Chat Input and Suggestions */}
+            {/* ChatUI Input and Suggestions */}
             <div className="mt-60 px-4 h-auto md:px-[300px] w-full">
                 {/* Input Box */}
                 <div className="md:w-[780px] md:h-full group relative">
