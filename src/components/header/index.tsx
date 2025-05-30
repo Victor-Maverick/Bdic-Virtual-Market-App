@@ -22,7 +22,6 @@ const Header = () => {
             <div className="hidden md:flex items-center gap-6 lg:gap-[65px] text-[14px] md:text-[16px] lg:text-[18px] font-normal">
                 <p className="cursor-pointer hover:text-[#c6eb5f]" onClick={() => router.push("/")}>Home</p>
                 <p className="cursor-pointer hover:text-[#c6eb5f]" onClick={() => router.push("/marketPlace")}>MarketPlace</p>
-                <p className="cursor-pointer hover:text-[#c6eb5f]" onClick={() => router.push("/logistics")}>Logistics</p>
                 <p className="cursor-pointer hover:text-[#c6eb5f]" onClick={() => router.push("/aboutUs")}>About us</p>
             </div>
 

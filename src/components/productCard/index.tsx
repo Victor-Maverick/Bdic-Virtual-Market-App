@@ -6,9 +6,9 @@ import locationImg from "../../../public/assets/images/location.png";
 // @ts-expect-error
 const ProductCard = ({ image, title, price, location }) => {
     return (
-        <div className="w-[240px] cursor-pointer h-[300px] rounded-2xl bg-[#FFFFFF] border border-transparent group transition-all duration-300 hover:border-lime-300 relative">
+        <div className="w-full cursor-pointer h-[400px] rounded-[14px] bg-[#FFFFFF] border border-transparent group transition-all duration-300 hover:border-lime-300 relative">
 
-            <Image className="h-[200px] w-full object-cover rounded-t-2xl" src={image} alt="image" width={240} height={200} />
+            <Image className="h-[278px] w-full object-cover rounded-t-2xl" src={image} alt="image" width={240} height={281} />
 
             <div className="absolute mt-2 mr-2 top-2 right-2 bg-white/50 backdrop-blur-md px-3 py-1 rounded-2xl text-sm font-medium shadow-md flex items-center gap-2">
                 <Image src={locationImg} alt="location icon" width={16} height={16} />

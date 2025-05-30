@@ -1,15 +1,19 @@
 'use client'
-import { useRouter } from "next/navigation";
+'use client'
 import { Star } from "lucide-react";
 import axios from "axios";
-import { useEffect, useState } from "react";
 import Image, { StaticImageData } from "next/image";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 // Components
 import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
 import NavigationBar from "@/components/navigationBar";
 import MarketProductCard from "@/components/marketProductCard";
+import { useCart } from "@/context/CartContext";
+
 
 // Images
 import vendorImg from '../../../../../public/assets/images/vendorImg.svg'
@@ -77,10 +81,13 @@ interface PageProps {
 }
 
 const ProductDetails = ({ params }: PageProps) => {
+    const { addToCart } = useCart();
+
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [productId, setProductId] = useState<string | null>(null);
+
     const router = useRouter();
 
     // Constants
@@ -118,6 +125,24 @@ const ProductDetails = ({ params }: PageProps) => {
             date: "March 8, 2024"
         }
     ];
+
+    const handleAddToCart = () => {
+        if (!product) return;
+
+        addToCart({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image: product.mainImageUrl,
+            description: product.description
+        });
+
+        toast.success(`${product.name} added to cart!`, {
+            position: "bottom-right",
+            duration: 3000,
+        });
+        router.push("/cart")
+    };
 
     const ratingsData: RatingData[] = [
         { stars: 5, count: 488 },
@@ -161,9 +186,7 @@ const ProductDetails = ({ params }: PageProps) => {
         fetchProduct();
     }, [productId]);
 
-    const handleAddToCart = () => {
-        router.push("/cart");
-    };
+
 
     const renderStars = (rating: number) => {
         return [...Array(5)].map((_, i) => {
@@ -223,7 +246,8 @@ const ProductDetails = ({ params }: PageProps) => {
                     <div className="w-[719px] h-[749px] bg-[#F9F9F9] items-end flex justify-center mb-[10px]">
                         {productImages.length > 0 && (
                             <Image
-                                src={`https://api.digitalmarke.bdic.ng${productImages[0]}`}
+                                src={productImages[0]
+                                }
                                 alt={product.name}
                                 height={698}
                                 width={698}
@@ -235,7 +259,7 @@ const ProductDetails = ({ params }: PageProps) => {
                         {productImages.slice(1, 4).map((image, index) => (
                             <div key={index} className="flex w-[235px] h-[235px] bg-[#F9F9F9] justify-center items-end">
                                 <Image
-                                    src={`https://api.digitalmarke.bdic.ng${image}`}
+                                    src={image}
                                     alt={product.name}
                                     width={225}
                                     height={235}
@@ -245,7 +269,6 @@ const ProductDetails = ({ params }: PageProps) => {
                         ))}
                     </div>
                 </div>
-
                 {/* Product Details Section */}
                 <div className="flex-col justify-start pt-[40px]">
                     <p className="text-[36px]">{product.name}</p>

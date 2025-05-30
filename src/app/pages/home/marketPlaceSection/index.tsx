@@ -11,6 +11,9 @@ const products = [
     { id: 3, image: carrots, title: "Nike air shoe", price: 50000, location: "Wannune" },
     { id: 4, image: pepper, title: "Bags of Oranges", price: 50000, location: "Makurdi" },
     { id: 5, image: pepper, title: "Tuber of Yam", price: 15000, location: "Otukpo" },
+    { id: 6, image: miniFan, title: "Standing Fan", price: 28000, location: "Makurdi" },
+    { id: 7, image: carrots, title: "Fresh Tomatoes", price: 8000, location: "Gboko" },
+    { id: 8, image: pepper, title: "Basket of Peppers", price: 18000, location: "Otukpo" },
 ];
 
 const MarketPlaceSection = () => {
@@ -29,12 +32,32 @@ const MarketPlaceSection = () => {
                 </div>
             </div>
 
-            <div className="relative py-6 mt-6 px-25 overflow-hidden hover:animate-shake">
-                <div className="flex flex-nowrap gap-4 w-[calc(3.5*250px)] hover:animate-shake">
-                    {products.map((product) => (
+            {/* First row of 4 products */}
+            <div className="relative py-6 mt-6 mx-25 overflow-hidden">
+                <div className="flex flex-nowrap gap-4">
+                    {products.slice(0, 4).map((product) => (
                         <div
                             key={product.id}
-                            className="w-[250px] group hover:animate-shake"
+                            className="w-[25%] group hover:animate-shake"
+                        >
+                            <ProductCard
+                                image={product.image}
+                                title={product.title}
+                                price={product.price}
+                                location={product.location}
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Second row of 4 products */}
+            <div className="relative  mx-25 overflow-hidden">
+                <div className="flex flex-nowrap gap-4">
+                    {products.slice(4, 8).map((product) => (
+                        <div
+                            key={product.id}
+                            className="w-[25%] group hover:animate-shake"
                         >
                             <ProductCard
                                 image={product.image}

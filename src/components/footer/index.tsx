@@ -1,11 +1,13 @@
 import Image from "next/image";
 import footerImg from "../../../public/assets/images/footerImg.png";
 import marketPlaceIcon from '../../../public/assets/images/footerFire.png'
+import bdicLogo from '../../../public/assets/images/BDIC logo.svg'
+
 
 const Footer = () => {
     return (
-        <div className="flex-col bg-green-950 py-12">
-            <div className="flex justify-between px-25 bg-green-950  ">
+        <div className="flex-col flex justify-between bg-[#001E18] py-25 h-[614px]">
+            <div className="flex justify-between  px-25   ">
                 <div className="h-[181px] flex justify-between items-start gap-20">
                     <div className="w-[128px] flex items-start gap-2">
                         <Image src={footerImg} alt="FarmGo Logo" />
@@ -57,17 +59,22 @@ const Footer = () => {
                     </div>
                 </div>
             </div>
-            <div className="flex justify-between px-40 text-white text-[14px] pb-3.5 ">
-                <p>© 2025 — Copyright</p>
-                <div className="flex items-center justify-between gap-8">
-                    <p>Privacy</p>
-                    <p>Terms of use</p>
-                    <p>Legal</p>
+            <div className="px-25">
+                <div className="flex justify-between  text-white text-[14px] pb-3.5 ">
+                    <p>© 2025 — Copyright</p>
+                    <div className="flex items-center justify-between gap-8">
+                        <p>Privacy</p>
+                        <p>Terms of use</p>
+                        <p>Legal</p>
+                    </div>
                 </div>
-            </div>
-            <div className="px-40">
-                <div className="w-full border-t border-gray-500"></div>
-                <p className="text-[14px] font-normal pt-8 text-[#C6EB5F]">Powered by: BDIC PLC</p>
+                <div className="">
+                    <div className="w-full border-t border-gray-500"></div>
+                    <div className="mt-8 flex items-end gap-[14px]">
+                        <p className="text-[14px] font-normal pt-8 text-[#ffffff]">Powered by BDIC </p>
+                        <Image src={bdicLogo} alt={'image'}/>
+                    </div>
+                </div>
             </div>
 
         </div>
@@ -75,4 +82,4 @@ const Footer = () => {
     );
 
 }
-export default Footer
+export default Footer;

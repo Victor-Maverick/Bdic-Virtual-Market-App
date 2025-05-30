@@ -83,8 +83,10 @@ const ProductCard = ({image, price, name, id, isApiProduct = false}: {
         <div onClick={handleOpen} className="cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed]">
             {isApiProduct ? (
                 <Image
-                    src={`https://api.digitalmarke.bdic.ng${image}`}
+                    src={image}
                     alt={name}
+                    width={200}
+                    height={200}
                     className="w-full h-[200px] object-cover rounded-t-[14px]"
                 />
             ) : (

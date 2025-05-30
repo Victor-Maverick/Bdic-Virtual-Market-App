@@ -40,9 +40,9 @@ const HeroSection = () => {
                     </div>
 
                     {/* Headings - Centered on mobile, left on desktop */}
-                    <h1 className="text-[#1E1E1E] font-semibold text-3xl sm:text-4xl md:text-5xl leading-tight">
-                        Transforming Local <br className="hidden md:block" />
-                        Commerce with a Click
+                    <h1 className="text-[#1E1E1E] font-semibold text-2xl sm:text-4xl md:text-[40px] leading-tight">
+                        BDIC Virtual and <br/>
+                        Digital Market Space & <br/>Logistics Management System
                     </h1>
                     <p className="text-[#1E1E1E] font-normal text-lg sm:text-xl md:text-2xl leading-tight">
                         Onboard your store, explore trusted vendors,
@@ -51,15 +51,15 @@ const HeroSection = () => {
                     </p>
 
                     {/* Buttons - Row and centered on mobile */}
-                    <div className="flex flex-row gap-4 mt-8 md:mt-12 justify-center md:justify-start">
+                    <div className="flex flex-row gap-[14px] mt-8 md:mt-12 justify-center md:justify-start">
                         <button
                             onClick={handleRegisterClick}
-                            className="bg-green-950 cursor-pointer w-[165px] h-[48px] text-[#c6eb5f] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-green-900 transition-colors"
+                            className="bg-[#022B23] cursor-pointer w-[165px] h-[48px] text-[#c6eb5f] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-green-900 transition-colors"
                         >
                             <p>Get started</p>
                             <Image src={limeArrow} alt="arrow icon" height={18} width={18} />
                         </button>
-                        <button className="bg-white cursor-pointer border-[2px] border-[#022B23] text-[#022B23] w-[115px] h-[48px] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-gray-50 transition-colors">
+                        <button className="bg-white cursor-pointer border-[2px] border-[#022B23] text-[#022B23] w-[127px] h-[48px] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-gray-50 transition-colors">
                             <p>Visit Market</p>
                         </button>
                     </div>
