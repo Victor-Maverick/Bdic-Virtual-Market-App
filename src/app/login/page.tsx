@@ -104,8 +104,8 @@ const Login = () => {
                 email: form.email,
                 password: form.password
             });
-            localStorage.setItem('authToken', response.data.token);
-            console.log("AuthToken: ",response.data.token)
+            localStorage.setItem('authToken', response.data.data.token);
+            console.log("AuthToken: ",response.data.data.token)
 
             if (response.status === 200) {
                 setToastType("success");

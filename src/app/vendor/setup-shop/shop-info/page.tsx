@@ -275,7 +275,7 @@ const Setup1 = () => {
         };
         localStorage.setItem('shopInfo', JSON.stringify(shopInfo));
 
-        router.push('/vendor/dashboard/personal-info');
+        router.push('/vendor/setup-shop/personal-info');
     };
 
     // Loading component to display while fetching data

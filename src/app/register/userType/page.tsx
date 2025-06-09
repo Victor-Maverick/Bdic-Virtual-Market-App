@@ -1,8 +1,8 @@
 'use client';
 import Image from "next/image";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { useState, useEffect } from "react";
+import axios from 'axios';
 import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
 import arrowLeft from "../../../../public/assets/images/arrow-right.svg";
 import shop from "../../../../public/assets/images/shop.svg";
@@ -12,33 +12,30 @@ import limeArrow from "../../../../public/assets/images/green arrow.png";
 import threeImages from '../../../../public/assets/images/threeImages.png';
 import greenTick from '@/../public/assets/images/greentick.svg';
 import greyTick from '@/../public/assets/images/greytick.svg';
+import Toast from "@/components/toast";
 
-
-
-type UserTypeOption = 'buyer' | 'seller' | 'logistics';
-
+type UserTypeOption = 'BUYER' | 'VENDOR' | 'LOGISTICS';
 
 const UserType = () => {
     const router = useRouter();
     const [selectedUserType, setSelectedUserType] = useState<UserTypeOption | null>(null);
+    const [email, setEmail] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [toast, setToast] = useState<{
+        show: boolean;
+        type: "success" | "error";
+        message: string;
+        subMessage: string;
+    } | null>(null);
 
-    const handleClick = () => {
-        if (selectedUserType) {
-            switch (selectedUserType) {
-                case 'buyer':
-                    router.push("/welcome/buyer");
-                    break;
-                case 'seller':
-                    router.push("/welcome/vendor");
-                    break;
-                case 'logistics':
-                    router.push("/welcome/logistics");
-                    break;
-                default:
-                    router.push("/welcome");
-            }
+    useEffect(() => {
+        // Get email from local storage
+        const storedEmail = localStorage.getItem('userEmail');
+        if (storedEmail) {
+            setEmail(storedEmail);
+            console.log("email", storedEmail);
         }
-    };
+    }, [router]);
 
     const handleBack = () => {
         router.push("/register/emailVerification");
@@ -46,6 +43,71 @@ const UserType = () => {
 
     const handleUserTypeSelect = (type: UserTypeOption) => {
         setSelectedUserType(type);
+    };
+
+    const addUserRole = async () => {
+        if (!selectedUserType || !email) return;
+
+        setIsLoading(true);
+
+        try {
+            const roleName = selectedUserType === 'BUYER' ? 'BUYER' : selectedUserType.toUpperCase();
+            console.log("email: ",email)
+
+            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/users/add-role', {
+                email: email,
+                name: roleName
+            });
+
+            if (response.data.success) {
+                setToast({
+                    show: true,
+                    type: "success",
+                    message: "Role added successfully",
+                    subMessage: "Redirecting to your dashboard"
+                });
+
+            }
+
+            // Redirect based on selected role
+            setTimeout(() => {
+                switch(selectedUserType) {
+                    case 'BUYER':
+                        router.push("/welcome/buyer");
+                        break;
+                    case 'VENDOR':
+                        router.push("/welcome/vendor");
+                        break;
+                    case 'LOGISTICS':
+                        router.push("/welcome/logistics");
+                        break;
+                    default:
+                        router.push("/");
+                }
+            }, 1500);
+
+        } catch (error) {
+            let errorMessage = "Failed to add role. Please try again.";
+
+            if (axios.isAxiosError(error)) {
+                errorMessage = error.response?.data?.message || error.message;
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            setToast({
+                show: true,
+                type: "error",
+                message: "Role Assignment Error",
+                subMessage: errorMessage
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const closeToast = () => {
+        setToast(null);
     };
 
     return (
@@ -91,19 +153,19 @@ const UserType = () => {
                     <div className="mt-[30px] rounded-[14px] border-[0.5px] border-[#ededed]">
                         {[
                             {
-                                type: 'buyer',
+                                type: 'BUYER',
                                 icon: shop,
                                 title: 'Buyer',
                                 description: 'Order products from available vendors'
                             },
                             {
-                                type: 'seller',
+                                type: 'VENDOR',
                                 icon: profileCirle,
                                 title: 'Seller',
                                 description: 'Create your own shop and sell products'
                             },
                             {
-                                type: 'logistics',
+                                type: 'LOGISTICS',
                                 icon: logCar,
                                 title: 'Logistics',
                                 description: 'Help buyers and sellers pick-up and deliver products'
@@ -135,19 +197,19 @@ const UserType = () => {
                         ))}
                     </div>
 
-
-
                     <button
-                        onClick={handleClick}
-                        disabled={!selectedUserType}
+                        onClick={addUserRole}
+                        disabled={!selectedUserType || isLoading}
                         className={`flex mt-[35px] gap-[9px] justify-center items-center rounded-[12px] h-[52px] w-full transition-colors ${
-                            selectedUserType
+                            selectedUserType && !isLoading
                                 ? "bg-[#022B23] text-[#C6EB5F] hover:bg-[#011C17] cursor-pointer"
                                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
                         }`}
                     >
-                        <p className="font-semibold text-[14px]">Complete onboarding</p>
-                        {selectedUserType && (
+                        <p className="font-semibold text-[14px]">
+                            {isLoading ? 'Processing...' : 'Complete onboarding'}
+                        </p>
+                        {selectedUserType && !isLoading && (
                             <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
                         )}
                     </button>
@@ -168,6 +230,15 @@ const UserType = () => {
                     className="mt-[100px] w-[415px] h-[227px]"
                 />
             </div>
+
+            {toast && (
+                <Toast
+                    type={toast.type}
+                    message={toast.message}
+                    subMessage={toast.subMessage}
+                    onClose={closeToast}
+                />
+            )}
         </div>
     );
 };

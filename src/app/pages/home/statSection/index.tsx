@@ -20,6 +20,9 @@ const StatSection = () => {
     const [counts, setCounts] = useState(stats.map(() => 0));
     const [hovered, setHovered] = useState(false);
 
+    // Pre-calculate the maximum display values for width consistency
+    const maxDisplayValues = stats.map(stat => `${formatNumber(stat.value)}+`);
+
     useEffect(() => {
         const isMobile = window.innerWidth < 768;
 
@@ -28,7 +31,10 @@ const StatSection = () => {
             return;
         }
 
-        if (!hovered) return;
+        if (!hovered) {
+            setCounts(stats.map(() => 0));
+            return;
+        }
 
         const duration = 1000;
         const steps = 50;
@@ -54,22 +60,38 @@ const StatSection = () => {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
         >
-            <div className="max-w-screen-xl mx-auto flex items-center justify-between flex-wrap md:flex-nowrap">
-                {/* Stats Section */}
-                <div className="flex w-full justify-between md:justify-start md:gap-16 text-sm md:text-base">
-                    {stats.map((stat, index) => (
-                        <div key={index} className="flex flex-col items-center md:items-start flex-shrink-0">
-                            <p className="text-[#022b23] uppercase text-xs md:text-sm whitespace-nowrap">{stat.label}</p>
-                            <p className="text-[#022b23] text-lg md:text-[2.25rem] font-semibold">
-                                {formatNumber(Math.floor(counts[index]))}+
-                            </p>
-                        </div>
-                    ))}
-                </div>
+            <div className="max-w-screen-xl mx-auto">
+                <div className="flex justify-between items-center">
+                    {/* Stats */}
+                    <div className="flex w-full md:gap-16 gap-4 justify-between md:justify-start">
+                        {stats.map((stat, index) => (
+                            <div
+                                key={index}
+                                className="flex flex-col items-center md:items-start flex-shrink-0"
+                                style={{ width: `${maxDisplayValues[index].length * 0.8}em` }}
+                            >
+                                <p className="text-[#022b23] uppercase text-xs md:text-sm whitespace-nowrap">
+                                    {stat.label}
+                                </p>
+                                <div className="relative">
+                                    <p className="text-[#022b23] text-lg md:text-[2.25rem] font-semibold">
+                                        {formatNumber(Math.floor(counts[index]))}+
+                                    </p>
+                                    <p
+                                        className="invisible absolute top-0 left-0 text-[#022b23] text-lg md:text-[2.25rem] font-semibold pointer-events-none"
+                                        aria-hidden="true"
+                                    >
+                                        {maxDisplayValues[index]}
+                                    </p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
 
-                {/* Arrow Image */}
-                <div className="hidden md:block md:ml-12 flex-shrink-0">
-                    <Image src={arrowImg} alt="Arrow Image" width={80} height={80} />
+                    {/* Arrow Image - Desktop Only */}
+                    <div className="hidden md:block md:ml-12 flex-shrink-0">
+                        <Image src={arrowImg} alt="Arrow Image" width={80} height={80} />
+                    </div>
                 </div>
             </div>
         </div>

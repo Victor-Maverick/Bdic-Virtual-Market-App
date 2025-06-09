@@ -189,7 +189,7 @@ const SetupComplete = () => {
 
         try {
             if (!summaryData.shopInfo || !summaryData.personalInfo || !summaryData.bankInfo) {
-                throw new Error('Missing required information. Please complete all setup steps.');
+                throw new Error('Missing required information. Please complete all setup-shop steps.');
             }
 
             const userId = 1; // Replace with actual userId from your auth system
@@ -223,7 +223,7 @@ const SetupComplete = () => {
 
         try {
             if (!summaryData.shopInfo || !summaryData.personalInfo || !summaryData.bankInfo) {
-                throw new Error('Missing required information. Please complete all setup steps.');
+                throw new Error('Missing required information. Please complete all setup-shop steps.');
             }
 
             // First, add the shop

@@ -1,37 +1,23 @@
+'use client';
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import limeArrow from "@/../public/assets/images/green arrow.png";
 import { ChevronDown } from "lucide-react";
-import { useRouter } from 'next/navigation';
-import FleetOnboardSuccessModal from "@/components/fleetOnboardSuccessModal";
+import limeArrow from "@/../public/assets/images/green arrow.png";
+import { NewVehicleData } from "@/types/vehicle";
 
-interface Vehicle {
-    type: string;
-    plateNumber: string;
-    engineNumber: string;
-}
 
 const vehicleTypes = [
-    { label: "Bike" },
-    { label: "Truck" },
-    { label: "Car" },
+    { label: "Bike" as const },
+    { label: "Truck" as const },
 ];
 
-interface FleetOnboardModalProps {
+interface OnboardFleetModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (vehicles: Vehicle[]) => void;
+    onSubmit: (vehicles: NewVehicleData[]) => Promise<void>;
 }
 
-type InputFieldProps = {
-    id: string;
-    size: number;
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-    placeholder?: string;
-    optional?: boolean;
-};
+
 
 const InputField = ({
                         id,
@@ -41,7 +27,15 @@ const InputField = ({
                         onChange,
                         placeholder,
                         optional = false,
-                    }: InputFieldProps) => {
+                    }: {
+    id: string;
+    size: number;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    optional?: boolean;
+}) => {
     const [isFocused, setIsFocused] = useState(false);
 
     return (
@@ -74,11 +68,7 @@ const InputField = ({
     );
 };
 
-type DropdownProps = {
-    onChange: (value: string) => void;
-};
-
-const Dropdown = ({ onChange }: DropdownProps) => {
+const Dropdown = ({ onChange }: { onChange: (value: string) => void }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [selectedOption, setSelectedOption] = useState<{ label: string } | null>(null);
 
@@ -124,18 +114,17 @@ const Dropdown = ({ onChange }: DropdownProps) => {
     );
 };
 
-export const OnboardFleetModal = ({ isOpen, onClose, onSubmit }: FleetOnboardModalProps) => {
+export const OnboardFleetModal = ({ isOpen, onClose, onSubmit }: OnboardFleetModalProps) => {
     const [fleetNumber, setFleetNumber] = useState("");
-    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [vehicles, setVehicles] = useState<NewVehicleData[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-    const router = useRouter();
+    const [error, setError] = useState("");
 
     useEffect(() => {
         if (isOpen) {
             setFleetNumber("");
             setVehicles([]);
-            setShowSuccessModal(false);
+            setError("");
         }
     }, [isOpen]);
 
@@ -155,106 +144,113 @@ export const OnboardFleetModal = ({ isOpen, onClose, onSubmit }: FleetOnboardMod
         );
     }, [fleetNumber]);
 
-    const handleChange = (index: number, field: keyof Vehicle, value: string) => {
+    const handleChange = (index: number, field: keyof NewVehicleData, value: string) => {
         setVehicles((prev) => {
             const updated = [...prev];
-            updated[index][field] = value;
+            updated[index] = { ...updated[index], [field]: value };
             return updated;
         });
     };
 
     const handleSubmit = async () => {
-        setIsSubmitting(true);
+        const num = parseInt(fleetNumber);
+        if (isNaN(num) || num <= 0) {
+            setError("Please enter a valid fleet number");
+            return;
+        }
+
         const validVehicles = vehicles.filter(
             (v) => v.type && v.plateNumber && v.engineNumber
         );
 
+        if (validVehicles.length !== num) {
+            setError("Please fill all vehicle details");
+            return;
+        }
+
+        setIsSubmitting(true);
+        setError("");
+
         try {
             await onSubmit(validVehicles);
-            setShowSuccessModal(true);
-        } catch (error) {
-            console.error("Submission failed:", error);
+            onClose();
+        } catch (err) {
+            setError("Failed to onboard fleet. Please try again.");
+            console.error("Submission error:", err);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleSuccessClose = () => {
-        setShowSuccessModal(false);
-        onClose();
-        router.push("/logistics/dashboard/fleet");
-    };
-
     if (!isOpen) return null;
 
     return (
-        <>
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-                <div className="bg-white px-10 py-6 w-[950px] max-h-[80vh] flex flex-col items-center gap-6 overflow-hidden rounded-lg">
-                    <div className="w-[547px] flex-shrink-0 mx-auto">
-                        <h2 className="text-[16px] font-medium text-[#022B23] pl-4">Onboard Fleet</h2>
-                        <p className="text-[14px] font-medium leading-tight text-[#707070] pl-4">
-                            Onboard your fleet and riders to help <br />
-                            you manage them easily
-                        </p>
-                    </div>
-
-                    <InputField
-                        placeholder="Number of fleet"
-                        value={fleetNumber}
-                        onChange={setFleetNumber}
-                        id="fleetNumber"
-                        label="Number of fleet"
-                        size={547}
-                    />
-
-                    {vehicles.length > 0 && (
-                        <div className="flex flex-col gap-[12px] w-[547px] max-h-[calc(80vh-200px)] overflow-y-auto pb-6 mx-auto">
-                            {vehicles.map((vehicle, index) => (
-                                <div
-                                    key={index}
-                                    className="flex w-full justify-between items-center flex-shrink-0"
-                                >
-                                    <InputField
-                                        placeholder="Vehicle engine number"
-                                        value={vehicle.engineNumber}
-                                        onChange={(value) => handleChange(index, "engineNumber", value)}
-                                        id={`engine-${index}`}
-                                        label="Vehicle engine number"
-                                        size={256}
-                                    />
-                                    <InputField
-                                        placeholder="Plate Number"
-                                        value={vehicle.plateNumber}
-                                        onChange={(value) => handleChange(index, "plateNumber", value)}
-                                        id={`plate-${index}`}
-                                        label="Plate Number"
-                                        size={152}
-                                    />
-                                    <Dropdown
-                                        onChange={(value) => handleChange(index, "type", value)}
-                                    />
-                                </div>
-                            ))}
-                            <button
-                                className="flex w-[513px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] min-h-[52px] flex-shrink-0 hover:bg-[#033a30] transition-colors mt-4 mx-auto disabled:opacity-50"
-                                onClick={handleSubmit}
-                                disabled={isSubmitting}
-                            >
-                                <p className="text-[#C6EB5F] font-semibold text-[14px]">
-                                    {isSubmitting ? "Processing..." : "Continue to onboard fleet"}
-                                </p>
-                                {!isSubmitting && <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />}
-                            </button>
-                        </div>
-                    )}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+            <div className="bg-white px-10 py-6 w-[950px] max-h-[80vh] flex flex-col items-center gap-6 overflow-hidden rounded-lg">
+                <div className="w-[547px] flex-shrink-0 mx-auto">
+                    <h2 className="text-[16px] font-medium text-[#022B23] pl-4">Onboard Fleet</h2>
+                    <p className="text-[14px] font-medium leading-tight text-[#707070] pl-4">
+                        Onboard your fleet and riders to help <br />
+                        you manage them easily
+                    </p>
                 </div>
-            </div>
 
-            <FleetOnboardSuccessModal
-                isOpen={showSuccessModal}
-                onClose={handleSuccessClose}
-            />
-        </>
+                <InputField
+                    placeholder="Number of fleet"
+                    value={fleetNumber}
+                    onChange={setFleetNumber}
+                    id="fleetNumber"
+                    label="Number of fleet"
+                    size={547}
+                />
+
+                {error && (
+                    <div className="text-red-500 text-sm w-[547px] text-center">
+                        {error}
+                    </div>
+                )}
+
+                {vehicles.length > 0 && (
+                    <div className="flex flex-col gap-[12px] w-[547px] max-h-[calc(80vh-200px)] overflow-y-auto pb-6 mx-auto">
+                        {vehicles.map((vehicle, index) => (
+                            <div
+                                key={index}
+                                className="flex w-full justify-between items-center flex-shrink-0"
+                            >
+                                <InputField
+                                    placeholder="Vehicle engine number"
+                                    value={vehicle.engineNumber}
+                                    onChange={(value) => handleChange(index, "engineNumber", value)}
+                                    id={`engine-${index}`}
+                                    label="Vehicle engine number"
+                                    size={256}
+                                />
+                                <InputField
+                                    placeholder="Plate Number"
+                                    value={vehicle.plateNumber}
+                                    onChange={(value) => handleChange(index, "plateNumber", value)}
+                                    id={`plate-${index}`}
+                                    label="Plate Number"
+                                    size={152}
+                                />
+                                <Dropdown
+                                    onChange={(value) => handleChange(index, "type", value)}
+                                />
+                            </div>
+                        ))}
+                        <button
+                            className="flex w-[513px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] min-h-[52px] flex-shrink-0 hover:bg-[#033a30] transition-colors mt-4 mx-auto disabled:opacity-50"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                        >
+                            <p className="text-[#C6EB5F] font-semibold text-[14px]">
+                                {isSubmitting ? "Processing..." : "Continue to onboard fleet"}
+                            </p>
+                            {!isSubmitting && <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 };

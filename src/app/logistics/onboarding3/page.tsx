@@ -1,14 +1,15 @@
 'use client'
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import Image from "next/image";
-import arrow from "../../../../../public/assets/images/arrow-right.svg";
+import dashImg from "../../../../public/assets/images/Logistics-rafiki.svg";
+import {useEffect, useState} from "react";
 import {ChevronDown} from "lucide-react";
 import {useRouter} from "next/navigation";
-import limeArrow from "../../../../../public/assets/images/green arrow.png";
-import greenTick from '../../../../../public/assets/images/green tick.png'
-import {useState, useEffect} from "react"
-import dashSlideImg from '@/../public/assets/images/dashSlideImg.png'
+import Image from "next/image";
+import arrow from "../../../../public/assets/images/arrow-right.svg";
+import greenTick from "../../../../public/assets/images/green tick.png";
+import limeArrow from "../../../../public/assets/images/green arrow.png";
+import { useOnboarding } from "@/context/LogisticsOnboardingContext";
 
 const banks = [
     { id: 1, label: "UNITED BANK 0F AFRICA" },
@@ -119,57 +120,37 @@ const InputField = ({
     );
 };
 
-const BankInfo = () => {
-    const [accountNumber, setAccountNumber] = useState("");
-    const [selectedBank, setSelectedBank] = useState<BankOption | null>(null);
-    const [formValid, setFormValid] = useState(false);
 
+const Onboarding3 =()=>{
+    const { onboardingData, updateBankInfo } = useOnboarding();
+    const [formValid, setFormValid] = useState(false);
     const router = useRouter();
 
-    // Validate the form whenever inputs change
     useEffect(() => {
-        setFormValid(!!selectedBank && accountNumber.length >= 10);
-    }, [selectedBank, accountNumber]);
+        setFormValid(
+            !!onboardingData.bankInfo.bankName &&
+            onboardingData.bankInfo.accountNumber.length >= 10
+        );
+    }, [onboardingData.bankInfo]);
 
     const handleContinue = () => {
         if (!formValid) {
             alert("Please complete all required fields");
             return;
         }
-
-        // Save bank info to localStorage
-        const bankInfo = {
-            bankName: selectedBank?.label,
-            accountNumber,
-        };
-
-        localStorage.setItem('bankInfo', JSON.stringify(bankInfo));
-        router.push('/vendor/dashboard/setup-complete');
+        router.push('/logistics/setup-complete');
     };
 
-    const handleBack = () => {
-        router.push("/vendor/dashboard/personal-info");
-    };
-
-    const returnToShopInfo = () => {
-        router.push("/vendor/dashboard/shop-info");
-    };
-
-    return (
+    return(
         <>
             <DashboardHeader />
-            <DashboardSubHeader
-                welcomeText={"Hey, welcome"}
-                description={"Get started by setting up your shop"}
-                background={'#ECFDF6'}
-                image={dashSlideImg}
-                textColor={'#05966F'}
-            />
+            <DashboardSubHeader welcomeText={"Manage your logistics company"} description={"Get started by setting up your company"} image={dashImg}
+                                textColor={"#DD6A02"} background={"#FFFAEB"}/>
             <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
-                <Image src={arrow} alt={'arrow image'} className="cursor-pointer" onClick={handleBack}/>
+                <Image src={arrow} alt={'arrow image'} className="cursor-pointer"/>
                 <p className="text-[14px] font-normal">
-                    <span className="cursor-pointer" onClick={returnToShopInfo}>Shop information //</span>
-                    <span className="cursor-pointer" onClick={handleBack}>Vendor information //</span>
+                    <span className="cursor-pointer" >Logistics company //</span>
+                    <span className="cursor-pointer" >License //</span>
                     <span className="cursor-pointer font-medium">Bank details</span>
                 </p>
             </div>
@@ -182,12 +163,15 @@ const BankInfo = () => {
                 </div>
                 <div className="flex flex-col w-[400px] h-auto gap-[38px]">
                     <div className="flex flex-col gap-[10px]">
-                        <DropDown selectedOption={selectedBank} setSelectedOption={setSelectedBank} />
+                        <DropDown
+                            selectedOption={banks.find(b => b.label === onboardingData.bankInfo.bankName) || null}
+                            setSelectedOption={(option) => updateBankInfo({ bankName: option?.label || '' })}
+                        />
                         <InputField
                             id="accountNumber"
                             label="Account number"
-                            value={accountNumber}
-                            onChange={setAccountNumber}
+                            value={onboardingData.bankInfo.accountNumber}
+                            onChange={(value) => updateBankInfo({ accountNumber: value })}
                             placeholder="Account number"
                         />
                         <div className="flex-col flex ">
@@ -203,13 +187,13 @@ const BankInfo = () => {
                         } transition-colors`}
                         onClick={formValid ? handleContinue : undefined}
                     >
-                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Complete KYC & setup shop</p>
+                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Complete </p>
                         <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
                     </div>
                 </div>
             </div>
         </>
     )
-};
+}
 
-export default BankInfo;
+export default Onboarding3

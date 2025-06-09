@@ -1,6 +1,5 @@
 'use client';
 import { useState } from "react";
-import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
 import NavigationBar from "@/components/navigationBar";
 import Image from "next/image";
@@ -26,7 +25,7 @@ const CheckOut = () => {
 
     return (
         <>
-            <ProductDetailHeader />
+            {/*<ProductDetailHeader />*/}
             <ProductDetailHeroBar />
             <NavigationBar page="//smart phone//product name//" name="cart" />
 

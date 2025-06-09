@@ -1,71 +1,29 @@
 'use client'
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
-import Dropdown from "@/components/dropDown";
 import Image from "next/image";
-import marketIcon from "../../../../public/assets/images/market element.png";
 import arrowBack from "../../../../public/assets/images/arrow-right.svg";
 import arrowRight from "../../../../public/assets/images/greyforwardarrow.svg";
-import React, {useState} from "react";
-import searchImg from "../../../../public/assets/images/search-normal.png";
+import React from "react";
 import iphone from "../../../../public/assets/images/iphone13.svg";
 import fan from "../../../../public/assets/images/table fan.png";
 import pepper from "../../../../public/assets/images/pepper.jpeg";
 import {useRouter} from "next/navigation";
 
-const SearchBar = () => (
-    <div className="flex  gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
-        <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-        <input placeholder="Search for items here" className="w-[413px] text-[#707070] text-[14px] focus:outline-none"/>
-    </div>
-);
+
 
 const initialProducts = [
-    { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "850,000", quantity: 1, date: "04 May, 2025", status: "Delivered" },
+    { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "850,000", quantity: 1, date: "04 May, 2025", status: "Pending" },
     { name: "Table Fan", description: "Powerful cooling fan", image: fan, price: "950,000", quantity: 1, date: "04 May, 2025", status: "In-transit" },
     { name: "Fresh Pepper", description: "Organic farm produce", image: pepper, price: "35,000", quantity: 1, date: "04 May, 2025", status: "Returned" },
     { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "40,000", quantity: 1, date: "04 May, 2025", status: "Delivered" },
 ];
 
 const Orders = ()=>{
-    const [selectedMarket, setSelectedMarket] = useState("Wurukum");
     const router = useRouter();
     return (
         <>
             <MarketPlaceHeader />
-            <div className="h-[114px] w-full  border-b-[0.5px] border-[#EDEDED]">
-                <div
-                    className="h-[66px]  w-full flex justify-between items-center px-25 border-t-[0.5px] border-[#ededed]  "
-                >
-                    <div className="flex gap-[20px]">
-                        <Dropdown/>
-                        <SearchBar/>
-                    </div>
-
-                    <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between  border border-[#ededed] rounded-[4px]">
-                        <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px]">
-                            <select className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] rounded-sm text-center w-full focus:outline-none">
-                                <option>Benue State</option>
-                                <option>Enugu State</option>
-                                <option>Lagos State</option>
-                            </select>
-                        </div>
-
-                        <div className="relative">
-                            <div className="flex items-center bg-[#F9F9F9] px-[8px] h-[48px] rounded-[4px]">
-                                <Image src={marketIcon} alt="Market Icon" width={20} height={20} />
-                                <select
-                                    className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] items-center pr-1 focus:outline-none"
-                                    onChange={(e) => setSelectedMarket(e.target.value)}
-                                    value={selectedMarket}
-                                >
-                                    <option>Wurukum market</option>
-                                    <option>Gboko Market</option>
-                                    <option>Otukpo Market</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="h-[48px] w-full  border-y-[0.5px] border-[#EDEDED]">
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
                     <Image src={arrowBack} alt={'imagw'}/>
                     <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Wishlist</span></p>

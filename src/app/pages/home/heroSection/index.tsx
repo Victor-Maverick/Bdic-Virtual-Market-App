@@ -59,7 +59,7 @@ const HeroSection = () => {
                             <p>Get started</p>
                             <Image src={limeArrow} alt="arrow icon" height={18} width={18} />
                         </button>
-                        <button className="bg-white cursor-pointer border-[2px] border-[#022B23] text-[#022B23] w-[127px] h-[48px] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-gray-50 transition-colors">
+                        <button onClick={()=>{router.push("/marketPlace")}} className="bg-white cursor-pointer border-[2px] border-[#022B23] text-[#022B23] w-[127px] h-[48px] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-gray-50 transition-colors">
                             <p>Visit Market</p>
                         </button>
                     </div>

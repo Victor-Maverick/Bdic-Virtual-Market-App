@@ -21,7 +21,7 @@ import arrowRight from '@/../public/assets/images/green arrow.png'
 import checkIcon from '@/../public/assets/images/green tick.png'
 import axios from 'axios';
 
-const DELIVERY_FEE = 20000;
+const DELIVERY_FEE = 2000;
 
 interface PaymentData {
     authorizationUrl: string;
@@ -314,7 +314,7 @@ const Cart = () => {
     };
     const handleSuccessModalClose = () => {
         setShowSuccessModal(false);
-        router.push('/');
+        router.push('/buyer/orders');
     };
 
     const getDeliveryOptionText = () => {

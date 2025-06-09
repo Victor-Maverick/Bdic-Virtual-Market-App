@@ -1,4 +1,5 @@
 'use client'
+import {useRouter} from "next/navigation";
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
 import dashImg from '@/../public/assets/images/Logistics-rafiki.svg'
@@ -7,6 +8,7 @@ import arrow from "../../../../public/assets/images/arrow-right.svg";
 import {ChangeEvent, useRef, useState} from "react";
 import uploadIcon from "../../../../public/assets/images/uploadIcon.png";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
+import { useOnboarding } from "@/context/LogisticsOnboardingContext";
 
 type InputFieldProps = {
     id: string;
@@ -58,18 +60,13 @@ const InputField = ({
 };
 
 const DashBoard = ()=>{
-    const [formData, setFormData] = useState({
-        companyName: "",
-        ownerName: "",
-        fleetNumber: "",
-        companyAddress: "",
-        taxIdNumber: "",
-    });
+    const router = useRouter();
+    const { onboardingData, updateCompanyInfo } = useOnboarding();
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleChange = (field: keyof typeof formData) => (value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+    const handleChange = (field: keyof typeof onboardingData.companyInfo) => (value: string) => {
+        updateCompanyInfo({ [field]: value });
     };
 
     const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +89,7 @@ const DashBoard = ()=>{
                 }
             };
             reader.readAsDataURL(file);
+            updateCompanyInfo({ logo: file });
         }
     };
 
@@ -102,6 +100,7 @@ const DashBoard = ()=>{
     const removeImage = (e: React.MouseEvent) => {
         e.stopPropagation();
         setUploadedImage(null);
+        updateCompanyInfo({ logo: null });
         if (fileInputRef.current) {
             fileInputRef.current.value = "";
         }
@@ -115,8 +114,7 @@ const DashBoard = ()=>{
             <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
                 <Image src={arrow} alt={'arrow image'} className="cursor-pointer" />
                 <p className="text-[14px] font-normal text-[#707070]">
-                    {/* eslint-disable-next-line react/jsx-no-comment-textnodes */}
-                    <span className="cursor-pointer text-[#022B23]">Logistics company </span> <span className="cursor-pointer" >// License //</span> <span  className="cursor-pointer"> Fleet onboarding // </span><span className="cursor-pointer" >Bank Details //</span><span className="cursor-pointer" > Completed</span>
+                    <span className="cursor-pointer text-[#022B23]">Logistics company //</span> <span className="cursor-pointer" > License //</span> <span  className="cursor-pointer"> Fleet onboarding // </span><span className="cursor-pointer" >Bank Details //</span><span className="cursor-pointer" > Completed</span>
                 </p>
             </div>
             <div className="flex ml-[366px] w-auto mt-16 gap-25">
@@ -128,7 +126,7 @@ const DashBoard = ()=>{
                     <InputField
                         id="companyName"
                         label="Company name"
-                        value={formData.companyName}
+                        value={onboardingData.companyInfo.companyName}
                         onChange={handleChange('companyName')}
                         placeholder="Company name"
                     />
@@ -136,17 +134,9 @@ const DashBoard = ()=>{
                     <InputField
                         id="ownerName"
                         label="Owner name"
-                        value={formData.ownerName}
+                        value={onboardingData.companyInfo.ownerName}
                         onChange={handleChange('ownerName')}
                         placeholder="Owner name"
-                    />
-
-                    <InputField
-                        id="fleetNumber"
-                        label="Fleet number"
-                        value={formData.fleetNumber}
-                        onChange={handleChange('fleetNumber')}
-                        placeholder="Fleet number"
                     />
 
                     <div className="mt-[38px] mb-[10px]">
@@ -197,37 +187,31 @@ const DashBoard = ()=>{
                         </div>
                     </div>
 
-
-
-
                     <InputField
                         id="companyAddress"
                         label="Company address"
-                        value={formData.companyAddress}
+                        value={onboardingData.companyInfo.companyAddress}
                         onChange={handleChange('companyAddress')}
                         placeholder="Company address"
                     />
 
-
                     <InputField
                         id="taxIdNumber"
                         label="TAXID number"
-                        value={formData.taxIdNumber}
+                        value={onboardingData.companyInfo.taxIdNumber}
                         onChange={handleChange('taxIdNumber')}
                         placeholder="TAXID number"
                     />
 
                     <div
+                        onClick={()=>{router.push("/logistics/onboarding2")}}
                         className="flex mt-[30px] mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
                     >
                         <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue to documents</p>
                         <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
                     </div>
                 </div>
-
-
             </div>
-
         </>
     )
 }

@@ -144,7 +144,7 @@ const Setup2 = () => {
     };
 
     const handleBack = () => {
-        router.push('/vendor/dashboard/shop-info');
+        router.push('/vendor/setup-shop/shop-info');
     };
 
     const handleContinue = () => {
@@ -160,7 +160,7 @@ const Setup2 = () => {
         };
         localStorage.setItem('personalInfo', JSON.stringify(personalInfo));
 
-        router.push('/vendor/dashboard/bank-info');
+        router.push('/vendor/setup-shop/bank-info');
     };
 
     return (

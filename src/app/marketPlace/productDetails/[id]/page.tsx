@@ -1,5 +1,4 @@
 'use client'
-'use client'
 import { Star } from "lucide-react";
 import axios from "axios";
 import Image, { StaticImageData } from "next/image";
@@ -47,6 +46,9 @@ interface Product {
     sideImage4Url: string;
     shopId: number;
     shopName: string;
+    market_section: string;
+    shop_address:string;
+    vendor:string;
     categoryId: number;
     categoryName: string;
 }
@@ -170,8 +172,9 @@ const ProductDetails = ({ params }: PageProps) => {
                 setLoading(true);
                 const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/products/${productId}`);
 
-                if (response.data.success && response.data.data) {
+                if (response.data.data) {
                     setProduct(response.data.data);
+                    console.log(response.data.data)
                 } else {
                     throw new Error(response.data.message || 'Failed to fetch product');
                 }
@@ -273,11 +276,7 @@ const ProductDetails = ({ params }: PageProps) => {
                 <div className="flex-col justify-start pt-[40px]">
                     <p className="text-[36px]">{product.name}</p>
                     <p className="font-semibold text-[26px]">₦{product.price.toLocaleString()}</p>
-                    <div className="p-0.5 border border-[#f9f9f9] w-[94px]">
-                        <div className="w-[90px] h-[37px] bg-[#ededed] flex items-center justify-center">
-                            <p className="text-[14px]">Brand new</p>
-                        </div>
-                    </div>
+
                     <div className="border-y border-[#ededed] py-[8px] px-[8px] mt-[30px]">
                         <p>Description</p>
                     </div>
@@ -290,7 +289,7 @@ const ProductDetails = ({ params }: PageProps) => {
                                 <Image src={vendorImg} alt={'vendor'} width={40} height={40}/>
                                 <div className="flex-col">
                                     <p className="text-[12px] text-[#707070]">Vendor</p>
-                                    <p className="text-[16px] font-normal mt-[-4px]">{product.shopName}</p>
+                                    <p className="text-[16px] font-normal mt-[-4px]">{product.vendor}</p>
                                 </div>
                             </div>
                             <div className="w-[74px] p-[6px] gap-[4px] h-[30px] bg-[#C6EB5F] rounded-[8px] flex items-center">
@@ -300,19 +299,19 @@ const ProductDetails = ({ params }: PageProps) => {
                         </div>
                         <div className="px-[20px] flex items-center gap-[4px] mt-[20px]">
                             <Image src={locationImg} alt={'location'} width={18} height={18}/>
-                            <p className="text-[14px] font-light">Modern market, Makurdi, Benue State</p>
+                            <p className="text-[14px] font-light">{product.shop_address}</p>
                         </div>
                         <div className="flex px-[20px] mt-[15px] gap-[18px]">
                             <div className="flex items-center gap-[4px]">
                                 <Image src={shopImg} alt={'shop'} width={18} height={18}/>
-                                <p className="text-[14px] font-light">{product.shopName} Shop 2C</p>
+                                <p className="text-[14px] font-light">{product.vendor} Shop 2C</p>
                             </div>
                             <div className="flex items-center gap-[4px]">
                                 <Image src={shopImg} alt={'shop'} width={18} height={18}/>
-                                <p className="text-[14px] font-light">Lagos line</p>
+                                <p className="text-[14px] font-light">{product.market_section}</p>
                             </div>
                         </div>
-                        <div className="px-[20px] w-[300px] w-[48px] gap-[14px] mt-[50px] flex items-center">
+                        <div className="px-[20px] w-[300px] gap-[14px] mt-[50px] flex items-center">
                             <div className="flex items-center gap-[10px] justify-center bg-[#ffeebe] rounded-[14px] w-[165px] h-[48px]">
                                 <p className="text-[#461602] font-semibold text-[14px]">Text vendor</p>
                                 <Image src={chatIcon} alt={'chat'}/>

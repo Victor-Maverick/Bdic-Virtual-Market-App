@@ -196,6 +196,7 @@ const GetStarted = () => {
                 }
             });
 
+            localStorage.setItem('userEmail',form.email);
             return { success: true, data: response.data };
         } catch (error) {
             let errorMessage = "Registration failed. Please try again.";

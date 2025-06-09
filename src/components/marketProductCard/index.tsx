@@ -19,5 +19,6 @@ const MarketProductCard = ({image,name,price, height,imageHeight,id})=>{
             </div>
         </div>
     )
+
 }
 export default MarketProductCard
