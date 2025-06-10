@@ -14,12 +14,13 @@ import greenTick from '@/../public/assets/images/greentick.svg';
 import greyTick from '@/../public/assets/images/greytick.svg';
 import Toast from "@/components/toast";
 
-type UserTypeOption = 'BUYER' | 'VENDOR' | 'LOGISTICS';
+type UserTypeOption = 'BUYER' | 'VENDOR' | 'LOGISTIC';
 
 const UserType = () => {
     const router = useRouter();
     const [selectedUserType, setSelectedUserType] = useState<UserTypeOption | null>(null);
     const [email, setEmail] = useState<string | null>(null);
+    const [password, setPassword] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState<{
         show: boolean;
@@ -31,9 +32,10 @@ const UserType = () => {
     useEffect(() => {
         // Get email from local storage
         const storedEmail = localStorage.getItem('userEmail');
+        const storedPassword = localStorage.getItem('password');
         if (storedEmail) {
             setEmail(storedEmail);
-            console.log("email", storedEmail);
+            setPassword(storedPassword)
         }
     }, [router]);
 
@@ -78,7 +80,7 @@ const UserType = () => {
                     case 'VENDOR':
                         router.push("/welcome/vendor");
                         break;
-                    case 'LOGISTICS':
+                    case 'LOGISTIC':
                         router.push("/welcome/logistics");
                         break;
                     default:
@@ -102,6 +104,12 @@ const UserType = () => {
                 subMessage: errorMessage
             });
         } finally {
+            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/auth/login', {
+                email: email,
+                password: password
+            });
+            localStorage.setItem('authToken', response.data.data.token);
+            localStorage.removeItem('password');
             setIsLoading(false);
         }
     };
@@ -165,7 +173,7 @@ const UserType = () => {
                                 description: 'Create your own shop and sell products'
                             },
                             {
-                                type: 'LOGISTICS',
+                                type: 'LOGISTIC',
                                 icon: logCar,
                                 title: 'Logistics',
                                 description: 'Help buyers and sellers pick-up and deliver products'

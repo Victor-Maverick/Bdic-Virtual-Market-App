@@ -197,6 +197,7 @@ const GetStarted = () => {
             });
 
             localStorage.setItem('userEmail',form.email);
+            localStorage.setItem('password',form.password);
             return { success: true, data: response.data };
         } catch (error) {
             let errorMessage = "Registration failed. Please try again.";
@@ -359,7 +360,7 @@ const GetStarted = () => {
                             </button>
 
                             <p className="text-[14px] mt-[10px] text-[#7C7C7C]">
-                                Already have an account? <span className="text-[16px] text-[#001234] cursor-pointer">Login</span>
+                                Already have an account? <span onClick={()=>{router.push("/login")}} className="text-[16px] text-[#001234] cursor-pointer">Login</span>
                             </p>
 
                             <p className="text-[16px] mt-[10px] text-[#7C7C7C]">

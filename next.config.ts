@@ -2,8 +2,15 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
     images: {
-        // Allow images from all domains (use with caution in production)
         remotePatterns: [
+            {
+                protocol: 'http', // Allow HTTP (less secure)
+                hostname: 'res.cloudinary.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'res.cloudinary.com',
+            },
             {
                 protocol: 'https',
                 hostname: 'api.digitalmarke.bdic.ng',
@@ -11,7 +18,6 @@ const nextConfig: NextConfig = {
         ],
     },
     output: 'standalone',
-
 };
 
 export default nextConfig;

@@ -171,10 +171,9 @@ const ProductDetails = ({ params }: PageProps) => {
             try {
                 setLoading(true);
                 const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/products/${productId}`);
-
-                if (response.data.data) {
-                    setProduct(response.data.data);
-                    console.log(response.data.data)
+                if (response.data) {
+                    setProduct(response.data);
+                    console.log(response.data)
                 } else {
                     throw new Error(response.data.message || 'Failed to fetch product');
                 }

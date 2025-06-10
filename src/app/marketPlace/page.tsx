@@ -324,6 +324,7 @@ const MarketPlace = () => {
 
             if (response.data.success && response.data.data) {
                 setApiProducts(response.data.data);
+                console.log(response.data.data)
             } else {
                 throw new Error(response.data.message || 'Failed to fetch products');
             }
