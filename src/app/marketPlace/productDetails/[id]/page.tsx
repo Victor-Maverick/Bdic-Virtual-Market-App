@@ -245,27 +245,31 @@ const ProductDetails = ({ params }: PageProps) => {
             <div className="flex gap-[10px] px-[100px]">
                 {/* Product Images Section */}
                 <div className="flex-col items-center">
-                    <div className="w-[719px] h-[749px] bg-[#F9F9F9] items-end flex justify-center mb-[10px]">
+                    {/* Main Image */}
+                    <div className="w-[719px] h-[749px] bg-[#F9F9F9] mb-[10px] overflow-hidden">
                         {productImages.length > 0 && (
                             <Image
-                                src={productImages[0]
-                                }
+                                src={productImages[0]}
                                 alt={product.name}
-                                height={698}
-                                width={698}
-                                className="object-contain"
+                                width={719}
+                                height={749}
+                                className="w-full h-full object-cover"
+                                style={{ objectPosition: 'center' }}
                             />
                         )}
                     </div>
+
+                    {/* Smaller Images */}
                     <div className="flex items-center gap-[8px] mb-2">
                         {productImages.slice(1, 4).map((image, index) => (
-                            <div key={index} className="flex w-[235px] h-[235px] bg-[#F9F9F9] justify-center items-end">
+                            <div key={index} className="w-[235px] h-[235px] bg-[#F9F9F9] overflow-hidden">
                                 <Image
                                     src={image}
                                     alt={product.name}
-                                    width={225}
+                                    width={235}
                                     height={235}
-                                    className="object-contain"
+                                    className="w-full h-full object-cover"
+                                    style={{ objectPosition: 'center' }}
                                 />
                             </div>
                         ))}
