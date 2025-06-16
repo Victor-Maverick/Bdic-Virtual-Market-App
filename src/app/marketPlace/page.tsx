@@ -1,5 +1,5 @@
 'use client'
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import BannerSection from "@/components/bannerSection";
 import Image, {StaticImageData} from 'next/image';
 import FeaturedCategories from "@/components/featuredCategories";
@@ -13,7 +13,6 @@ import highlightSet from '@/../public/assets/images/highlight set.png'
 import fashionIcon from '@/../public/assets/images/fashionIcon.png'
 import neckTie from '@/../public/assets/images/men tie.png'
 import skirtImg from '@/../public/assets/images/skirt.png'
-import { useState, useEffect} from "react";
 import axios from 'axios';
 import Footer from "@/components/footer";
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
@@ -320,6 +319,7 @@ const MarketPlace = () => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
+
             });
 
             if (response.data.success && response.data.data) {
@@ -362,8 +362,16 @@ const MarketPlace = () => {
     };
 
     useEffect(() => {
-        fetchProducts();
         fetchData();
+    }, []);
+
+    useEffect(() => {
+        fetchProducts();
+
+        const intervalId = setInterval(fetchProducts, 300000);
+
+        // Cleanup interval on component unmount
+        return () => clearInterval(intervalId);
     }, []);
 
     useEffect(() => {

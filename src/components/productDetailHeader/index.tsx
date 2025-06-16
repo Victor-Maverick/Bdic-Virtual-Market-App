@@ -5,66 +5,47 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import headerImg from "../../../public/assets/images/headerImg.png";
+import {useSession} from "next-auth/react";
 
 const DashboardHeader = () => {
-    const router = useRouter();
-    const [userName, setUserName] = useState<string | null>(null);
+    const [userName, setUserName] = useState<string | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
+    const { data: session, status } = useSession();
 
     useEffect(() => {
         const fetchUserProfile = async () => {
+            if (status === 'loading') return;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            if (status === 'unauthenticated' || !session?.accessToken) {
+                setIsLoading(false);
+                return;
+            }
+
             try {
-                // Safely check for localStorage availability
-                let token: string | null = null;
-                try {
-                    token = typeof window !== 'undefined' && window.localStorage ? localStorage.getItem('authToken') : null;
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                } catch (storageError) {
-                    // localStorage access failed - continue without token
-                    console.log('LocalStorage access failed');
-                }
-
-                if (!token) {
-                    setIsLoading(false);
-                    return;
-                }
-
                 const response = await axios.get('https://api.digitalmarke.bdic.ng/api/auth/profile', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                        // @ts-expect-error
+                        Authorization: `Bearer ${session.accessToken}`,
                     },
-                    // Add timeout to prevent hanging requests
-                    timeout: 10000
                 });
 
-                if (response?.status === 200 && response?.data?.firstName) {
+                if (response.status === 200) {
                     setUserName(response.data.firstName);
                 }
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (error) {
-                // Silently handle all errors - no UI impact
                 console.log('Profile fetch failed or user not authenticated');
             } finally {
-                // Ensure loading state is always cleared
-                try {
-                    setIsLoading(false);
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                } catch (stateError) {
-                    // Even if setState fails, don't throw
-                    console.log('State update failed');
-                }
+                setIsLoading(false);
             }
         };
 
-        // Wrap the entire function call in try-catch
-        try {
-            fetchUserProfile();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-            console.log('Failed to initiate profile fetch');
-            setIsLoading(false);
-        }
-    }, []);
+        fetchUserProfile();
+    }, [status, session]);
+
 
     // Safe navigation handlers
     const handleLogoClick = () => {

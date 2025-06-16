@@ -23,7 +23,7 @@ const EmailVerification = () => {
             {/* Left Panel - Main content */}
             <div className="w-full md:w-2/3 pb-10 z-10 flex flex-col">
                 {/* Logo */}
-                <div className="mt-8 md:mt-16 mx-auto md:mx-0 md:ml-24">
+                <div className="mt-8 md:mt-16 ml-[20px] mx-auto md:mx-0 md:ml-24">
                     <Image src={farmGoLogo} alt="logo" width={90} height={45} />
                 </div>
 

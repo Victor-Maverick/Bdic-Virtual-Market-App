@@ -125,7 +125,7 @@ const UserType = () => {
                 <Image
                     src={farmGoLogo}
                     alt="FarmGo logo"
-                    className="mt-[60px] ml-[102px]"
+                    className="mt-[60px] md:ml-[102px]"
                     width={90}
                     height={45}
                 />

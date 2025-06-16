@@ -128,21 +128,30 @@ const ProductDetails = ({ params }: PageProps) => {
         }
     ];
 
-    const handleAddToCart = () => {
+    const handleAddToCart = async () => {
         if (!product) return;
 
-        addToCart({
-            id: product.id,
-            name: product.name,
-            price: product.price,
-            image: product.mainImageUrl,
-            description: product.description
-        });
+        try {
+            await addToCart({
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                imageUrl: product.mainImageUrl,
+                description: product.description
+            });
 
-        toast.success(`${product.name} added to cart!`, {
-            position: "bottom-right",
-            duration: 3000,
-        });
+            toast.success(`${product.name} added to cart!`, {
+                position: "bottom-right",
+                duration: 3000,
+            });
+            router.push("/cart");
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            toast.error("Failed to add item to cart", {
+                position: "bottom-right",
+                duration: 3000,
+            });
+        }
         router.push("/cart")
     };
 

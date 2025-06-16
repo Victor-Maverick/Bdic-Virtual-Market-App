@@ -1,5 +1,6 @@
+//Cart/page.tsxx
 'use client';
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
@@ -19,9 +20,12 @@ import emptyCartImg from '@/../public/assets/images/archive.svg';
 import { Toaster, toast } from "react-hot-toast";
 import arrowRight from '@/../public/assets/images/green arrow.png'
 import checkIcon from '@/../public/assets/images/green tick.png'
-import axios from 'axios';
 
-const DELIVERY_FEE = 2000;
+import axios from 'axios';
+import { useSession } from 'next-auth/react';
+
+
+const DELIVERY_FEE = 1000;
 
 interface PaymentData {
     authorizationUrl: string;
@@ -100,6 +104,8 @@ const Cart = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    const { status } = useSession();
+    const isAuthenticated = status === 'authenticated';
 
     const {
         cartItems,
@@ -108,13 +114,83 @@ const Cart = () => {
         getTotalItems,
         getTotalPrice,
         clearCart,
+        fetchCart
     } = useCart();
+
+    const { checkout: apiCheckout } = useCart();
 
     // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastType, setToastType] = useState<"success" | "error">("success");
     const [toastMessage, setToastMessage] = useState("");
     const [toastSubMessage, setToastSubMessage] = useState("");
+
+    const verifyPayment = useCallback(async (transRef: string) => {
+        setIsVerifying(true);
+        setPaymentError(null);
+
+        try {
+            const response = await axios.get<VerifyPaymentResponse>(
+                `https://api.digitalmarke.bdic.ng/api/payments/verify/${transRef}`,
+                { timeout: 30000 }
+            );
+
+            if (response.data.data) {
+                const paymentData = response.data.data;
+                const expectedAmount = getStoredTotalAmount();
+
+                if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
+                    throw new Error('Payment amount does not match order total');
+                }
+
+                const buyerEmail = localStorage.getItem('userEmail');
+
+                // Handle null buyerEmail case
+                if (!buyerEmail) {
+                    throw new Error('User email not found. Please log in again.');
+                }
+
+                console.log("buyerEmail: ", buyerEmail);
+
+                // Create order after successful payment verification
+                const checkoutResponse = await apiCheckout({
+                    buyerEmail, // Now TypeScript knows this is definitely a string
+                    deliveryOption: selectedDeliveryOption,
+                    address: 'Shop 2C, Modern market, Makurdi'
+                });
+
+                const orderDetails: OrderDetails = {
+                    orderId: checkoutResponse.orderNumber || generateOrderId(),
+                    deliveryOption: selectedDeliveryOption,
+                    deliveryAddress: selectedDeliveryOption === 'pickup'
+                        ? 'Shop 2C, Modern market, Makurdi'
+                        : 'No. 4 Vandeikya Street, Makurdi',
+                    paymentAmount: paymentData.transAmount,
+                };
+
+                setOrderDetails(orderDetails);
+                clearStoredTotalAmount();
+                clearCart();
+                setShowSuccessModal(true);
+                showSuccessToast('Payment Successful', 'Your order has been placed successfully');
+                router.replace('/cart', undefined);
+            } else {
+                throw new Error('Payment verification failed');
+            }
+        } catch (error) {
+            console.error('Payment verification error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
+            setPaymentError(errorMessage);
+            showErrorToast('Payment Error', errorMessage);
+        } finally {
+            setIsVerifying(false);
+        }
+    }, [selectedDeliveryOption, apiCheckout, clearCart, router]);
+
+    // Update useEffect dependencies
+    useEffect(() => {
+        fetchCart(); // Fetch cart data when component mounts
+    }, [fetchCart]); // Added fetchCart as dependency
 
     useEffect(() => {
         const transRef = searchParams.get('transRef');
@@ -129,60 +205,7 @@ const Cart = () => {
         if (paymentStatus && !transRef) {
             router.replace('/cart', undefined);
         }
-    }, [searchParams, showSuccessModal]);
-
-    const verifyPayment = async (transRef: string) => {
-        setIsVerifying(true);
-        setPaymentError(null);
-
-        try {
-            const response = await axios.get<VerifyPaymentResponse>(
-                `https://api.digitalmarke.bdic.ng/api/payments/verify/${transRef}`,
-                { timeout: 30000 }
-            );
-
-            if (response.data.data) {
-                const paymentData = response.data.data;
-                const expectedAmount = getStoredTotalAmount();
-
-                // Validate payment amount
-                if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
-                    throw new Error('Payment amount does not match order total');
-                }
-
-                // Prepare order details
-                const orderDetails: OrderDetails = {
-                    orderId: generateOrderId(),
-                    deliveryOption: selectedDeliveryOption,
-                    deliveryAddress: selectedDeliveryOption === 'pickup'
-                        ? 'Shop 2C, Modern market, Makurdi'
-                        : 'No. 4 Vandeikya Street, Makurdi',
-                    paymentAmount: paymentData.transAmount,
-                };
-
-                // Update state and show success
-                setOrderDetails(orderDetails);
-                clearCart();
-                clearStoredTotalAmount();
-                setShowSuccessModal(true);
-                showSuccessToast('Payment Successful', 'Your order has been placed successfully');
-
-                // Clear the transaction reference from URL
-                router.replace('/cart', undefined);
-            } else {
-                throw new Error('Payment verification failed');
-            }
-        } catch (error) {
-            console.error('Payment verification error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
-            setPaymentError(errorMessage);
-            showErrorToast('Payment Error', errorMessage);
-        } finally {
-            setIsVerifying(false);
-        }
-    };
-
-
+    }, [searchParams, showSuccessModal, verifyPayment, router]);
     const showSuccessToast = (message: string, subMessage: string) => {
         setToastType("success");
         setToastMessage(message);
@@ -235,7 +258,7 @@ const Cart = () => {
                 callbackUrl: `${window.location.origin}/cart`,
                 metadata: {
                     cartItems: cartItems.map(item => ({
-                        id: item.id,
+                        id: item.productId,
                         name: item.name,
                         quantity: item.quantity,
                         price: item.price
@@ -287,13 +310,18 @@ const Cart = () => {
     };
 
     const handleCheckout = async () => {
+        // First check if user is authenticated
+        if (!isAuthenticated) {
+            // Store the current URL to redirect back after login
+            localStorage.setItem('preAuthUrl', window.location.pathname);
+            router.push('/login');
+            return;
+        }
         setIsLoading(true);
-
         try {
             if (cartItems.length === 0) {
                 throw new Error('Your cart is empty');
             }
-
             // Store the expected amount before payment
             const totalAmount = getTotalPrice() + DELIVERY_FEE - discount;
             storeTotalAmount(totalAmount);
@@ -312,6 +340,7 @@ const Cart = () => {
             setIsLoading(false);
         }
     };
+
     const handleSuccessModalClose = () => {
         setShowSuccessModal(false);
         router.push('/buyer/orders');
@@ -484,12 +513,12 @@ const Cart = () => {
                     <div className="border-[0.5px] border-[#ededed] w-[60%] h-full rounded-[14px]">
                         {cartItems.map((product, index) => (
                             <div
-                                key={`${product.id}-${index}`}
+                                key={`${product.productId}-${index}`}
                                 className={`flex items-center ${index !== cartItems.length - 1 ? 'border-b border-[#ededed]' : ''}`}
                             >
                                 <div className="flex border-r border-[#ededed] w-[133px] h-[110px] overflow-hidden">
                                     <Image
-                                        src={product.image}
+                                        src={product.imageUrl}
                                         alt={product.name}
                                         width={133}
                                         height={110}
@@ -512,25 +541,22 @@ const Cart = () => {
                                         </p>
                                     </div>
 
-                                    <div className="w-[114px] h-[38px] flex justify-center items-center shrink-0">
-                                        <button
-                                            className="w-[38px] h-[38px] flex justify-center items-center rounded-[8px] bg-[#F9F9F9] border-[0.5px] border-[#ededed] hover:bg-[#e5e5e5] transition-colors"
-                                            onClick={() => updateQuantity(product.id, -1)}
-                                            disabled={product.quantity <= 1}
-                                        >
-                                            <p className="text-[14px] font-medium">-</p>
-                                        </button>
-                                        <div className="w-[38px] h-[38px] flex justify-center items-center">
-                                            <p className="text-[14px] font-medium">{product.quantity}</p>
-                                        </div>
-                                        <button
-                                            className="w-[38px] h-[38px] flex rounded-[8px] justify-center items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] hover:bg-[#e5e5e5] transition-colors"
-                                            onClick={() => updateQuantity(product.id, 1)}
-                                        >
-                                            <p className="text-[14px] font-medium">+</p>
-                                        </button>
+                                    <button
+                                        className="w-[38px] h-[38px] flex justify-center items-center rounded-[8px] bg-[#F9F9F9] border-[0.5px] border-[#ededed] hover:bg-[#e5e5e5] transition-colors"
+                                        onClick={() => updateQuantity(product.itemId, -1)}
+                                        disabled={product.quantity <= 1}
+                                    >
+                                        <p className="text-[14px] font-medium">-</p>
+                                    </button>
+                                    <div className="w-[38px] h-[38px] flex justify-center items-center">
+                                        <p className="text-[14px] font-medium">{product.quantity}</p>
                                     </div>
-
+                                    <button
+                                        className="w-[38px] h-[38px] flex rounded-[8px] justify-center items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] hover:bg-[#e5e5e5] transition-colors"
+                                        onClick={() => updateQuantity(product.itemId, 1)}
+                                    >
+                                        <p className="text-[14px] font-medium">+</p>
+                                    </button>
                                     <div className="flex gap-[4px] items-center w-[20%] justify-end">
                                         <Image
                                             src={trash}
@@ -539,14 +565,14 @@ const Cart = () => {
                                             height={19}
                                             className="w-[19px] h-[19px] cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => {
-                                                removeFromCart(product.id);
+                                                removeFromCart(product.itemId);
                                                 toast.success(`${product.name} removed from cart`);
                                             }}
                                         />
                                         <p
                                             className="text-[14px] text-[#707070] font-normal cursor-pointer hover:text-[#505050] transition-colors"
                                             onClick={() => {
-                                                removeFromCart(product.id);
+                                                removeFromCart(product.itemId);
                                                 toast.success(`${product.name} removed from cart`);
                                             }}
                                         >

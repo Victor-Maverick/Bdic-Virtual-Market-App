@@ -263,7 +263,7 @@ const GetStarted = () => {
 
             <div className="flex min-h-screen relative z-10">
                 <div className="w-full md:w-[65%] pb-[40px] flex flex-col bg-white">
-                    <div className={`mt-[40px] md:mt-[60px] mx-auto md:ml-[102px] md:mx-0 ${isMobile ? 'ml-[102px]' : 'ml-[102px]'}`}>
+                    <div className={`mt-[40px] md:mt-[60px] mx-auto md:ml-[102px] md:mx-0 ${isMobile ? 'ml-[20px]' : 'ml-[102px]'}`}>
                         <Image src={farmGoLogo} alt="FarmGo logo" width={90} height={45} />
                     </div>
 

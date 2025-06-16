@@ -10,42 +10,50 @@ import { useRouter, usePathname } from "next/navigation";
 import { useCart } from "@/context/CartContext";
 import {useEffect, useState} from "react";
 import axios from "axios";
+import {useSession} from "next-auth/react";
 
 const MarketPlaceHeader = () => {
-    const [userName, setUserName] = useState<string | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const router = useRouter();
     const pathname = usePathname();
     const { cartItems } = useCart();
 
+    const [userName, setUserName] = useState<string | undefined>(undefined);
+    const [isLoading, setIsLoading] = useState(true);
+    const router = useRouter();
+    const { data: session, status } = useSession();
+
     useEffect(() => {
         const fetchUserProfile = async () => {
-            try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    setIsLoading(false);
-                    return;
-                }
+            if (status === 'loading') return;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            if (status === 'unauthenticated' || !session?.accessToken) {
+                setIsLoading(false);
+                return;
+            }
 
+            try {
                 const response = await axios.get('https://api.digitalmarke.bdic.ng/api/auth/profile', {
                     headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                        // @ts-expect-error
+                        Authorization: `Bearer ${session.accessToken}`,
+                    },
                 });
 
-                if (response.status === 200 && response.data.firstName) {
+                if (response.status === 200) {
                     setUserName(response.data.firstName);
                 }
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (error) {
-                // Silently handle error - user might not be authenticated
+                console.log('Profile fetch failed or user not authenticated');
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchUserProfile();
-    }, []);
+    }, [status, session]);
+
 
     const handleNavigation = (path: string) => {
         // Only navigate if we're not already on that path

@@ -3,23 +3,117 @@ import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
 import arrowBack from "../../../../public/assets/images/arrow-right.svg";
 import arrowRight from "../../../../public/assets/images/greyforwardarrow.svg";
-import React from "react";
-import iphone from "../../../../public/assets/images/iphone13.svg";
-import fan from "../../../../public/assets/images/table fan.png";
-import pepper from "../../../../public/assets/images/pepper.jpeg";
-import {useRouter} from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
 
+interface OrderItem {
+    id: number;
+    productId: number;
+    name: string;
+    unitPrice: number;
+    quantity: number;
+    productImage: string;
+    description: string;
+}
 
+interface OrderResponse {
+    id: number;
+    orderNumber: string;
+    status: string;
+    totalAmount: number;
+    deliveryFee: number;
+    grandTotal: number;
+    createdAt: string;
+    items: OrderItem[];
+}
 
-const initialProducts = [
-    { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "850,000", quantity: 1, date: "04 May, 2025", status: "Pending" },
-    { name: "Table Fan", description: "Powerful cooling fan", image: fan, price: "950,000", quantity: 1, date: "04 May, 2025", status: "In-transit" },
-    { name: "Fresh Pepper", description: "Organic farm produce", image: pepper, price: "35,000", quantity: 1, date: "04 May, 2025", status: "Returned" },
-    { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "40,000", quantity: 1, date: "04 May, 2025", status: "Delivered" },
-];
-
-const Orders = ()=>{
+const Orders = () => {
     const router = useRouter();
+    const [orders, setOrders] = useState<OrderResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            const userEmail = localStorage.getItem('userEmail');
+            if (!userEmail) {
+                router.push('/login');
+                return;
+            }
+            try {
+                const response = await axios.get(
+                    'https://api.digitalmarke.bdic.ng/api/orders/user',
+                    { params: { buyerEmail: userEmail } }
+                );
+                console.log("lists:::", response.data)
+                setOrders(response.data);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchOrders();
+    }, [router]);
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'decimal',
+            maximumFractionDigits: 2
+        }).format(price);
+    };
+
+    const getStatusStyle = (status: string) => {
+        switch (status) {
+            case 'DELIVERED':
+                return 'bg-[#F9FDE8] text-[#0C4F24]';
+            case 'IN_TRANSIT':
+                return 'bg-[#FFFAEB] text-[#F99007]';
+            case 'RETURNED':
+                return 'bg-[#FFEBEB] text-[#F90707]';
+            default:
+                return 'bg-[#E7E7E7] text-[#1E1E1E]';
+        }
+    };
+
+    const getStatusDisplayText = (status: string) => {
+        switch (status) {
+            case 'DELIVERED':
+                return 'Delivered';
+            case 'IN_TRANSIT':
+                return 'In-transit';
+            case 'RETURNED':
+                return 'Returned';
+            case 'PENDING':
+                return 'Pending';
+            default:
+                return status;
+        }
+    };
+
+    const getProductDisplayName = (items: OrderItem[]) => {
+        if (items.length === 0) return 'No items';
+        if (items.length === 1) return items[0].name;
+        return `${items[0].name} + ${items.length - 1} other item${items.length > 2 ? 's' : ''}`;
+    };
+
+    if (loading) {
+        return (
+            <>
+                <MarketPlaceHeader />
+                <div className="flex justify-center items-center h-screen">
+                    <p>Loading...</p>
+                </div>
+            </>
+        );
+    }
+
     return (
         <>
             <MarketPlaceHeader />
@@ -46,34 +140,55 @@ const Orders = ()=>{
                         </div>
                     </div>
                     <div className="flex flex-col w-[779px] gap-[24px]">
-                        <p className="text-[#000000] text-[14] font-medium">My orders (24)</p>
+                        <p className="text-[#000000] text-[14px] font-medium">My orders ({orders.length})</p>
                         <div className="h-[604px] border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
-                            {initialProducts.map((product, index) => {
-                                const isLastItem = index === initialProducts.length - 1;
+                            {orders.map((order, index) => {
+                                const isLastItem = index === orders.length - 1;
+                                const firstItem = order.items[0] || {
+                                    name: 'No product',
+                                    productImage: '',
+                                    description: ''
+                                };
+
                                 return (
-                                    <div key={index} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none"}`}>
+                                    <div key={order.id} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none"}`}>
                                         <div className="flex border-r border-[#ededed] w-[169px] h-[151px] overflow-hidden">
-                                            <Image src={product.image} alt="image" width={133} height={100} className="w-full h-full overflow-hidden" />
+                                            {firstItem.productImage ? (
+                                                <Image
+                                                    src={firstItem.productImage}
+                                                    alt={`product`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                                    No image
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex items-center w-full px-[20px] justify-between">
                                             <div className="flex flex-col w-[30%]">
                                                 <div className="mb-[13px]">
-                                                    <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">{product.name}</p>
-                                                    <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">{product.description}</p>
+                                                    <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">
+                                                        {getProductDisplayName(order.items)}
+                                                    </p>
+                                                    <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
+                                                        {firstItem.description || 'No description'}
+                                                    </p>
                                                 </div>
 
                                                 <div className="flex flex-col">
-                                                    <p className="font-medium text-[#1E1E1E] text-[16px]">₦{product.price}.00</p>
-                                                    <p className="text-[#3D3D3D] text-[10px]">{product.date}</p>
+                                                    <p className="font-medium text-[#1E1E1E] text-[16px]">
+                                                        ₦{formatPrice(order.grandTotal)}
+                                                    </p>
+                                                    <p className="text-[#3D3D3D] text-[10px]">
+                                                        {formatDate(order.createdAt)}
+                                                    </p>
                                                 </div>
-
                                             </div>
 
-                                            <div className={`flex h-[42px] w-[80px] items-center text-[14px] font-medium justify-center rounded-[100px]
-                                             ${product.status==="Delivered"?'bg-[#F9FDE8] text-[#0C4F24]'
-                                                :product.status==='In-transit'?'bg-[#FFFAEB] text-[#F99007]':'bg-[#E7E7E7] text-[#1E1E1E]'}`}>
-                                                <p>{product.status}</p>
+                                            <div className={`flex h-[42px] w-[80px] items-center text-[14px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`}>
+                                                <p>{getStatusDisplayText(order.status)}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -84,6 +199,7 @@ const Orders = ()=>{
                 </div>
             </div>
         </>
-    )
-}
+    );
+};
+
 export default Orders;
