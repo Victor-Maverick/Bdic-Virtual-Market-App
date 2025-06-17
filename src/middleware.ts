@@ -58,7 +58,6 @@ export const config = {
         '/vendor/:path*',
         '/logistics/:path*',
         '/rider/:path*',
-        '/marketplace/:path*',
-        '/cart/:path*'
+        '/marketplace/:path*'
     ],
 };

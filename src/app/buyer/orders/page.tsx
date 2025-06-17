@@ -117,7 +117,7 @@ const Orders = () => {
     return (
         <>
             <MarketPlaceHeader />
-            <div className="h-[48px] w-full  border-y-[0.5px] border-[#EDEDED]">
+            <div className="h-[48px] w-full border-y-[0.5px] border-[#EDEDED]">
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
                     <Image src={arrowBack} alt={'imagw'}/>
                     <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Wishlist</span></p>
@@ -130,70 +130,78 @@ const Orders = () => {
                             <p>Go to profile</p>
                             <Image src={arrowRight} alt={'image'}/>
                         </div>
-                        <div  className="flex flex-col h-[80px] w-[381px] mt-[6px] rounded-[12px] border border-[#eeeeee]">
-                            <div onClick={()=>{router.push("/buyer/wishlist")}} className="w-full text-[#022B23]  text-[12px] font-medium h-[40px]  rounded-t-[12px] flex items-center px-[8px] ">
+                        <div className="flex flex-col h-[80px] w-[381px] mt-[6px] rounded-[12px] border border-[#eeeeee]">
+                            <div onClick={() => {router.push("/buyer/wishlist")}} className="w-full text-[#022B23] text-[12px] font-medium h-[40px] rounded-t-[12px] flex items-center px-[8px]">
                                 <p>Wishlist</p>
                             </div>
-                            <div onClick={()=>{router.push("/buyer/orders")}} className="w-full text-[#022B23]  text-[12px]  h-[40px] rounded-b-[12px] bg-[#f8f8f8] flex items-center px-[8px] ">
+                            <div onClick={() => {router.push("/buyer/orders")}} className="w-full text-[#022B23] text-[12px] h-[40px] rounded-b-[12px] bg-[#f8f8f8] flex items-center px-[8px]">
                                 <p>My orders</p>
                             </div>
                         </div>
                     </div>
                     <div className="flex flex-col w-[779px] gap-[24px]">
                         <p className="text-[#000000] text-[14px] font-medium">My orders ({orders.length})</p>
-                        <div className="h-[604px] border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
-                            {orders.map((order, index) => {
-                                const isLastItem = index === orders.length - 1;
-                                const firstItem = order.items[0] || {
-                                    name: 'No product',
-                                    productImage: '',
-                                    description: ''
-                                };
+                        <div className="border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
+                            {orders.length === 0 ? (
+                                <div className="flex items-center justify-center h-[151px] text-[#3D3D3D] text-[14px]">
+                                    <p>No orders yet</p>
+                                </div>
+                            ) : (
+                                orders.map((order, index) => {
+                                    const isLastItem = index === orders.length - 1;
+                                    const firstItem = order.items[0] || {
+                                        name: 'No product',
+                                        productImage: '',
+                                        description: ''
+                                    };
 
-                                return (
-                                    <div key={order.id} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none"}`}>
-                                        <div className="flex border-r border-[#ededed] w-[169px] h-[151px] overflow-hidden">
-                                            {firstItem.productImage ? (
-                                                <Image
-                                                    src={firstItem.productImage}
-                                                    alt={`product`}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                                    No image
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex items-center w-full px-[20px] justify-between">
-                                            <div className="flex flex-col w-[30%]">
-                                                <div className="mb-[13px]">
-                                                    <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">
-                                                        {getProductDisplayName(order.items)}
-                                                    </p>
-                                                    <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
-                                                        {firstItem.description || 'No description'}
-                                                    </p>
-                                                </div>
-
-                                                <div className="flex flex-col">
-                                                    <p className="font-medium text-[#1E1E1E] text-[16px]">
-                                                        ₦{formatPrice(order.grandTotal)}
-                                                    </p>
-                                                    <p className="text-[#3D3D3D] text-[10px]">
-                                                        {formatDate(order.createdAt)}
-                                                    </p>
-                                                </div>
+                                    return (
+                                        <div key={order.id} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none h-[151px]"}`}>
+                                            <div className="flex border-r border-[#ededed] w-[169px] h-[151px] overflow-hidden">
+                                                {firstItem.productImage ? (
+                                                    <Image
+                                                        src={firstItem.productImage}
+                                                        alt={`product`}
+                                                        width={168}
+                                                        height={150}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                                                        No image
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            <div className={`flex h-[42px] w-[80px] items-center text-[14px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`}>
-                                                <p>{getStatusDisplayText(order.status)}</p>
+                                            <div className="flex items-center w-full px-[20px] justify-between">
+                                                <div className="flex flex-col w-[30%]">
+                                                    <div className="mb-[13px]">
+                                                        <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">
+                                                            {getProductDisplayName(order.items)}
+                                                        </p>
+                                                        <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
+                                                            {firstItem.description || 'No description'}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="flex flex-col">
+                                                        <p className="font-medium text-[#1E1E1E] text-[16px]">
+                                                            ₦{formatPrice(order.grandTotal)}
+                                                        </p>
+                                                        <p className="text-[#3D3D3D] text-[10px]">
+                                                            {formatDate(order.createdAt)}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className={`flex h-[42px] w-[80px] items-center text-[14px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`}>
+                                                    <p>{getStatusDisplayText(order.status)}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            )}
                         </div>
                     </div>
                 </div>

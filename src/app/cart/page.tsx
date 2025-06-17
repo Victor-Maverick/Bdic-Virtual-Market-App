@@ -26,7 +26,6 @@ import { useSession } from 'next-auth/react';
 
 
 const DELIVERY_FEE = 1000;
-
 interface PaymentData {
     authorizationUrl: string;
     reference: string;
@@ -87,10 +86,19 @@ const getStoredTotalAmount = (): number | null => {
     return amount;
 };
 
+interface Address {
+    id: string;
+    address: string;
+    isDefault: boolean;
+}
+
 // Clear the stored amount
 const clearStoredTotalAmount = () => {
     localStorage.removeItem('expectedPayment');
 };
+
+type HoverOption = "pickup" | "delivery" | "add" | null;
+
 
 const Cart = () => {
     const router = useRouter();
@@ -104,6 +112,10 @@ const Cart = () => {
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
     const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [userAddresses, setUserAddresses] = useState<Address[]>([]);
+    const [selectedAddress, setSelectedAddress] = useState<string>('Shop 2C, Modern market, Makurdi');
+    const [showAddAddressModal, setShowAddAddressModal] = useState(false);
+    const [newAddress, setNewAddress] = useState('');
     const { status } = useSession();
     const isAuthenticated = status === 'authenticated';
 
@@ -144,19 +156,15 @@ const Cart = () => {
                 }
 
                 const buyerEmail = localStorage.getItem('userEmail');
-
-                // Handle null buyerEmail case
                 if (!buyerEmail) {
                     throw new Error('User email not found. Please log in again.');
                 }
-
-                console.log("buyerEmail: ", buyerEmail);
 
                 // Create order after successful payment verification
                 const checkoutResponse = await apiCheckout({
                     buyerEmail, // Now TypeScript knows this is definitely a string
                     deliveryOption: selectedDeliveryOption,
-                    address: 'Shop 2C, Modern market, Makurdi'
+                    address: selectedAddress
                 });
 
                 const orderDetails: OrderDetails = {
@@ -185,7 +193,28 @@ const Cart = () => {
         } finally {
             setIsVerifying(false);
         }
-    }, [selectedDeliveryOption, apiCheckout, clearCart, router]);
+    }, [selectedDeliveryOption,setSelectedAddress, apiCheckout, clearCart, router]);
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            // Mock function to fetch user addresses - replace with actual API call
+            const fetchUserAddresses = async () => {
+                try {
+                    // This would be your actual API call to get user addresses
+                    const mockAddresses: Address[] = [
+                        { id: '1', address: 'Shop 2C, Modern market, Makurdi', isDefault: true },
+                        { id: '2', address: 'No. 4 Vandeikya Street, Makurdi', isDefault: false },
+                    ];
+                    setUserAddresses(mockAddresses);
+                    setSelectedAddress(mockAddresses.find(addr => addr.isDefault)?.address || mockAddresses[0].address);
+                } catch (error) {
+                    console.error('Error fetching addresses:', error);
+                }
+            };
+
+            fetchUserAddresses();
+        }
+    }, [isAuthenticated]);
 
     // Update useEffect dependencies
     useEffect(() => {
@@ -248,11 +277,13 @@ const Cart = () => {
     };
 
     const initializePayment = async (): Promise<PaymentData> => {
+        const userEmail = localStorage.getItem("userEmail")
+        console.log("payment email: ", userEmail)
         try {
             const totalAmount = getTotalPrice() + DELIVERY_FEE - discount;
 
             const requestData = {
-                email: "ameliageorge@gmail.com", // Replace with actual customer email
+                email: userEmail, // Replace with actual customer email
                 amount: totalAmount * 100, // Convert to kobo
                 currency: 'NGN',
                 callbackUrl: `${window.location.origin}/cart`,
@@ -312,20 +343,22 @@ const Cart = () => {
     const handleCheckout = async () => {
         // First check if user is authenticated
         if (!isAuthenticated) {
+            toast.error('Please login to proceed with payment');
             // Store the current URL to redirect back after login
             localStorage.setItem('preAuthUrl', window.location.pathname);
             router.push('/login');
             return;
         }
+
         setIsLoading(true);
         try {
             if (cartItems.length === 0) {
                 throw new Error('Your cart is empty');
             }
+
             // Store the expected amount before payment
             const totalAmount = getTotalPrice() + DELIVERY_FEE - discount;
             storeTotalAmount(totalAmount);
-
             // Initialize payment
             const paymentData = await initializePayment();
 
@@ -339,6 +372,26 @@ const Cart = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+// Add function to handle new address submission
+    const handleAddNewAddress = () => {
+        if (!newAddress.trim()) {
+            toast.error('Please enter a valid address');
+            return;
+        }
+
+        const newAddressObj: Address = {
+            id: Date.now().toString(),
+            address: newAddress,
+            isDefault: false
+        };
+
+        setUserAddresses([...userAddresses, newAddressObj]);
+        setSelectedAddress(newAddress);
+        setSelectedDeliveryOption('delivery');
+        setShowAddAddressModal(false);
+        setNewAddress('');
     };
 
     const handleSuccessModalClose = () => {
@@ -594,14 +647,12 @@ const Cart = () => {
                                     ₦{getTotalPrice().toLocaleString()}.00
                                 </p>
                             </div>
-
                             <div className="flex justify-between items-center">
                                 <p className="text-[#022B23] text-[14px] font-normal">Discount</p>
                                 <p className="text-[14px] font-semibold text-[#1E1E1E]">
                                     -₦{discount.toLocaleString()}.00
                                 </p>
                             </div>
-
                             <div className="flex justify-between items-center">
                                 <p className="text-[#022B23] text-[14px] font-normal">VAT</p>
                                 <p className="text-[14px] font-semibold text-[#1E1E1E]">0%</p>
@@ -613,7 +664,6 @@ const Cart = () => {
                                     ₦{DELIVERY_FEE.toLocaleString()}.00
                                 </p>
                             </div>
-
                             <div className="border-t border-[#ededed] pt-3 mt-3">
                                 <div className="flex justify-between items-center">
                                     <p className="text-[#022B23] text-[18px] font-medium">Total</p>
@@ -659,7 +709,10 @@ const Cart = () => {
                                     }`}
                                     onMouseEnter={() => setHoveredOption('pickup')}
                                     onMouseLeave={() => setHoveredOption(null)}
-                                    onClick={() => setSelectedDeliveryOption('pickup')}
+                                    onClick={() => {
+                                        setSelectedDeliveryOption('pickup');
+                                        setSelectedAddress('Shop 2C, Modern market, Makurdi');
+                                    }}
                                 >
                                     <Image
                                         src={
@@ -677,34 +730,39 @@ const Cart = () => {
                                     </div>
                                 </div>
 
-                                {/* Delivery Option */}
-                                <div
-                                    className={`flex gap-[10px] py-[10px] px-[8px] cursor-pointer rounded-[10px] transition-colors ${
-                                        selectedDeliveryOption === 'delivery'
-                                            ? 'bg-[#022B23] text-white'
-                                            : hoveredOption === 'delivery'
+                                {userAddresses.filter(addr => addr.address !== 'Shop 2C, Modern market, Makurdi').map((address) => (
+                                    <div
+                                        key={address.id}
+                                        className={`flex gap-[10px] py-[10px] px-[8px] cursor-pointer rounded-[10px] transition-colors ${
+                                            selectedDeliveryOption === 'delivery' && selectedAddress === address.address
                                                 ? 'bg-[#022B23] text-white'
-                                                : ''
-                                    }`}
-                                    onMouseEnter={() => setHoveredOption('delivery')}
-                                    onMouseLeave={() => setHoveredOption(null)}
-                                    onClick={() => setSelectedDeliveryOption('delivery')}
-                                >
-                                    <Image
-                                        src={
-                                            selectedDeliveryOption === 'delivery' || hoveredOption === 'delivery'
-                                                ? whiteAddressIcon
-                                                : grayAddressIcon
-                                        }
-                                        alt="Delivery"
-                                        width={20}
-                                        height={20}
-                                    />
-                                    <div className="flex-col">
-                                        <p className="text-[14px] font-medium">Delivery to address</p>
-                                        <p className="text-[12px]">No. 4 Vandeikya Street, Makurdi</p>
+                                                : hoveredOption === address.id
+                                                    ? 'bg-[#022B23] text-white'
+                                                    : ''
+                                        }`}
+                                        onMouseEnter={() => setHoveredOption(address.id as HoverOption)}
+                                        onMouseLeave={() => setHoveredOption(null)}
+                                        onClick={() => {
+                                            setSelectedDeliveryOption('delivery');
+                                            setSelectedAddress(address.address);
+                                        }}
+                                    >
+                                        <Image
+                                            src={
+                                                selectedDeliveryOption === 'delivery' && selectedAddress === address.address
+                                                    ? whiteAddressIcon
+                                                    : grayAddressIcon
+                                            }
+                                            alt="Delivery"
+                                            width={20}
+                                            height={20}
+                                        />
+                                        <div className="flex-col">
+                                            <p className="text-[14px] font-medium">Delivery to address</p>
+                                            <p className="text-[12px]">{address.address}</p>
+                                        </div>
                                     </div>
-                                </div>
+                                ))}
 
                                 {/* Add New Address Option */}
                                 <div
@@ -713,10 +771,7 @@ const Cart = () => {
                                     }`}
                                     onMouseEnter={() => setHoveredOption('add')}
                                     onMouseLeave={() => setHoveredOption(null)}
-                                    onClick={() => {
-                                        // Handle add new address functionality here
-                                        console.log('Add new address clicked');
-                                    }}
+                                    onClick={() => setShowAddAddressModal(true)}
                                 >
                                     <Image src={addIcon} alt="Add" width={20} height={20} />
                                     <div className="flex-col">
@@ -726,6 +781,35 @@ const Cart = () => {
                                 </div>
                             </div>
 
+                            {/* Add Address Modal */}
+                            {showAddAddressModal && (
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+                                    <div className="bg-white p-6 rounded-lg max-w-md w-full">
+                                        <h3 className="text-lg font-medium mb-4">Add New Address</h3>
+                                        <textarea
+                                            className="w-full p-2 border border-gray-300 rounded mb-4"
+                                            rows={3}
+                                            placeholder="Enter full address"
+                                            value={newAddress}
+                                            onChange={(e) => setNewAddress(e.target.value)}
+                                        />
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                className="px-4 py-2 border border-gray-300 rounded"
+                                                onClick={() => setShowAddAddressModal(false)}
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                className="px-4 py-2 bg-[#022B23] text-white rounded"
+                                                onClick={handleAddNewAddress}
+                                            >
+                                                Save Address
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             <button
                                 onClick={handleCheckout}
                                 disabled={isLoading || cartItems.length === 0}
