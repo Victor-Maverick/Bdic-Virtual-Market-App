@@ -3,7 +3,7 @@
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import cartIcon from '../../../public/assets/images/black cart.png';
+import cartIcon from '../../../public/assets/images/cart.svg';
 
 const CartIndicator = () => {
     const { cartItems } = useCart();

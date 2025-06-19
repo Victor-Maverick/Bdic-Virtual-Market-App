@@ -47,7 +47,6 @@ export async function middleware(req: NextRequest) {
             return NextResponse.redirect(new URL('/unauthorized', req.url));
         }
     }
-
     // Continue if all checks pass or route isn't protected
     return NextResponse.next();
 }

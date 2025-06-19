@@ -14,7 +14,7 @@ import greenTick from '@/../public/assets/images/greentick.svg';
 import greyTick from '@/../public/assets/images/greytick.svg';
 import Toast from "@/components/toast";
 
-type UserTypeOption = 'BUYER' | 'VENDOR' | 'LOGISTIC';
+type UserTypeOption = 'BUYER' | 'VENDOR' | 'LOGISTICS';
 
 const UserType = () => {
     const router = useRouter();
@@ -58,7 +58,7 @@ const UserType = () => {
 
             const response = await axios.post('https://api.digitalmarke.bdic.ng/api/users/add-role', {
                 email: email,
-                name: roleName
+                roleName: roleName
             });
 
             if (response.data.success) {
@@ -80,7 +80,7 @@ const UserType = () => {
                     case 'VENDOR':
                         router.push("/welcome/vendor");
                         break;
-                    case 'LOGISTIC':
+                    case 'LOGISTICS':
                         router.push("/welcome/logistics");
                         break;
                     default:

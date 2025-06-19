@@ -89,6 +89,7 @@ const Login = () => {
                 redirect: false,
             });
 
+
             if (result?.error) {
                 setToastType('error');
                 setToastMessage('Login failed');
@@ -99,8 +100,6 @@ const Login = () => {
                 const session = await response.json();
                 const roles = session?.user?.roles || [];
                 localStorage.setItem("userEmail", form.email)
-                console.log("roles: ",roles);
-
                 setToastType('success');
                 setToastMessage('Login successful');
                 setToastSubMessage('You are being redirected');
@@ -120,7 +119,7 @@ const Login = () => {
                 } else if (roles.includes('RIDER')) {
                     router.push('/rider/dashboard');
                 } else if (roles.includes('BUYER')) {
-                    router.push('/marketplace');
+                    router.push('/marketPlace');
                 } else {
                     router.push('/dashboard');
                 }
@@ -138,7 +137,6 @@ const Login = () => {
     };
 
     const handleCloseToast = () => setShowToast(false);
-
     return (
         <>
             {showToast && (

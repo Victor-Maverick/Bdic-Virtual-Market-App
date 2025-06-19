@@ -116,8 +116,9 @@ const Cart = () => {
     const [selectedAddress, setSelectedAddress] = useState<string>('Shop 2C, Modern market, Makurdi');
     const [showAddAddressModal, setShowAddAddressModal] = useState(false);
     const [newAddress, setNewAddress] = useState('');
-    const { status } = useSession();
-    const isAuthenticated = status === 'authenticated';
+    const { data: session } = useSession();
+    const isAuthenticated = !!session?.user;
+
 
     const {
         cartItems,
@@ -341,7 +342,6 @@ const Cart = () => {
     };
 
     const handleCheckout = async () => {
-        // First check if user is authenticated
         if (!isAuthenticated) {
             toast.error('Please login to proceed with payment');
             // Store the current URL to redirect back after login

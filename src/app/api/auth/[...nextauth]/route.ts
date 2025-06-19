@@ -22,13 +22,16 @@ const authOptions: NextAuthOptions = {
                         password: credentials.password,
                     });
 
-                    const { token, roles } = response.data;
-                    if (token && roles) {
+                    const loginData = response.data.data;
+
+                    console.log("Login response: ",response.data.data)
+                    if (loginData) {
+
                         return {
                             id: credentials.email, // Use email as ID
                             email: credentials.email,
-                            accessToken: token, // Store backend token
-                            roles,
+                            accessToken: loginData.token, // Store backend token
+                            roles: loginData.roles,
                         };
                     }
                     return null;

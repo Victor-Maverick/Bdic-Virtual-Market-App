@@ -186,8 +186,8 @@ const GetStarted = () => {
         try {
             const formData = new FormData();
             formData.append('email', form.email);
-            formData.append('surname', form.lastName);
-            formData.append('otherName', form.firstName);
+            formData.append('lastName', form.lastName);
+            formData.append('firstName', form.firstName);
             formData.append('password', form.password);
 
             const response = await axios.post(`${API_URL}/api/users/register`, formData, {
