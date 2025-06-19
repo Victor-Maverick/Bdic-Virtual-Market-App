@@ -21,6 +21,14 @@ type MenuOption =
     | 'notifications'
     | 'settings';
 
+interface MenuItem {
+    id: MenuOption;
+    icon: StaticImageData;
+    label: string;
+    widthClass: string;
+    notifications?: string; // Make notifications optional
+}
+
 interface DashboardOptionsProps {
     initialSelected?: MenuOption;
 }
@@ -32,18 +40,32 @@ const DashboardOptions = ({
     const pathname = usePathname();
     const [selectedOption, setSelectedOption] = useState<MenuOption>(initialSelected);
 
-    useEffect(() => {
-        const routeToOption: Record<string, MenuOption> = {
-            '/vendor/dashboard2': 'dashboard',
-            '/vendor/dashboard/shop': 'shop',
-            '/vendor/dashboard/order': 'order',
-            '/vendor/dashboard/transactions': 'transactions',
-            '/vendor/dashboard/chats': 'chats',
-            '/vendor/dashboard/reviews': 'reviews',
-            '/vendor/dashboard/notifications': 'notifications',
-            '/dashboard/settings': 'settings',
-        };
+    // Map routes to menu options
+    const routeToOption: Record<string, MenuOption> = {
+        '/vendor/dashboard': 'dashboard',
+        '/vendor/dashboard/shop': 'shop',
+        '/vendor/dashboard/order': 'order',
+        '/vendor/dashboard/transactions': 'transactions',
+        '/vendor/dashboard/chats': 'chats',
+        '/vendor/dashboard/reviews': 'reviews',
+        '/vendor/dashboard/notifications': 'notifications',
+        '/vendor/dashboard/settings': 'settings',
+    };
 
+    // Map menu options to routes
+    const optionToRoute: Record<MenuOption, string> = {
+        dashboard: '/vendor/dashboard',
+        shop: '/vendor/dashboard/shop',
+        order: '/vendor/dashboard/order',
+        transactions: '/vendor/dashboard/transactions',
+        chats: '/vendor/dashboard/chats',
+        reviews: '/vendor/dashboard/reviews',
+        notifications: '/vendor/dashboard/notifications',
+        settings: '/vendor/dashboard/settings',
+    };
+
+    // Update selected option based on current path
+    useEffect(() => {
         const matchedOption = Object.entries(routeToOption).find(([route]) =>
             pathname.startsWith(route)
         )?.[1] || 'dashboard';
@@ -51,32 +73,12 @@ const DashboardOptions = ({
         setSelectedOption(matchedOption);
     }, [pathname]);
 
-    const getRouteForOption = (option: MenuOption): string => {
-        const routeMap: Record<MenuOption, string> = {
-            dashboard: '/vendor/dashboard2',
-            shop: '/vendor/dashboard/shop',
-            order: '/vendor/dashboard/order',
-            transactions: '/vendor/dashboard/transactions',
-            chats: '/vendor/dashboard/chats',
-            reviews: '/vendor/dashboard/reviews',
-            notifications: '/vendor/dashboard/notifications',
-            settings: '/vendor/dashboard/settings',
-        };
-        return routeMap[option];
-    };
-
     const handleOptionClick = (option: MenuOption) => {
         setSelectedOption(option);
-        router.push(getRouteForOption(option));
+        router.push(optionToRoute[option]);
     };
 
-    const menuItems: {
-        id: MenuOption;
-        icon: StaticImageData;
-        label: string;
-        widthClass: string;
-        notifications?: string;
-    }[] = [
+    const menuItems: MenuItem[] = [
         { id: 'dashboard', icon: dashboardImage, label: 'Dashboard', widthClass: 'w-[116px]' },
         { id: 'shop', icon: shopImg, label: 'Shop', widthClass: 'w-[77px]' },
         { id: 'order', icon: orderImg, label: 'Order', widthClass: 'w-[88px]' },
@@ -103,14 +105,15 @@ const DashboardOptions = ({
             }}
         >
             {menuItems.map((item) => (
-                <div
+                <button
                     key={item.id}
+                    type="button"
                     className={`
-            text-[#171719] text-[14px] h-[40px] flex items-center gap-[6px] cursor-pointer
-            ${item.widthClass}
-            ${selectedOption === item.id ? 'border-b-[1px] border-[#022B23]' : ''}
-            hover:bg-gray-50 transition-colors duration-200
-          `}
+                        text-[#171719] text-[14px] h-[40px] flex items-center gap-[6px] cursor-pointer
+                        ${item.widthClass}
+                        ${selectedOption === item.id ? 'border-b-[1px] border-[#022B23]' : ''}
+                        hover:bg-gray-50 transition-colors duration-200
+                    `}
                     onClick={() => handleOptionClick(item.id)}
                 >
                     <Image
@@ -120,14 +123,14 @@ const DashboardOptions = ({
                         height={16}
                         className="flex-shrink-0"
                     />
-                    <p className="whitespace-nowrap">{item.label}</p>
+                    <span className="whitespace-nowrap">{item.label}</span>
 
                     {item.notifications && (
-                        <div className="text-[#ffffff] p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[10px] w-[22px] h-[18px] text-[14px]">
-                            <p className="text-[8px] font-semibold">{item.notifications}</p>
-                        </div>
+                        <span className="text-[#ffffff] p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[10px] w-[22px] h-[18px] text-[14px]">
+                            <span className="text-[8px] font-semibold">{item.notifications}</span>
+                        </span>
                     )}
-                </div>
+                </button>
             ))}
         </div>
     );

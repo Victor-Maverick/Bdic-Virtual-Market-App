@@ -27,7 +27,6 @@ const Header = () => {
                 setIsLoading(false);
                 return;
             }
-
             try {
                 const response = await axios.get('https://api.digitalmarke.bdic.ng/api/auth/profile', {
                     headers: {
@@ -45,7 +44,6 @@ const Header = () => {
                     });
                 }
             } catch (error) {
-                console.log('Profile fetch failed or user not authenticated');
                 console.error('Error details:', error);
             } finally {
                 setIsLoading(false);
@@ -61,13 +59,15 @@ const Header = () => {
 
     const navigateToDashboard = () => {
         if (!userProfile?.roles) {
-            router.push('/buyer/orders');
             return;
         }
-
-        if (userProfile.roles.includes('VENDOR')) {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
+        const roles = session?.user.roles || []
+        console.log("rolesss: ",roles);
+        if (roles.includes('VENDOR') && roles.includes('BUYER')) {
             router.push('/vendor/dashboard');
-        } else if (userProfile.roles.includes('LOGISTICS')) {
+        } else if (roles.includes('LOGISTICS')) {
             router.push('/logistics/dashboard');
         } else {
             router.push('/buyer/orders');
@@ -95,8 +95,6 @@ const Header = () => {
                 redirect: false,
                 callbackUrl: '/'
             });
-
-            // Redirect to login page
             router.push('/login');
         } catch (error) {
             console.error('Logout failed:', error);
@@ -172,14 +170,12 @@ const Header = () => {
                     )}
                 </>
             )}
-
             <button
                 className="md:hidden text-black flex items-center justify-center p-3"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 {isOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
-
             {isOpen && (
                 <div className="absolute top-[70px] md:top-[80px] lg:top-[90px] left-0 w-full bg-white shadow-md flex flex-col items-center gap-4 py-6 sm:py-8 md:hidden">
                     <p
@@ -231,7 +227,6 @@ const Header = () => {
                                             <span className="font-semibold">{userProfile.firstName}</span>
                                         </p>
                                     </div>
-
                                     {isProfileDropdownOpen && (
                                         <div className="mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                                             <button
@@ -273,5 +268,4 @@ const Header = () => {
         </div>
     );
 };
-
 export default Header;
