@@ -17,7 +17,8 @@ const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    const response = await axios.post('https://api.digitalmarke.bdic.ng/api/auth/login', {
+                    //https://api.digitalmarke.bdic.ng/api/auth/login
+                    const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/auth/login', {
                         email: credentials.email,
                         password: credentials.password,
                     });
@@ -32,6 +33,8 @@ const authOptions: NextAuthOptions = {
                             email: credentials.email,
                             accessToken: loginData.token, // Store backend token
                             roles: loginData.roles,
+                            firstName: loginData.firstName,
+                            lastName: loginData.lastName
                         };
                     }
                     return null;
@@ -56,6 +59,12 @@ const authOptions: NextAuthOptions = {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-expect-error
                 token.roles = user.roles;
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                token.firstName = user.firstName;
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                token.lastName = user.lastName;
             }
 
             return token;
@@ -73,6 +82,12 @@ const authOptions: NextAuthOptions = {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             session.user.roles = token.roles as string[];
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            session.user.firstName = token.firstName as string;
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            session.user.lastName = token.lastName as string;
             return session;
         },
     },

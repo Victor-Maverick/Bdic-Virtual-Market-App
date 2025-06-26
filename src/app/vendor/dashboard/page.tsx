@@ -14,21 +14,323 @@ import blueLines from '../../../../public/assets/images/Blue.svg'
 import yellowLines from '../../../../public/assets/images/Yellow.svg'
 import turqoiseLines from '../../../../public/assets/images/Turquoise.svg'
 import Stats from '../../../../public/assets/images/Stats.svg'
-
-import {useState} from "react";
+import {useRouter} from "next/navigation";
+import {useSession} from "next-auth/react";
+import {useEffect, useState, useCallback} from "react";
 import DashboardOptions from "@/components/dashboardOptions";
 import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
+import axios from "axios";
+import {useSearchParams} from "next/navigation";
+import Toast from "@/components/Toast";
 
+interface ShopData {
+    id: number;
+    name: string;
+    address: string;
+    logoUrl: string;
+    phone: string;
+    shopNumber: string;
+    homeAddress: string;
+    streetName: string;
+    cacNumber: string;
+    taxIdNumber: string;
+    nin: number;
+    bankName: string;
+    accountNumber: string;
+    market: string;
+    marketSectionId: number;
+    firstName: string;
+    status: string;
+}
 
-const DashBoard2 = ()=>{
+interface PaymentData {
+    authorizationUrl: string;
+    reference: string;
+    credoReference: string;
+}
+
+interface InitializePaymentResponse {
+    status: string;
+    message: string;
+    data?: PaymentData;
+}
+
+interface VerifyPaymentResponse {
+    status: string;
+    message: string;
+    data?: {
+        amount: number;
+        currency: string;
+        transactionDate: string;
+        reference: string;
+        status: string;
+        paymentMethod: string;
+        transAmount: number;
+    };
+}
+
+const DashBoard = () => {
     const [activeView, setActiveView] = useState('orders');
+    const [shopData, setShopData] = useState<ShopData>();
+    const [loading, setLoading] = useState(true);
+    const [activating, setActivating] = useState(false);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const {data: session} = useSession();
 
-    return(
+    // Toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastSubMessage, setToastSubMessage] = useState("");
+    const [completedTransactions, setCompletedTransactions] = useState(0);
+    const [totalSales, setTotalSales] = useState(0);
+    const [totalStock, setTotalStock] = useState(0);
+
+    const showSuccessToast = (message: string, subMessage: string) => {
+        setToastType("success");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+    };
+
+    const showErrorToast = (message: string, subMessage: string) => {
+        setToastType("error");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+    };
+
+    const handleCloseToast = () => setShowToast(false);
+
+    const fetchShopData = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
+                console.log("Shop: ", response.data);
+                const data = response.data;
+                setShopData(data);
+
+                // Fetch transaction count and total sales after shop data is loaded
+                if (data.id) {
+                    const [countResponse, amountResponse, stockResponse, productResponse] = await Promise.all([
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionCount?shopId=${data.id}`),
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionAmount?shopId=${data.id}`),
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getShopStockCount?shopId=${data.id}`),
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getBestSelling?shopId=${data.id}`),
+                    ]);
+
+                    setCompletedTransactions(countResponse.data);
+                    setTotalSales(amountResponse.data);
+                    setTotalStock(stockResponse.data);
+                    console.log("product: ", productResponse.data);
+                }
+            } catch (error) {
+                console.error('Error fetching shop data:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+    }, [session]);
+
+    useEffect(() => {
+        fetchShopData();
+    }, [fetchShopData]);
+
+    const verifyShopStatus = useCallback(async (email: string) => {
+        try {
+            const response = await axios.put(
+                'https://digitalmarket.benuestate.gov.ng/api/shops/update-status',
+                null,
+                {
+                    params: {email},
+                    headers: {'Content-Type': 'application/json'},
+                    timeout: 30000,
+                }
+            );
+            return response.status === 200;
+        } catch (error) {
+            console.error('Error verifying shop status:', error);
+            return false;
+        }
+        finally {
+            router.replace("/vendor/dashboard", undefined)
+        }
+    }, [router]);
+
+    const verifyPayment = useCallback(async (transRef: string) => {
+        try {
+            const response = await axios.get<VerifyPaymentResponse>(
+                `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
+                {timeout: 30000}
+            );
+
+            if (response.data.data) {
+                // Verify shop status after successful payment
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                if (session?.user.email) {
+                    const shopVerified = await verifyShopStatus(session.user.email);
+                    if (shopVerified) {
+                        showSuccessToast('Payment Successful', 'Your shop has been activated successfully');
+                        // Refresh shop data
+                        await fetchShopData();
+                    } else {
+                        throw new Error('Shop verification failed');
+                    }
+                } else {
+                    throw new Error('User email not found');
+                }
+            } else {
+                throw new Error('Payment verification failed');
+            }
+        } catch (error) {
+            console.error('Payment verification error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
+            setPaymentError(errorMessage);
+            showErrorToast('Payment Error', errorMessage);
+        }
+    }, [session, fetchShopData, verifyShopStatus]);
+
+    useEffect(() => {
+        const transRef = searchParams.get('transRef');
+        if (transRef) {
+            verifyPayment(transRef);
+        }
+    }, [searchParams, verifyPayment]);
+
+    const initializePayment = async () => {
+        if (!session?.user?.email) {
+            showErrorToast('Error', 'User email not found');
+            return;
+        }
+
+        setActivating(true);
+        setPaymentError(null);
+
+        try {
+            const requestData = {
+                email: session.user.email,
+                amount: 500000, // 5000 Naira in kobo
+                currency: 'NGN',
+                callbackUrl: `${window.location.origin}/vendor/dashboard`
+            };
+
+            const response = await axios.post<InitializePaymentResponse>(
+                'https://digitalmarket.benuestate.gov.ng/api/payments/initialize',
+                requestData,
+                {
+                    headers: {'Content-Type': 'application/json'},
+                    timeout: 30000,
+                }
+            );
+
+            const paymentResponse = response.data;
+
+            if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
+                const authorizationUrl = paymentResponse.data?.authorizationUrl;
+
+                if (!authorizationUrl) {
+                    throw new Error('Authorization URL not found');
+                }
+
+                showSuccessToast('Payment Initialized', 'Redirecting to payment page...');
+                setTimeout(() => {
+                    window.location.href = authorizationUrl;
+                }, 2000);
+            } else {
+                throw new Error(paymentResponse.message || 'Payment initialization failed');
+            }
+        } catch (error) {
+            console.error('Payment initialization error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
+            setPaymentError(errorMessage);
+            showErrorToast('Payment Error', errorMessage);
+        } finally {
+            setActivating(false);
+        }
+    };
+
+    const handleActivateShop = async () => {
+        await initializePayment();
+    };
+
+    if (loading) {
+        return (
+            <>
+                <DashboardHeader/>
+                <div className="flex justify-center items-center h-screen">
+                    <p>Loading...</p>
+                </div>
+            </>
+        );
+    }
+
+    if (!shopData) {
+        return (
+            <>
+                <DashboardHeader/>
+                <DashboardOptions/>
+                <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Explore your shop, products, sales and orders"}
+                                    background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'}/>
+                <div className="flex flex-col items-center justify-center h-screen">
+                    <p className="mb-4">You need to set up your shop first</p>
+                    <button
+                        onClick={() => router.push('/vendor/setup-shop')}
+                        className="h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px]"
+                    >
+                        Setup Shop
+                    </button>
+                </div>
+            </>
+        );
+    }
+
+    if (shopData.status === 'NOT_VERIFIED') {
+        return (
+            <>
+                <DashboardHeader/>
+                <DashboardOptions/>
+                <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Explore your shop, products, sales and orders"}
+                                    background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'}/>
+                <div className="flex flex-col items-center justify-center h-screen">
+                    <p className="mb-4">Your shop is not yet activated</p>
+                    <button
+                        onClick={handleActivateShop}
+                        disabled={activating}
+                        className={`h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px] ${
+                            activating ? 'opacity-70 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        {activating ? 'Processing...' : 'Activate Shop'}
+                    </button>
+                    {paymentError && (
+                        <p className="mt-2 text-red-500">{paymentError}</p>
+                    )}
+                </div>
+                {showToast && (
+                    <Toast
+                        type={toastType}
+                        message={toastMessage}
+                        subMessage={toastSubMessage}
+                        onClose={handleCloseToast}
+                    />
+                )}
+            </>
+        );
+    }
+
+    // MAIN DASHBOARD CONTENT - Only shown when shop exists and is verified
+    return (
         <>
-            <DashboardHeader />
+            <DashboardHeader/>
             <DashboardOptions/>
-            <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Get started by setting up your shop"}
-                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'} />            <div className="h-[58px] px-25 border-b-[0.5px] border-[#EDEDED] items-center flex">
+            <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Explore your shop, products, sales and orders"}
+                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'}/>
+            <div className="h-[58px] px-25 border-b-[0.5px] border-[#EDEDED] items-center flex">
                 <p className="text-[#022B23] font-medium text-[20px]">Dashboard overview</p>
             </div>
             <div className="flex flex-col gap-[32px] py-[10px]">
@@ -37,25 +339,26 @@ const DashBoard2 = ()=>{
                     <div className="flex items-center gap-[20px] h-[100px]">
                         <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#ECFDF6] border-[#52A43E]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#52A43E] font-medium p-[15px]">
-                                <Image src={biArrows} alt="total sales" width={18} height={18} className="h-[18px] w-[18px]" />
-                                <p>Total sales (741)</p>
+                                <Image src={biArrows} alt="total sales" width={18} height={18} className="h-[18px] w-[18px]"/>
+                                <p>Total sales ({completedTransactions.toLocaleString()})</p>
                             </div>
                             <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">N102,426,231.00</p>
-                                <div className="flex items-center gap-[4px]">
-                                    <Image src={arrowUp} alt={'image'} width={10} height={10}/>
-                                    <p className="text-[#22C55E] text-[12px]">2%</p>
-                                </div>
+                                <p className="text-[#18181B] font-medium text-[16px]">N {totalSales.toLocaleString()}.00</p>
+                                {/*<div className="flex items-center gap-[4px]">*/}
+                                {/*    <Image src={arrowUp} alt={'image'} width={10} height={10}/>*/}
+                                {/*    <p className="text-[#22C55E] text-[12px]">2%</p>*/}
+                                {/*</div>*/}
                             </div>
                         </div>
 
                         <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={archiveImg} alt="completed transactions" width={18} height={18} className="h-[18px] w-[18px]" />
+                                <Image src={archiveImg} alt="completed transactions" width={18} height={18}
+                                       className="h-[18px] w-[18px]"/>
                                 <p>Completed transactions</p>
                             </div>
                             <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">721</p>
+                                <p className="text-[#18181B] font-medium text-[16px]">{completedTransactions.toLocaleString()}</p>
                                 <div className="flex items-center gap-[4px]">
                                     <Image src={arrowUp} alt={'image'} width={10} height={10}/>
                                     <p className="text-[#22C55E] text-[12px]">2%</p>
@@ -65,10 +368,11 @@ const DashBoard2 = ()=>{
 
                         <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#FF9500]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={awardImg} alt="pending orders" width={18} height={18} className="h-[18px] w-[18px]" />
+                                <Image src={awardImg} alt="pending orders" width={18} height={18}
+                                       className="h-[18px] w-[18px]"/>
                                 <p>Pending orders</p>
                             </div>
-                            <p className="text-[#18181B] ml-[15px] font-medium text-[16px]">21</p>
+                            <p className="text-[#18181B] ml-[15px] font-medium text-[16px]">0</p>
                         </div>
                     </div>
 
@@ -76,7 +380,8 @@ const DashBoard2 = ()=>{
                     <div className="flex items-center gap-[20px] h-[100px]">
                         <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={dashUser} alt="total visitors" width={18} height={18} className="h-[18px] w-[18px]" />
+                                <Image src={dashUser} alt="total visitors" width={18} height={18}
+                                       className="h-[18px] w-[18px]"/>
                                 <p>Total visitors</p>
                             </div>
                             <div className="flex justify-between px-[15px]">
@@ -89,11 +394,12 @@ const DashBoard2 = ()=>{
                         </div>
                         <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={dropBoxImg} alt="top product" width={18} height={18} className="h-[18px] w-[18px]" />
+                                <Image src={dropBoxImg} alt="top product" width={18} height={18}
+                                       className="h-[18px] w-[18px]"/>
                                 <p>Top selling product</p>
                             </div>
                             <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">iPhone 14 pro (82)</p>
+                                <p className="text-[#18181B] font-medium text-[16px]">IPhone 13</p>
                                 <div className="flex items-center gap-[4px]">
                                     <Image src={arrowUp} alt={'image'} width={10} height={10}/>
                                     <p className="text-[#22C55E] text-[12px]">2%</p>
@@ -103,11 +409,11 @@ const DashBoard2 = ()=>{
 
                         <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={flag} alt="inventory" width={18} height={18} className="h-[18px] w-[18px]" />
+                                <Image src={flag} alt="inventory" width={18} height={18} className="h-[18px] w-[18px]"/>
                                 <p>All products (in stock)</p>
                             </div>
                             <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">1,232</p>
+                                <p className="text-[#18181B] font-medium text-[16px]">{totalStock.toLocaleString()}</p>
                                 <div className="flex items-center gap-[4px]">
                                     <Image src={arrowUp} alt={'image'} width={10} height={10}/>
                                     <p className="text-[#22C55E] text-[12px]">2%</p>
@@ -185,7 +491,7 @@ const DashBoard2 = ()=>{
                                     <div className="flex justify-between items-end">
                                         <span className="text-[#18181B] font-medium text-[20px]">2.3K</span>
                                         <div className="flex items-center gap-1">
-                                            <Image src={arrowUp} alt="increase" width={10} height={10} />
+                                            <Image src={arrowUp} alt="increase" width={10} height={10}/>
                                             <span className="text-[#22C55E] text-[12px]">+11.4%</span>
                                         </div>
                                     </div>
@@ -196,7 +502,7 @@ const DashBoard2 = ()=>{
                                     <div className="flex justify-between items-end">
                                         <span className="text-[#18181B] font-medium text-[20px]">1.5K</span>
                                         <div className="flex items-center gap-1">
-                                            <Image src={arrowUp} alt="increase" width={10} height={10} />
+                                            <Image src={arrowUp} alt="increase" width={10} height={10}/>
                                             <span className="text-[#22C55E] text-[12px]">+1.4%</span>
                                         </div>
                                     </div>
@@ -207,7 +513,7 @@ const DashBoard2 = ()=>{
                                     <div className="flex justify-between items-end">
                                         <span className="text-[#18181B] font-medium text-[20px]">1.6K</span>
                                         <div className="flex items-center gap-1">
-                                            <Image src={arrowUp} alt="increase" width={10} height={10} />
+                                            <Image src={arrowUp} alt="increase" width={10} height={10}/>
                                             <span className="text-[#22C55E] text-[12px]">+7.0%</span>
                                         </div>
                                     </div>
@@ -231,8 +537,6 @@ const DashBoard2 = ()=>{
                                         <p>+3.4%</p>
                                     </div>
                                 </div>
-
-
                             </div>
                             <Image src={Stats} alt={'stats'} className="mb-[20px]"/>
                             <div className="flex items-center justify-between gap-4">
@@ -261,7 +565,6 @@ const DashBoard2 = ()=>{
                                     </div>
                                 </div>
 
-
                                 <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
                                     <div className="flex items-center gap-[9px]">
                                         <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
@@ -274,7 +577,6 @@ const DashBoard2 = ()=>{
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
                                     <div className="flex items-center gap-[9px]">
                                         <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
@@ -292,8 +594,16 @@ const DashBoard2 = ()=>{
                     )}
                 </div>
             </div>
+            {showToast && (
+                <Toast
+                    type={toastType}
+                    message={toastMessage}
+                    subMessage={toastSubMessage}
+                    onClose={handleCloseToast}
+                />
+            )}
         </>
-    )
-}
+    );
+};
 
-export default DashBoard2
+export default DashBoard;

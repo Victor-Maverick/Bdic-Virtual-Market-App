@@ -1,5 +1,5 @@
 'use client'
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState, useRef} from 'react';
 import BannerSection from "@/components/bannerSection";
 import Image, {StaticImageData} from 'next/image';
 import FeaturedCategories from "@/components/featuredCategories";
@@ -10,23 +10,10 @@ import books from '@/../public/assets/images/books.png'
 import eraser from '@/../public/assets/images/eraser.png'
 import pencils from '@/../public/assets/images/pencils.png'
 import highlightSet from '@/../public/assets/images/highlight set.png'
-import fashionIcon from '@/../public/assets/images/fashionIcon.png'
-import neckTie from '@/../public/assets/images/men tie.png'
-import skirtImg from '@/../public/assets/images/skirt.png'
 import axios from 'axios';
 import Footer from "@/components/footer";
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import categoryImg from '@/../public/assets/images/categoryImg.svg'
-import agricimg from "../../../public/assets/images/mapIcon.png";
-import electronicIcon from "../../../public/assets/images/electronicIcon.png";
-import hospitalIcon from "../../../public/assets/images/hospitalIcon.svg";
-import babyIcon from "../../../public/assets/images/homeIcon.png";
-import lotionIcon from "../../../public/assets/images/lotionIcon.svg";
-import carIcon from "../../../public/assets/images/carIcon.svg";
-import mobileIcon from "../../../public/assets/images/mobileIcon.svg";
-import homeIcon from "../../../public/assets/images/homeIcon.png";
-import mapIcon from "../../../public/assets/images/mapIcon.png";
-import deviceIcon from "../../../public/assets/images/deviceIcon.svg";
 import filterImg from '@/../public/assets/images/filter.svg'
 import {useRouter} from "next/navigation";
 import store1 from '@/../public/assets/images/store1.png'
@@ -34,17 +21,22 @@ import store2 from '@/../public/assets/images/store2.png'
 import {fetchMarkets, fetchStates} from "@/utils/api";
 import {ChevronDown} from "lucide-react";
 
-type Category = {
-    label: string;
-    icon: string;
-};
-
 type Market = {
     id: number;
     name: string;
 };
 
 type State = {
+    id: number;
+    name: string;
+};
+
+type CategoryResponse = {
+    id: number;
+    name: string;
+};
+
+type SubCategoryResponse = {
     id: number;
     name: string;
 };
@@ -79,7 +71,7 @@ const ProductCard = ({image, price, name, id, isApiProduct = false}: {
     }
 
     return (
-        <div onClick={handleOpen} className="cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed]">
+        <div onClick={handleOpen} className="hover:shadow-lg cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed]">
             {isApiProduct ? (
                 <Image
                     src={image}
@@ -98,29 +90,9 @@ const ProductCard = ({image, price, name, id, isApiProduct = false}: {
         </div>
     )
 }
-const categories: Category[] = [
-    {label: "Agriculture", icon: agricimg},
-    {label: "Electronics", icon: electronicIcon},
-    {label: "Healthcare", icon: hospitalIcon},
-    {label: "Kids", icon: babyIcon},
-    {label: "Skincare", icon: lotionIcon},
-    {label: "Cars", icon: carIcon},
-    {label: "Smartphones", icon: mobileIcon},
-    {label: "Fashion", icon: fashionIcon},
-    {label: "Home", icon: homeIcon},
-    {label: "Travel", icon: mapIcon},
-    {label: "Computing", icon: deviceIcon},
-];
-
-const SearchBar = () => (
-    <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
-        <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-        <input placeholder="Search for items here" className="w-[540px] text-[#707070] text-[14px] focus:outline-none"/>
-    </div>
-);
 
 const ProductGrid = ({apiProducts = []}: { apiProducts?: Product[] }) => (
-    <div className="grid grid-cols-5 w-full gap-x-3 gap-y-[10px] px-25 py-[10px]">
+    <div className="flex justify-start grid grid-cols-5 w-full gap-x-3 gap-y-[10px] px-25 py-[10px]">
         {apiProducts.map((product: Product) => (
             <ProductCard
                 key={`api-${product.id}`}
@@ -215,7 +187,6 @@ const StoreSection = () => {
             </div>
         );
     };
-
     return (
         <div className="flex-col rounded-3xl mt-[20px] mx-25">
             <div className="bg-[#022B23] h-[80px] flex justify-between px-4 pt-2">
@@ -286,7 +257,6 @@ const Dropdown = <T extends { id: number; name: string }>({
     );
 };
 
-
 const MarketPlace = () => {
     const [countdown, setCountdown] = useState<number>(24 * 60 * 60);
     const [apiProducts, setApiProducts] = useState<Product[]>([]);
@@ -296,6 +266,14 @@ const MarketPlace = () => {
     const [states, setStates] = useState<State[]>([]);
     const [selectedMarket, setSelectedMarket] = useState<Market | null>(null);
     const [selectedState, setSelectedState] = useState<State | null>(null);
+    const [searchQuery, setSearchQuery] = useState<string>('');
+    const [isSearching, setIsSearching] = useState<boolean>(false);
+    const [categories, setCategories] = useState<CategoryResponse[]>([]);
+    const [selectedCategory, setSelectedCategory] = useState<CategoryResponse | null>(null);
+    const [subCategories, setSubCategories] = useState<SubCategoryResponse[]>([]);
+    const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategoryResponse | null>(null);
+    const searchInputRef = useRef<HTMLInputElement>(null);
+
 
     const featuredProducts = [
         {id:1,name: "Pack of pen", image: books, price: "2,000"},
@@ -310,36 +288,6 @@ const MarketPlace = () => {
         {id:10,name: "Highlighter set", image: highlightSet, price: "1,200"}
     ];
 
-    const fetchProducts = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const response = await axios.get('https://api.digitalmarke.bdic.ng/api/products/all', {
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-
-            });
-
-            if (response.data.success && response.data.data) {
-                setApiProducts(response.data.data);
-                console.log(response.data.data)
-            } else {
-                throw new Error(response.data.message || 'Failed to fetch products');
-            }
-        } catch (err) {
-            console.error('Error fetching products:', err);
-            if (axios.isAxiosError(err)) {
-                setError(err.response?.data?.message || err.message || 'An error occurred while fetching products');
-            } else {
-                setError(err instanceof Error ? err.message : 'An error occurred while fetching products');
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const fetchData = async () => {
         try {
             const [marketsData, statesData] = await Promise.all([
@@ -349,7 +297,6 @@ const MarketPlace = () => {
             setMarkets(marketsData);
             setStates(statesData);
 
-            // Set default selections if data is available
             if (marketsData.length > 0) {
                 setSelectedMarket(marketsData[0]);
             }
@@ -362,15 +309,8 @@ const MarketPlace = () => {
     };
 
     useEffect(() => {
-        fetchData();
-    }, []);
-
-    useEffect(() => {
         fetchProducts();
-
         const intervalId = setInterval(fetchProducts, 300000);
-
-        // Cleanup interval on component unmount
         return () => clearInterval(intervalId);
     }, []);
 
@@ -388,114 +328,284 @@ const MarketPlace = () => {
         return () => clearInterval(countdownInterval);
     }, []);
 
+    const fetchProducts = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const PRIMARY_API = process.env.NEXT_PUBLIC_API_BASE_URL;
+            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
+
+            let response;
+            try {
+                response = await axios.get(`${PRIMARY_API}/products/all`, {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            } catch (primaryError) {
+                console.warn('Primary API failed, trying fallback...', primaryError);
+                response = await axios.get(`${FALLBACK_API}/products/all`, {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+
+            if (response.data.success && response.data.data) {
+                setApiProducts(response.data.data);
+            } else {
+                throw new Error(response.data.message || 'Failed to fetch products');
+            }
+        } catch (err) {
+            console.error('Error fetching products:', err);
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.message || err.message || 'An error occurred while fetching products');
+            } else {
+                setError(err instanceof Error ? err.message : 'An error occurred while fetching products');
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchSearchResults = useCallback(async (query: string) => {
+        if (!query.trim()) {
+            setIsSearching(false);
+            await fetchProducts();
+            return;
+        }
+
+        try {
+            setLoading(true);
+            setError(null);
+            setIsSearching(true);
+
+            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
+            const response = await axios.get(
+                `${FALLBACK_API}/products/search-product?keyword=${encodeURIComponent(query)}`,
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (response.data) {
+                setApiProducts(response.data);
+            } else {
+                setApiProducts([]);
+            }
+        } catch (err) {
+            console.error('Error searching products:', err);
+            if (axios.isAxiosError(err)) {
+                setError(err.response?.data?.message || err.message || 'An error occurred while searching products');
+            } else {
+                setError(err instanceof Error ? err.message : 'An error occurred while searching products');
+            }
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchCategories = async () => {
+        try {
+            const PRIMARY_API = process.env.NEXT_PUBLIC_API_BASE_URL;
+            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
+
+            let response;
+            try {
+                response = await axios.get(`${PRIMARY_API}/categories/all`);
+            } catch (primaryError) {
+                console.warn('Primary API failed, trying fallback...', primaryError);
+                response = await axios.get(`${FALLBACK_API}/categories/all`);
+            }
+
+            if (response.data) {
+                setCategories(response.data);
+            }
+        } catch (err) {
+            console.error('Error fetching categories:', err);
+        }
+    };
+
+    const fetchSubCategories = async (categoryName: string) => {
+        try {
+            const PRIMARY_API = process.env.NEXT_PUBLIC_API_BASE_URL;
+            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
+
+            let response;
+            try {
+                response = await axios.get(`${PRIMARY_API}/categories/getAllCategorySub?categoryName=${encodeURIComponent(categoryName)}`);
+            } catch (primaryError) {
+                console.warn('Primary API failed, trying fallback...', primaryError);
+                response = await axios.get(`${FALLBACK_API}/categories/getAllCategorySub?categoryName=${encodeURIComponent(categoryName)}`);
+            }
+
+            if (response.data) {
+                setSubCategories(response.data);
+            } else {
+                setSubCategories([]);
+            }
+        } catch (err) {
+            console.error('Error fetching subcategories:', err);
+            setSubCategories([]);
+        }
+    };
+
+    const handleCategoryClick = (category: CategoryResponse) => {
+        setSelectedCategory(category);
+        setSelectedSubCategory(null);
+        fetchSubCategories(category.name);
+        setIsSearching(false);
+        setSearchQuery('');
+    };
+
+    const handleSubCategoryClick = (subCategory: SubCategoryResponse) => {
+        setSelectedSubCategory(subCategory);
+    };
+
+    useEffect(() => {
+        fetchData();
+        fetchCategories();
+    }, []);
+
+    useEffect(() => {
+        if (searchQuery.trim()) {
+            fetchSearchResults(searchQuery);
+        } else {
+            setIsSearching(false);
+            fetchProducts();
+        }
+    }, [searchQuery, fetchSearchResults]); // Added fetchSearchResults to dependencies
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Escape') {
+            setSearchQuery('');
+            searchInputRef.current?.blur();
+        }
+    };
+
     return (
         <>
             <MarketPlaceHeader/>
             <div className="flex-col w-full border-t-[0.5px] border-[#ededed]">
                 <div className="flex justify-between h-[595px] pt-[10px] px-25">
-                    <div className="w-[20%] flex flex-col drop-shadow-sm h-full">
-                        <div className="rounded-t-[8px] gap-[8px] h-[52px] px-[10px] font-medium text-[16px] flex  items-center bg-[#022B23]">
-                            <Image src={categoryImg} alt={'image'}/>
-                            <p className="text-[#FFEEBE]">Categories</p>
-                        </div>
-                        <div className="shadow-sm">
-                            <ul className=" ">
-                                {categories.map((option, index) => (
-                                    <li
-                                        key={index}
-                                        className="flex items-center px-[14px] gap-[10px] h-[48px] text-[#1E1E1E] hover:bg-[#ECFDF6] cursor-pointer"
-                                    >
-                                        <Image
-                                            src={option.icon}
-                                            alt={option.label}
-                                            width={20}
-                                            height={20}
-                                        />
-                                        {option.label}
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </div>
-                    <div className="flex flex-col h-full w-[80%]">
-                        <div className="flex justify-end mb-[2px] gap-[8px] items-center">
-                            <SearchBar/>
-                            <div className="flex items-center rounded-[2px] gap-[2px] p-[2px] border-[0.5px] border-[#ededed]">
-                                <div className="w-[121px]">
-                                    <Dropdown
-                                        items={states}
-                                        selectedItem={selectedState}
-                                        onSelect={setSelectedState}
-                                        placeholder="Benue State"
-                                    />
-                                </div>
-                                <div className="w-[171px]">
-                                    <Dropdown
-                                        items={markets}
-                                        selectedItem={selectedMarket}
-                                        onSelect={setSelectedMarket}
-                                        placeholder="Wurukum market"
-                                    />
-                                </div>
+                    {!isSearching && (
+                        <div className="w-[20%] flex flex-col drop-shadow-sm h-full">
+                            <div className="rounded-t-[8px] gap-[8px] h-[52px] px-[10px] font-medium text-[16px] flex items-center bg-[#022B23]">
+                                <Image src={categoryImg} alt={'image'}/>
+                                <p className="text-[#FFEEBE]">Categories</p>
                             </div>
-                        </div>
-                        <BannerSection/>
-                    </div>
-                </div>
-                <FeaturedCategories/>
+                            <div className="shadow-sm">
+                                <ul>
+                                    {categories.map((category) => (
+                                        <li
+                                            key={category.id}
+                                            className={`flex items-center px-[14px] gap-[10px] h-[48px] text-[#1E1E1E] hover:bg-[#ECFDF6] cursor-pointer ${
+                                                selectedCategory?.id === category.id ? 'bg-[#ECFDF6]' : ''
+                                            }`}
+                                            onClick={() => handleCategoryClick(category)}
+                                        >
+                                            {category.name}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
 
-                <div className="flex items-center w-full justify-between h-[66px] px-25 border-y border-[#ededed]">
-                    <div className="flex gap-[2px] p-0.5 border border-[#ededed] w-[313px] rounded-[2px]">
-                        <div className="flex gap-[4px] h-[42px] w-[159px] bg-[#f9f9f9] rounded-[2px] items-center px-[8px] py-[14px]">
-                            <Image width={20} height={20} src={marketIcon} alt="Market Icon"/>
-                            <p className="text-[#1E1E1E] font-normal text-[14px]">
-                                {loading ? 'Loading...' : `${apiProducts.length} Products`}
-                            </p>
+                            {selectedCategory && subCategories.length > 0 && (
+                                <div className="shadow-sm mt-4">
+                                    <div className="px-[14px] py-2 font-medium bg-gray-100">
+                                        Subcategories
+                                    </div>
+                                    <ul>
+                                        {subCategories.map((subCategory) => (
+                                            <li
+                                                key={subCategory.id}
+                                                className={`flex items-center px-[14px] gap-[10px] h-[48px] text-[#1E1E1E] hover:bg-[#ECFDF6] cursor-pointer ${
+                                                    selectedSubCategory?.id === subCategory.id ? 'bg-[#ECFDF6]' : ''
+                                                }`}
+                                                onClick={() => handleSubCategoryClick(subCategory)}
+                                            >
+                                                {subCategory.name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                         </div>
-                        <div className="bg-[#f9f9f9] gap-[4px] text-[#1E1E1E] flex text-[14px] w-[148px] h-[42px] px-1 items-center justify-center rounded-[2px]">
-                            <Image src={filterImg} alt={'image'} width={20} height={20} className="w-[20px] h-[20px]"/>
-                            <p>Sort by: <span className="text-[#022B23] font-medium">Popular</span></p>
-                        </div>
-                    </div>
-                    <div className="flex justify-between gap-[10px]">
-                        <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
-                            <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[44px] w-[100px]  text-center ">
-                                <Image src={marketIcon} alt={''}/>
-                                <p className="text-center text-[14px]">Below 5k</p>
+                    )}
+
+                    <div className={`flex flex-col h-full ${isSearching ? 'w-full' : 'w-[80%]'}`}>
+                        <div className="flex justify-between mb-[2px] items-center"> {/* Changed from justify-end to justify-between */}
+                            <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px] flex-1 max-w-[540px]"> {/* Added flex-1 and max-w */}
+                                <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
+                                <input
+                                    ref={searchInputRef}
+                                    placeholder="Search for items here"
+                                    className="w-full text-[#707070] text-[14px] focus:outline-none"
+                                    value={searchQuery}
+                                    onChange={handleSearchChange}
+                                    onKeyDown={handleKeyDown}
+                                />
                             </div>
+                            {!isSearching && (
+                                <div className="flex items-center rounded-[2px] gap-[2px] p-[2px] border-[0.5px] border-[#ededed]">
+                                    <div className="w-[121px]">
+                                        <Dropdown
+                                            items={states}
+                                            selectedItem={selectedState}
+                                            onSelect={setSelectedState}
+                                            placeholder="Benue State"
+                                        />
+                                    </div>
+                                    <div className="w-[171px]">
+                                        <Dropdown
+                                            items={markets}
+                                            selectedItem={selectedMarket}
+                                            onSelect={setSelectedMarket}
+                                            placeholder="Wurukum market"
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                        <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
-                            <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[46px] w-[100px]  text-center ">
-                                <Image src={marketIcon} alt={''}/>
-                                <p className="text-center text-[14px]">Below 50k</p>
+
+                        {isSearching && (
+                            <div className="mt-4">
+                                <div className="flex items-center w-full justify-between h-[66px] px-4 border-y border-[#ededed]">
+                                    <div className="flex gap-[2px] p-0.5 border border-[#ededed] w-[313px] rounded-[2px]">
+                                        <div className="flex gap-[4px] h-[42px] w-[159px] bg-[#f9f9f9] rounded-[2px] items-center px-[8px] py-[14px]">
+                                            <Image width={20} height={20} src={marketIcon} alt="Market Icon"/>
+                                            <p className="text-[#1E1E1E] font-normal text-[14px]">
+                                                {loading ? 'Loading...' : `${apiProducts.length} Products found`}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="mt-4">
+                                    <ProductGrid apiProducts={apiProducts}/>
+                                </div>
                             </div>
-                        </div>
-                        <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
-                            <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[46px] w-[100px]  text-center ">
-                                <Image src={fashionIcon} alt={''} height={20} width={20}/>
-                                <p className="text-center text-[14px]">Fashion</p>
-                            </div>
-                        </div>
-                        <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
-                            <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[46px] w-[100px]  text-center ">
-                                <Image src={neckTie} alt={''}/>
-                                <p className="text-center text-[14px]">Men</p>
-                            </div>
-                        </div>
-                        <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
-                            <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[46px] w-[100px]  text-center ">
-                                <Image src={skirtImg} alt={''}/>
-                                <p className="text-center text-[14px]">Women</p>
-                            </div>
-                        </div>
-                        <div className="border border-[#EDEDED] rounded-[4px]  p-0.5">
-                            <div className="bg-[#EDEDED] justify-center items-center gap-[4px] p-[2px] flex rounded-[4px] h-[46px] w-[100px]  text-center ">
-                                <Image src={skirtImg} alt={''}/>
-                                <p className="text-center text-[14px]">Farm</p>
-                            </div>
-                        </div>
+                        )}
+
+                        {!isSearching && <BannerSection/>}
                     </div>
                 </div>
+
+                {!isSearching && <FeaturedCategories/>}
+
+                {!isSearching && (
+                    <div className="flex items-center w-full justify-between h-[66px] px-25 border-y border-[#ededed]">
+                        <div className="flex gap-[2px] p-0.5 border border-[#ededed] w-[313px] rounded-[2px]">
+                            <div className="flex gap-[4px] h-[42px] w-[159px] bg-[#f9f9f9] rounded-[2px] items-center px-[8px] py-[14px]">
+                                <Image width={20} height={20} src={marketIcon} alt="Market Icon"/>
+                                <p className="text-[#1E1E1E] font-normal text-[14px]">
+                                    {loading ? 'Loading...' : `${apiProducts.length} Products`}
+                                </p>
+                            </div>
+                            <div className="bg-[#f9f9f9] gap-[4px] text-[#1E1E1E] flex text-[14px] w-[148px] h-[42px] px-1 items-center justify-center rounded-[2px]">
+                                <Image src={filterImg} alt={'image'} width={20} height={20} className="w-[20px] h-[20px]"/>
+                                <p>Sort by: <span className="text-[#022B23] font-medium">Popular</span></p>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {loading && (
                     <div className="flex justify-center items-center py-10">
@@ -507,7 +617,7 @@ const MarketPlace = () => {
                     <div className="flex justify-center items-center py-10">
                         <p className="text-red-500 text-lg">Error: {error}</p>
                         <button
-                            onClick={fetchProducts}
+                            onClick={isSearching ? () => fetchSearchResults(searchQuery) : fetchProducts}
                             className="ml-4 bg-[#022B23] text-white px-4 py-2 rounded"
                         >
                             Retry
@@ -515,17 +625,14 @@ const MarketPlace = () => {
                     </div>
                 )}
 
-                {!loading && !error && (
-                    <ProductGrid apiProducts={apiProducts}/>
-                )}
-
-                <div className="flex-col px-25">
-                    <FlashSale countdown={countdown} featuredProducts={featuredProducts}/>
-                </div>
-                <StoreSection/>
-
-                {!loading && !error && (
-                    <ProductGrid apiProducts={[]}/>
+                {!loading && !error && !isSearching && (
+                    <>
+                        <ProductGrid apiProducts={apiProducts}/>
+                        <div className="flex-col px-25">
+                            <FlashSale countdown={countdown} featuredProducts={featuredProducts}/>
+                        </div>
+                        <StoreSection/>
+                    </>
                 )}
             </div>
             <Footer/>

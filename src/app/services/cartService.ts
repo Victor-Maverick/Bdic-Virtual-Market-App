@@ -1,7 +1,7 @@
 //cartService.ts
 import axios from 'axios';
 
-const API_BASE_URL = 'https://api.digitalmarke.bdic.ng/api';
+const API_BASE_URL = 'https://digitalmarket.benuestate.gov.ng/api';
 
 export interface CartItem {
     itemId: number;
@@ -30,8 +30,9 @@ export interface CheckoutResponse {
 
 export interface CheckoutData {
     buyerEmail: string;
-    deliveryOption: 'pickup' | 'delivery';
+    deliveryMethod: 'pickup' | 'delivery';
     address: string;
+    transRef: string;
 }
 
 // Helper function to get auth token from session
@@ -69,7 +70,7 @@ export const addToCart = async (cartId: string, productId: number, quantity: num
 export const getCart = async (cartId: string): Promise<CartResponse> => {
     try {
         const token = await getAuthToken();
-        console.log("gettcard token:", token);
+        console.log("Cart ID:", cartId);
         const response = await axios.get<CartResponse>(`${API_BASE_URL}/cart`, {
             headers: {
                 'X-Cart-Id': cartId,

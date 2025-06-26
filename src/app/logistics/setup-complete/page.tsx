@@ -9,7 +9,7 @@ import dashImg from "../../../../public/assets/images/Logistics-rafiki.svg";
 import {useEffect, useState} from "react";
 import { useOnboarding } from "@/context/LogisticsOnboardingContext";
 import { useRouter } from "next/navigation";
-import Toast from "@/components/toast";
+import Toast from "@/components/Toast";
 
 const Setup_Complete = () => {
     const [email, setEmail] = useState("");

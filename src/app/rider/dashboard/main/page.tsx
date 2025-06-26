@@ -8,7 +8,6 @@ import orderImg from "../../../../../public/assets/images/archive.svg";
 import blackArrowImg from "../../../../../public/assets/images/arrow-up.svg";
 import deliveredImg from "../../../../../public/assets/images/dropbox.svg";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-import NewProductView from "@/components/newProductView";
 import RiderDashboardOptions from "@/components/riderDashboardOptions";
 
 const products = [
@@ -312,7 +311,7 @@ const DashboardContent = () => {
                         </div>
                     </div>
                 )}
-                {activeTab === 'pending' && <NewProductView />}
+                {/*{activeTab === 'pending' && <NewProductView />}*/}
                 {activeTab === 'delivered' && (
                     <div className="flex flex-col mt-[60px] rounded-[24px] border-[1px] border-[#EAECF0]">
                         <div className="my-[20px] mx-[20px] flex flex-col">

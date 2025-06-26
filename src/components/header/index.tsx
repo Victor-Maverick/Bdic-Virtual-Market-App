@@ -28,7 +28,8 @@ const Header = () => {
                 return;
             }
             try {
-                const response = await axios.get('https://api.digitalmarke.bdic.ng/api/auth/profile', {
+                //https://api.digitalmarke.bdic.ng/api/auth/profile
+                const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
                     headers: {
                         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                         // @ts-expect-error
@@ -79,7 +80,7 @@ const Header = () => {
         try {
             // Call the backend logout endpoint
             await axios.post(
-                'https://api.digitalmarke.bdic.ng/api/auth/logout',
+                'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
                 {},
                 {
                     headers: {
@@ -95,15 +96,14 @@ const Header = () => {
                 redirect: false,
                 callbackUrl: '/'
             });
-            router.push('/login');
         } catch (error) {
             console.error('Logout failed:', error);
             // Even if backend logout fails, we should still clear the client session
             await signOut({
                 redirect: false,
-                callbackUrl: '/login'
+                callbackUrl: '/'
             });
-            router.push('/login');
+
         }
     };
 

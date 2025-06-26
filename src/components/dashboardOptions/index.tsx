@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image, { StaticImageData } from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import shadow from "../../../public/assets/images/shadow.png";
@@ -26,22 +26,21 @@ interface MenuItem {
     icon: StaticImageData;
     label: string;
     widthClass: string;
-    notifications?: string; // Make notifications optional
+    notifications?: string;
 }
 
 interface DashboardOptionsProps {
     initialSelected?: MenuOption;
 }
 
-const DashboardOptions = ({
-                              initialSelected = 'dashboard',
-                          }: DashboardOptionsProps) => {
+const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsProps) => {
     const router = useRouter();
     const pathname = usePathname();
     const [selectedOption, setSelectedOption] = useState<MenuOption>(initialSelected);
+    const [indicatorPosition, setIndicatorPosition] = useState({ left: 0, width: 0 });
 
-    // Map routes to menu options
-    const routeToOption: Record<string, MenuOption> = {
+    // Memoize routeToOption to prevent recreating on every render
+    const routeToOption = useMemo(() => ({
         '/vendor/dashboard': 'dashboard',
         '/vendor/dashboard/shop': 'shop',
         '/vendor/dashboard/order': 'order',
@@ -50,10 +49,9 @@ const DashboardOptions = ({
         '/vendor/dashboard/reviews': 'reviews',
         '/vendor/dashboard/notifications': 'notifications',
         '/vendor/dashboard/settings': 'settings',
-    };
+    }), []);
 
-    // Map menu options to routes
-    const optionToRoute: Record<MenuOption, string> = {
+    const optionToRoute = useMemo(() => ({
         dashboard: '/vendor/dashboard',
         shop: '/vendor/dashboard/shop',
         order: '/vendor/dashboard/order',
@@ -62,23 +60,23 @@ const DashboardOptions = ({
         reviews: '/vendor/dashboard/reviews',
         notifications: '/vendor/dashboard/notifications',
         settings: '/vendor/dashboard/settings',
-    };
+    }), []);
 
-    // Update selected option based on current path
     useEffect(() => {
         const matchedOption = Object.entries(routeToOption).find(([route]) =>
             pathname.startsWith(route)
         )?.[1] || 'dashboard';
-
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-expect-error
         setSelectedOption(matchedOption);
-    }, [pathname]);
+    }, [pathname, routeToOption]);
 
     const handleOptionClick = (option: MenuOption) => {
         setSelectedOption(option);
         router.push(optionToRoute[option]);
     };
 
-    const menuItems: MenuItem[] = [
+    const menuItems: MenuItem[] = useMemo(() => [
         { id: 'dashboard', icon: dashboardImage, label: 'Dashboard', widthClass: 'w-[116px]' },
         { id: 'shop', icon: shopImg, label: 'Shop', widthClass: 'w-[77px]' },
         { id: 'order', icon: orderImg, label: 'Order', widthClass: 'w-[88px]' },
@@ -93,45 +91,71 @@ const DashboardOptions = ({
             notifications: '30+'
         },
         { id: 'settings', icon: settingImg, label: 'Settings', widthClass: 'w-[97px]' },
-    ];
+    ], []);
+
+    const updateIndicatorPosition = (element: HTMLElement | null) => {
+        if (element) {
+            setIndicatorPosition({
+                left: element.offsetLeft,
+                width: element.offsetWidth
+            });
+        }
+    };
+
+    useEffect(() => {
+        const selectedElement = document.getElementById(`menu-item-${selectedOption}`);
+        updateIndicatorPosition(selectedElement);
+    }, [selectedOption]);
 
     return (
-        <div
-            className="h-[70px] border-b-[1px] border-[#EDEDED] px-25 py-[10px] w-full relative flex items-center gap-[14px]"
-            style={{
-                backgroundImage: `url(${shadow.src})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center"
-            }}
-        >
-            {menuItems.map((item) => (
-                <button
-                    key={item.id}
-                    type="button"
-                    className={`
-                        text-[#171719] text-[14px] h-[40px] flex items-center gap-[6px] cursor-pointer
-                        ${item.widthClass}
-                        ${selectedOption === item.id ? 'border-b-[1px] border-[#022B23]' : ''}
-                        hover:bg-gray-50 transition-colors duration-200
-                    `}
-                    onClick={() => handleOptionClick(item.id)}
-                >
-                    <Image
-                        src={item.icon}
-                        alt={`${item.label} icon`}
-                        width={16}
-                        height={16}
-                        className="flex-shrink-0"
-                    />
-                    <span className="whitespace-nowrap">{item.label}</span>
-
-                    {item.notifications && (
-                        <span className="text-[#ffffff] p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[10px] w-[22px] h-[18px] text-[14px]">
-                            <span className="text-[8px] font-semibold">{item.notifications}</span>
-                        </span>
-                    )}
-                </button>
-            ))}
+        <div className="relative w-full">
+            <div
+                className="h-[70px] border-b-[1px] border-[#EDEDED] px-25 py-[10px] w-full flex items-center gap-[14px] relative"
+                style={{
+                    backgroundImage: `url(${shadow.src})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center"
+                }}
+            >
+                {menuItems.map((item) => (
+                    <button
+                        key={item.id}
+                        id={`menu-item-${item.id}`}
+                        type="button"
+                        className={`
+                            text-[#171719] text-[14px] h-[40px] flex items-center gap-[6px] cursor-pointer
+                            ${item.widthClass}
+                            hover:bg-gray-50 transition-colors duration-200
+                            relative
+                        `}
+                        onClick={(e) => {
+                            handleOptionClick(item.id);
+                            updateIndicatorPosition(e.currentTarget);
+                        }}
+                    >
+                        <Image
+                            src={item.icon}
+                            alt={`${item.label} icon`}
+                            width={16}
+                            height={16}
+                            className="flex-shrink-0"
+                        />
+                        <span className="whitespace-nowrap">{item.label}</span>
+                        {item.notifications && (
+                            <span className="text-[#ffffff] p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[10px] w-[22px] h-[18px] text-[14px]">
+                                <span className="text-[8px] font-semibold">{item.notifications}</span>
+                            </span>
+                        )}
+                    </button>
+                ))}
+            </div>
+            <div
+                className="absolute bottom-0 h-[2px] bg-[#022B23] transition-all duration-300"
+                style={{
+                    left: `${indicatorPosition.left}px`,
+                    width: `${indicatorPosition.width}px`
+                }}
+            />
         </div>
     );
 };

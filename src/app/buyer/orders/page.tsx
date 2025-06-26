@@ -7,30 +7,32 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
-interface OrderItem {
+interface OrderItemDto {
     id: number;
     productId: number;
     name: string;
     unitPrice: number;
     quantity: number;
     productImage: string;
-    description: string;
 }
 
-interface OrderResponse {
-    id: number;
+interface BuyerOrderResponse {
     orderNumber: string;
     status: string;
+    deliveryInfo: {
+        method: string;
+        address: string;
+    };
+    createdAt: string;
     totalAmount: number;
     deliveryFee: number;
     grandTotal: number;
-    createdAt: string;
-    items: OrderItem[];
+    itemsByShop: Record<number, OrderItemDto[]>;
 }
 
 const Orders = () => {
     const router = useRouter();
-    const [orders, setOrders] = useState<OrderResponse[]>([]);
+    const [orders, setOrders] = useState<BuyerOrderResponse[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -41,12 +43,12 @@ const Orders = () => {
                 return;
             }
             try {
-                const response = await axios.get(
-                    'https://api.digitalmarke.bdic.ng/api/orders/user',
+                const response = await axios.get<BuyerOrderResponse[]>(
+                    'https://digitalmarket.benuestate.gov.ng/api/orders/user',
                     { params: { buyerEmail: userEmail } }
                 );
-                console.log("lists:::", response.data)
                 setOrders(response.data);
+                console.log("Orders:: ",response.data)
             } catch (error) {
                 console.error('Error fetching orders:', error);
             } finally {
@@ -56,7 +58,30 @@ const Orders = () => {
 
         fetchOrders();
     }, [router]);
+    const getAllItemsFromOrder = (order: BuyerOrderResponse): OrderItemDto[] => {
+        return Object.values(order.itemsByShop).flat();
+    };
 
+    // Updated getProductDisplayName to work with itemsByShop
+    const getProductDisplayName = (order: BuyerOrderResponse) => {
+        const allItems = getAllItemsFromOrder(order);
+        if (allItems.length === 0) return 'No items';
+        if (allItems.length === 1) return allItems[0].name;
+        return `${allItems[0].name} + ${allItems.length - 1} other item${allItems.length > 2 ? 's' : ''}`;
+    };
+
+    // Get first item for image display
+    const getFirstItem = (order: BuyerOrderResponse) => {
+        const allItems = getAllItemsFromOrder(order);
+        return allItems[0] || {
+            name: 'No product',
+            productImage: '',
+            productId: 0,
+            id: 0,
+            quantity: 0,
+            unitPrice: 0
+        };
+    };
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -97,11 +122,7 @@ const Orders = () => {
         }
     };
 
-    const getProductDisplayName = (items: OrderItem[]) => {
-        if (items.length === 0) return 'No items';
-        if (items.length === 1) return items[0].name;
-        return `${items[0].name} + ${items.length - 1} other item${items.length > 2 ? 's' : ''}`;
-    };
+
 
     if (loading) {
         return (
@@ -149,14 +170,10 @@ const Orders = () => {
                             ) : (
                                 orders.map((order, index) => {
                                     const isLastItem = index === orders.length - 1;
-                                    const firstItem = order.items[0] || {
-                                        name: 'No product',
-                                        productImage: '',
-                                        description: ''
-                                    };
+                                    const firstItem = getFirstItem(order);
 
                                     return (
-                                        <div key={order.id} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none h-[151px]"}`}>
+                                        <div key={order.orderNumber} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none h-[151px]"}`}>
                                             <div className="flex border-r border-[#ededed] w-[169px] h-[151px] overflow-hidden">
                                                 {firstItem.productImage ? (
                                                     <Image
@@ -177,16 +194,16 @@ const Orders = () => {
                                                 <div className="flex flex-col w-[30%]">
                                                     <div className="mb-[13px]">
                                                         <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">
-                                                            {getProductDisplayName(order.items)}
+                                                            {getProductDisplayName(order)}
                                                         </p>
                                                         <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
-                                                            {firstItem.description || 'No description'}
+                                                            Order #{order.orderNumber}
                                                         </p>
                                                     </div>
 
                                                     <div className="flex flex-col">
                                                         <p className="font-medium text-[#1E1E1E] text-[16px]">
-                                                            ₦{formatPrice(order.grandTotal)}
+                                                            ₦{formatPrice(order.totalAmount)}
                                                         </p>
                                                         <p className="text-[#3D3D3D] text-[10px]">
                                                             {formatDate(order.createdAt)}
@@ -209,5 +226,4 @@ const Orders = () => {
         </>
     );
 };
-
 export default Orders;

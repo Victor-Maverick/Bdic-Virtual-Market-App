@@ -160,7 +160,7 @@ const MarketSectionDropdown = ({
                                     setIsOpen(false);
                                 }}
                             >
-                                {section.name}
+                                {String(section.name)} {/* Force string conversion */}
                             </li>
                         ))}
                     </ul>

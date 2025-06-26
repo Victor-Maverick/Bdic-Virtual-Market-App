@@ -2,7 +2,6 @@
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import shadow from '@/../public/assets/images/shadow.png';
 import React, {Key, useState} from "react";
-import Dropdown from "@/components/dropDown";
 import Image from "next/image";
 import searchImg from "../../../../public/assets/images/search-normal.png";
 import marketIcon from "../../../../public/assets/images/market element.png";
@@ -128,7 +127,7 @@ const Store = () => {
                     className="h-[66px] bg-cover w-full flex justify-between items-center px-25 bg-no-repeat bg-center relative"
                     style={{ backgroundImage: `url(${shadow.src})` }} // Using Next.js Image optimization
                 >
-                    <Dropdown/>
+                    {/*<Dropdown/>*/}
                     <SearchBar/>
                     <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between  border border-[#ededed] rounded-[4px]">
                         <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px]">

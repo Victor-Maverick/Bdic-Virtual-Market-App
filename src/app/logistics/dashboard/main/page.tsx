@@ -4,7 +4,6 @@ import DashboardHeader from "@/components/dashboardHeader"
 import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
-import NewProductView from "@/components/newProductView"
 import orderImg from '../../../../../public/assets/images/archive.svg'
 import blackArrowImg from '../../../../../public/assets/images/arrow-up.svg'
 import deliveredImg from '../../../../../public/assets/images/dropbox.svg'
@@ -326,7 +325,7 @@ function DashboardContent() {
                         </div>
                     </div>
                 )}
-                {activeTab === 'pending' && <NewProductView />}
+                {/*{activeTab === 'pending' && <NewProductView />}*/}
                 {activeTab === 'delivered' && (
                     <div className="flex flex-col mt-[60px] rounded-[24px] border-[1px] border-[#EAECF0]">
                         <div className="my-[20px] mx-[20px] flex flex-col">

@@ -1,6 +1,6 @@
-//CartContext.tsx
+// CartContext.tsx
 'use client'
-import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import {
     addToCart as apiAddToCart,
     getCart as apiGetCart,
@@ -13,8 +13,9 @@ import {
 
 interface CheckoutData {
     buyerEmail: string;
-    deliveryOption: 'pickup' | 'delivery';
+    deliveryMethod: 'pickup' | 'delivery';
     address: string;
+    transRef: string;
 }
 
 interface CartContextType {
@@ -34,99 +35,104 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-export const CartProvider = ({ children, authToken: initialAuthToken }: { children: ReactNode, authToken?: string }) => {
+export const CartProvider = ({ children }: { children: ReactNode }) => {
     const [cartId, setCartId] = useState<string | null>(null);
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [authToken, setAuthToken] = useState(initialAuthToken);
 
-    useEffect(() => {
-        const fetchSession = async () => {
-            try {
-                const response = await fetch('/api/auth/session');
-                const session = await response.json();
-                console.log("Token here: ", session.accessToken)
-                setAuthToken(session?.accessToken);
-                localStorage.setItem("token", session.accessToken)
-            } catch (err) {
-                console.error('Error fetching session:', err);
-            }
-        };
-
-        fetchSession();
-    }, []);
-
-    // Initialize cart from localStorage or create new one
-    useEffect(() => {
-        const initializeCart = async () => {
-            try {
-                setLoading(true);
-                // Try to get cartId from localStorage
-                const savedCartId = localStorage.getItem('cartId');
-
-                if (savedCartId) {
-                    // Verify if cart exists on server
-                    try {
-                        const cart = await apiGetCart(savedCartId);
-                        setCartId(savedCartId);
-                        setCartItems(cart.items);
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                    } catch (error) {
-                        // If cart doesn't exist on server, create new one
-                        localStorage.removeItem('cartId');
-                        createNewCart();
-                    }
-                } else {
-                    createNewCart();
-                }
-            } catch (err) {
-                console.error('Error initializing cart:', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        const createNewCart = async () => {
-            const newCartId = 'cart-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
-            localStorage.setItem('cartId', newCartId);
-            setCartId(newCartId);
-            setCartItems([]);
-        };
-
-        if (authToken !== undefined) {
-            initializeCart();
-        }
-    }, [authToken]);
+    const generateCartId = () => {
+        return 'cart-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+    };
 
     const fetchCart = useCallback(async () => {
+        if (!cartItems) {
+            setCartItems([]);
+            return;
+        }
+        const currentCartId = localStorage.getItem('cartId');
+        if (!currentCartId) {
+            setCartItems([]);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await apiGetCart(currentCartId);
+            setCartItems(response.items);
+
+            if (response.items.length === 0) {
+                localStorage.removeItem('cartId');
+                setCartId(null);
+            }
+        } catch (err) {
+            if ((err as { response?: { status?: number } })?.response?.status === 401 ||
+                (err as { response?: { status?: number } })?.response?.status === 404) {
+                localStorage.removeItem('cartId');
+                setCartId(null);
+            }
+            setCartItems([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [cartItems]);
+
+    const removeFromCart = useCallback(async (itemId: number) => {
         if (!cartId) return;
 
         try {
             setLoading(true);
-            const response = await apiGetCart(cartId);
-            setCartItems(response.items);
-            // Update cartId if server returned a different one
-            if (response.cartId && response.cartId !== cartId) {
-                setCartId(response.cartId);
-                localStorage.setItem('cartId', response.cartId);
+            const response = await apiRemoveFromCart(cartId, itemId);
+
+            if (!response.items || response.items.length === 0) {
+                localStorage.removeItem('cartId');
+                setCartId(null);
             }
+
+            setCartItems(response.items || []);
         } catch (err) {
-            setError('Failed to fetch cart');
-            console.error('Error fetching cart:', err);
+            setError('Failed to remove item from cart');
+            console.error('Error removing from cart:', err);
+            throw err;
         } finally {
             setLoading(false);
         }
-    }, [cartId]); // Removed authToken dependency
+    }, [cartId]);
+
+    const clearCart = useCallback(async () => {
+        localStorage.removeItem('cartId');
+        setCartId(null);
+        setCartItems([]);
+    }, []);
+
+    const checkout = useCallback(async (checkoutData: CheckoutData): Promise<CheckoutResponse> => {
+        const currentCartId = cartId || localStorage.getItem('cartId');
+        if (!currentCartId) throw new Error('No cart ID');
+
+        try {
+            setLoading(true);
+            const response = await apiCheckoutCart(currentCartId, checkoutData);
+
+            localStorage.removeItem('cartId');
+            setCartId(null);
+            setCartItems([]);
+
+            return response;
+        } catch (err) {
+            setError('Failed to checkout');
+            console.error('Error during checkout:', err);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [cartId]);
 
     const addToCart = useCallback(async (product: Omit<CartItem, 'itemId' | 'quantity'>, quantity: number = 1) => {
         try {
             setLoading(true);
-            let currentCartId = cartId;
-
-            // If no cart exists, create one by adding the first item
+            let currentCartId = localStorage.getItem('cartId');
             if (!currentCartId) {
-                currentCartId = 'cart-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+                currentCartId = generateCartId();
                 localStorage.setItem('cartId', currentCartId);
                 setCartId(currentCartId);
             }
@@ -138,8 +144,7 @@ export const CartProvider = ({ children, authToken: initialAuthToken }: { childr
             );
 
             setCartItems(response.items);
-            // Update cartId if server returned a different one
-            if (response.cartId && response.cartId !== currentCartId) {
+            if (response.cartId) {
                 setCartId(response.cartId);
                 localStorage.setItem('cartId', response.cartId);
             }
@@ -150,7 +155,7 @@ export const CartProvider = ({ children, authToken: initialAuthToken }: { childr
         } finally {
             setLoading(false);
         }
-    }, [cartId]); // Removed authToken dependency
+    }, []);
 
     const updateQuantity = useCallback(async (itemId: number, quantityDelta: number) => {
         if (!cartId) return;
@@ -177,58 +182,19 @@ export const CartProvider = ({ children, authToken: initialAuthToken }: { childr
         } finally {
             setLoading(false);
         }
-    }, [cartId, cartItems]); // Removed authToken dependency
-
-    const removeFromCart = useCallback(async (itemId: number) => {
-        if (!cartId) return;
-
-        try {
-            setLoading(true);
-            const response = await apiRemoveFromCart(
-                cartId,
-                itemId,
-            );
-            setCartItems(response.items);
-        } catch (err) {
-            setError('Failed to remove item from cart');
-            console.error('Error removing from cart:', err);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, [cartId]); // Removed authToken dependency
-
-    const clearCart = useCallback(async () => {
-        setCartItems([]);
-    }, []);
-
-    const checkout = useCallback(async (checkoutData: CheckoutData): Promise<CheckoutResponse> => {
-        const currentCartId = cartId || localStorage.getItem('cartId');
-        if (!currentCartId) throw new Error('No cart ID');
-
-        try {
-            setLoading(true);
-            const response = await apiCheckoutCart(
-                currentCartId,
-                checkoutData,
-            );
-
-            setCartItems([]);
-            return response;
-        } catch (err) {
-            setError('Failed to checkout');
-            console.error('Error during checkout:', err);
-            throw err;
-        } finally {
-            setLoading(false);
-        }
-    }, [cartId]); // Removed authToken dependency
+    }, [cartId, cartItems]);
 
     const getTotalItems = useCallback(() => {
+        if (!cartItems) {
+            return 0;
+        }
         return cartItems.reduce((total, item) => total + item.quantity, 0);
     }, [cartItems]);
 
     const getTotalPrice = useCallback(() => {
+        if (!cartItems) {
+            return 0;
+        }
         return cartItems.reduce((total, item) => total + (item.price || 0) * item.quantity, 0);
     }, [cartItems]);
 

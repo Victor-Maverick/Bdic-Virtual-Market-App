@@ -3,9 +3,8 @@
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import ProductDetailHeader from "@/components/productDetailHeader";
-import ProductDetailHeroBar from "@/components/productDetailHeroBar";
 import NavigationBar from "@/components/navigationBar";
-import Toast from "@/components/toast";
+import Toast from "../../components/Toast";
 import cartIcon from '../../../public/assets/images/black cart.png';
 import Image from "next/image";
 import arrow from '../../../public/assets/images/blackArrow.png';
@@ -21,8 +20,9 @@ import { Toaster, toast } from "react-hot-toast";
 import arrowRight from '@/../public/assets/images/green arrow.png'
 import checkIcon from '@/../public/assets/images/green tick.png'
 
+
 import axios from 'axios';
-import { useSession } from 'next-auth/react';
+import {useSession} from 'next-auth/react';
 
 
 const DELIVERY_FEE = 1000;
@@ -99,7 +99,6 @@ const clearStoredTotalAmount = () => {
 
 type HoverOption = "pickup" | "delivery" | "add" | null;
 
-
 const Cart = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -117,8 +116,7 @@ const Cart = () => {
     const [showAddAddressModal, setShowAddAddressModal] = useState(false);
     const [newAddress, setNewAddress] = useState('');
     const { data: session } = useSession();
-    const isAuthenticated = !!session?.user;
-
+    const isAuthenticated = session?.user;
 
     const {
         cartItems,
@@ -138,13 +136,15 @@ const Cart = () => {
     const [toastMessage, setToastMessage] = useState("");
     const [toastSubMessage, setToastSubMessage] = useState("");
 
+
     const verifyPayment = useCallback(async (transRef: string) => {
         setIsVerifying(true);
         setPaymentError(null);
 
         try {
+
             const response = await axios.get<VerifyPaymentResponse>(
-                `https://api.digitalmarke.bdic.ng/api/payments/verify/${transRef}`,
+                `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
                 { timeout: 30000 }
             );
 
@@ -155,17 +155,19 @@ const Cart = () => {
                 if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
                     throw new Error('Payment amount does not match order total');
                 }
-
-                const buyerEmail = localStorage.getItem('userEmail');
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                const buyerEmail = session?.email;
                 if (!buyerEmail) {
-                    throw new Error('User email not found. Please log in again.');
+                    throw new Error('User email not found in session. Please log in again.');
                 }
 
                 // Create order after successful payment verification
                 const checkoutResponse = await apiCheckout({
-                    buyerEmail, // Now TypeScript knows this is definitely a string
-                    deliveryOption: selectedDeliveryOption,
-                    address: selectedAddress
+                    buyerEmail,
+                    deliveryMethod: selectedDeliveryOption,
+                    address: selectedAddress,
+                    transRef
                 });
 
                 const orderDetails: OrderDetails = {
@@ -173,12 +175,13 @@ const Cart = () => {
                     deliveryOption: selectedDeliveryOption,
                     deliveryAddress: selectedDeliveryOption === 'pickup'
                         ? 'Shop 2C, Modern market, Makurdi'
-                        : 'No. 4 Vandeikya Street, Makurdi',
+                        : selectedAddress,
                     paymentAmount: paymentData.transAmount,
                 };
 
                 setOrderDetails(orderDetails);
                 clearStoredTotalAmount();
+
                 clearCart();
                 setShowSuccessModal(true);
                 showSuccessToast('Payment Successful', 'Your order has been placed successfully');
@@ -191,10 +194,16 @@ const Cart = () => {
             const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
             setPaymentError(errorMessage);
             showErrorToast('Payment Error', errorMessage);
+
+            // If it's an authentication error, redirect to login
+            if (errorMessage.includes('log in')) {
+                localStorage.setItem('preAuthUrl', window.location.pathname);
+                router.push('/login');
+            }
         } finally {
             setIsVerifying(false);
         }
-    }, [selectedDeliveryOption,setSelectedAddress, apiCheckout, clearCart, router]);
+    }, [selectedDeliveryOption, selectedAddress, apiCheckout, clearCart, router, session]); // Add session to dependencies
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -219,8 +228,13 @@ const Cart = () => {
 
     // Update useEffect dependencies
     useEffect(() => {
-        fetchCart(); // Fetch cart data when component mounts
-    }, [fetchCart]); // Added fetchCart as dependency
+        if(getTotalItems() === undefined || getTotalItems() ===0){
+            return
+        }
+        else {
+            fetchCart();
+        }
+    }, [fetchCart, getTotalItems]);
 
     useEffect(() => {
         const transRef = searchParams.get('transRef');
@@ -278,7 +292,7 @@ const Cart = () => {
     };
 
     const initializePayment = async (): Promise<PaymentData> => {
-        const userEmail = localStorage.getItem("userEmail")
+        const userEmail = session?.user?.email;
         console.log("payment email: ", userEmail)
         try {
             const totalAmount = getTotalPrice() + DELIVERY_FEE - discount;
@@ -300,7 +314,7 @@ const Cart = () => {
             };
 
             const response = await axios.post<InitializePaymentResponse>(
-                'https://api.digitalmarke.bdic.ng/api/payments/initialize',
+                'https://digitalmarket.benuestate.gov.ng/api/payments/initialize',
                 requestData,
                 {
                     headers: {
@@ -309,7 +323,6 @@ const Cart = () => {
                     timeout: 30000,
                 }
             );
-
             const paymentResponse = response.data;
 
             if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
@@ -374,7 +387,6 @@ const Cart = () => {
         }
     };
 
-// Add function to handle new address submission
     const handleAddNewAddress = () => {
         if (!newAddress.trim()) {
             toast.error('Please enter a valid address');
@@ -494,8 +506,6 @@ const Cart = () => {
                     </div>
                 </div>
             )}
-
-            {/* Payment Error Display */}
             {paymentError && (
                 <div className="px-[100px] py-4">
                     <div className="bg-red-50 border-l-4 border-red-500 p-4">
@@ -514,9 +524,8 @@ const Cart = () => {
                     </div>
                 </div>
             )}
-
             <ProductDetailHeader />
-            <ProductDetailHeroBar />
+            {/*<ProductDetailHeroBar />*/}
             <NavigationBar page="//cart" name="Cart" />
 
             <div className="px-[100px] py-[10px] border-b border-[#ededed]">
@@ -541,7 +550,7 @@ const Cart = () => {
                 </div>
             </div>
 
-            {cartItems.length === 0 ? (
+            {getTotalItems() === 0 ? (
                 <div className="flex flex-col items-center justify-center px-[100px] py-[80px]">
                     <Image
                         src={emptyCartImg}
@@ -593,7 +602,6 @@ const Cart = () => {
                                             ₦{product.price.toLocaleString()}.00
                                         </p>
                                     </div>
-
                                     <button
                                         className="w-[38px] h-[38px] flex justify-center items-center rounded-[8px] bg-[#F9F9F9] border-[0.5px] border-[#ededed] hover:bg-[#e5e5e5] transition-colors"
                                         onClick={() => updateQuantity(product.itemId, -1)}
@@ -624,9 +632,16 @@ const Cart = () => {
                                         />
                                         <p
                                             className="text-[14px] text-[#707070] font-normal cursor-pointer hover:text-[#505050] transition-colors"
-                                            onClick={() => {
-                                                removeFromCart(product.itemId);
-                                                toast.success(`${product.name} removed from cart`);
+                                            onClick={async () => {
+                                                try {
+                                                    await removeFromCart(product.itemId);
+                                                    toast.success(`${product.name} removed from cart`);
+                                                    // // Fetch the latest cart state after removal
+                                                    // await fetchCart();
+                                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                                } catch (error) {
+                                                    toast.error('Failed to remove item from cart');
+                                                }
                                             }}
                                         >
                                             Remove
@@ -764,7 +779,6 @@ const Cart = () => {
                                     </div>
                                 ))}
 
-                                {/* Add New Address Option */}
                                 <div
                                     className={`flex gap-[10px] py-[10px] px-[8px] cursor-pointer rounded-[10px] transition-colors ${
                                         hoveredOption === 'add' ? 'bg-[#022B23] text-white' : ''

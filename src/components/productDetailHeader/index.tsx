@@ -24,7 +24,7 @@ const DashboardHeader = () => {
             }
 
             try {
-                const response = await axios.get('https://api.digitalmarke.bdic.ng/api/auth/profile', {
+                const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
                     headers: {
                         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                         // @ts-expect-error

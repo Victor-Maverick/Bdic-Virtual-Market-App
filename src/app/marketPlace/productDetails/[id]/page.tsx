@@ -5,15 +5,12 @@ import Image, { StaticImageData } from "next/image";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-
 // Components
 import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
 import NavigationBar from "@/components/navigationBar";
 import MarketProductCard from "@/components/marketProductCard";
 import { useCart } from "@/context/CartContext";
-
-
 // Images
 import vendorImg from '../../../../../public/assets/images/vendorImg.svg'
 import verify from '../../../../../public/assets/images/verify.svg'
@@ -31,6 +28,8 @@ import blueGreenCircle from '../../../../../public/assets/images/blueGreenCircle
 import redPurpleCircle from '../../../../../public/assets/images/purpleRedCircle.png'
 import orangeCircle from '../../../../../public/assets/images/orangeCirlce.png'
 import greenVerify from '../../../../../public/assets/images/limeVerify.png'
+import { useSession } from "next-auth/react";
+
 
 // Types
 interface Product {
@@ -46,10 +45,12 @@ interface Product {
     sideImage4Url: string;
     shopId: number;
     shopName: string;
-    market_section: string;
-    shop_address:string;
-    vendor:string;
-    categoryId: number;
+    shopNumber: string;
+    marketSection: string;
+    market: string;
+    vendorName: string;
+    city: string;
+    shopAddress: string;
     categoryName: string;
 }
 
@@ -163,6 +164,43 @@ const ProductDetails = ({ params }: PageProps) => {
         { stars: 1, count: 0 },
     ];
 
+    const { data: session } = useSession();
+
+    const handleAddToWishlist = async () => {
+        if (!product || !session?.user?.email) {
+            toast.error("You need to be logged in to add items to your wishlist", {
+                position: "bottom-right",
+                duration: 3000,
+            });
+            return;
+        }
+        try {
+            const response = await axios.post(
+                "https://digitalmarket.benuestate.gov.ng/api/orders/add-to-wishlist",
+                {
+                    buyerEmail: session.user.email,
+                    productId: product.id,
+                }
+            );
+
+            toast.success(response.data.message || "Added to wishlist successfully", {
+                position: "bottom-right",
+                duration: 3000,
+            });
+            console.log("message: ",response.data);
+        } catch (error) {
+            console.error("Error adding to wishlist:", error);
+            toast.error(
+                axios.isAxiosError(error)
+                    ? error.response?.data?.message || "Failed to add to wishlist"
+                    : "Failed to add to wishlist",
+                {
+                    position: "bottom-right",
+                    duration: 3000,
+                }
+            );
+        }
+    };
     // Extract params first
     useEffect(() => {
         const extractParams = async () => {
@@ -179,10 +217,10 @@ const ProductDetails = ({ params }: PageProps) => {
         const fetchProduct = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`https://api.digitalmarke.bdic.ng/api/products/${productId}`);
+                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/${productId}`);
                 if (response.data) {
                     setProduct(response.data);
-                    console.log(response.data)
+                    console.log("Product hrer:: ",response.data)
                 } else {
                     throw new Error(response.data.message || 'Failed to fetch product');
                 }
@@ -212,7 +250,6 @@ const ProductDetails = ({ params }: PageProps) => {
             );
         });
     };
-
     if (loading || !productId) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -220,7 +257,6 @@ const ProductDetails = ({ params }: PageProps) => {
             </div>
         );
     }
-
     if (error) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -228,7 +264,6 @@ const ProductDetails = ({ params }: PageProps) => {
             </div>
         );
     }
-
     if (!product) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -268,7 +303,6 @@ const ProductDetails = ({ params }: PageProps) => {
                         )}
                     </div>
 
-                    {/* Smaller Images */}
                     <div className="flex items-center gap-[8px] mb-2">
                         {productImages.slice(1, 4).map((image, index) => (
                             <div key={index} className="w-[235px] h-[235px] bg-[#F9F9F9] overflow-hidden">
@@ -301,7 +335,7 @@ const ProductDetails = ({ params }: PageProps) => {
                                 <Image src={vendorImg} alt={'vendor'} width={40} height={40}/>
                                 <div className="flex-col">
                                     <p className="text-[12px] text-[#707070]">Vendor</p>
-                                    <p className="text-[16px] font-normal mt-[-4px]">{product.vendor}</p>
+                                    <p className="text-[16px] font-normal mt-[-4px]">{product.vendorName}</p>
                                 </div>
                             </div>
                             <div className="w-[74px] p-[6px] gap-[4px] h-[30px] bg-[#C6EB5F] rounded-[8px] flex items-center">
@@ -311,16 +345,16 @@ const ProductDetails = ({ params }: PageProps) => {
                         </div>
                         <div className="px-[20px] flex items-center gap-[4px] mt-[20px]">
                             <Image src={locationImg} alt={'location'} width={18} height={18}/>
-                            <p className="text-[14px] font-light">{product.shop_address}</p>
+                            <p className="text-[14px] font-light">{product.market}, {product.city}</p>
                         </div>
                         <div className="flex px-[20px] mt-[15px] gap-[18px]">
                             <div className="flex items-center gap-[4px]">
                                 <Image src={shopImg} alt={'shop'} width={18} height={18}/>
-                                <p className="text-[14px] font-light">{product.vendor} Shop 2C</p>
+                                <p className="text-[14px] font-light">{product.shopName} Shop {product.shopNumber}</p>
                             </div>
                             <div className="flex items-center gap-[4px]">
                                 <Image src={shopImg} alt={'shop'} width={18} height={18}/>
-                                <p className="text-[14px] font-light">{product.market_section}</p>
+                                <p className="text-[14px] font-light">{product.marketSection}</p>
                             </div>
                         </div>
                         <div className="px-[20px] w-[300px] gap-[14px] mt-[50px] flex items-center">
@@ -347,7 +381,10 @@ const ProductDetails = ({ params }: PageProps) => {
                                 <p className="text-[#022B23] text-[15px] font-bold">Add to cart</p>
                                 <Image src={bag} alt={'cart'} width={18} height={18}/>
                             </div>
-                            <div className="h-[48px] w-[48px] border-[2px] border-[#022B23] rounded-[12px] flex ml-[20px] items-center justify-center">
+                            <div
+                                onClick={handleAddToWishlist}
+                                className="h-[48px] w-[48px] border-[2px] border-[#022B23] rounded-[12px] flex ml-[20px] items-center justify-center cursor-pointer"
+                            >
                                 <Image src={wishlist} alt={'wishlist'} width={26} height={26}/>
                             </div>
                         </div>
@@ -437,5 +474,4 @@ const ProductDetails = ({ params }: PageProps) => {
         </>
     );
 };
-
 export default ProductDetails;

@@ -1,7 +1,6 @@
 'use client'
 import React, {useEffect, useRef, useState} from "react";
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
-import Dropdown from "@/components/dropDown";
 import Image from "next/image";
 import marketIcon from "../../../public/assets/images/market element.png";
 import arrowBack from "../../../public/assets/images/arrow-right.svg";
@@ -206,7 +205,7 @@ const Profile = ()=>{
             <div className="h-[114px] w-full border-b-[0.5px] border-[#EDEDED]">
                 <div className="h-[66px] w-full flex justify-between items-center px-25 border-t-[0.5px] border-[#ededed]">
                     <div className="flex gap-[20px]">
-                        <Dropdown/>
+                        {/*<Dropdown/>*/}
                         <SearchBar/>
                     </div>
 

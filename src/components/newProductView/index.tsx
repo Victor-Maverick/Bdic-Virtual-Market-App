@@ -12,28 +12,41 @@ import arrowUp from "../../../public/assets/images/arrow-up.svg";
 import flagImg from '../../../public/assets/images/flag-2.svg';
 import dropBoxImg from '../../../public/assets/images/dropbox.svg';
 import archiveImg from '../../../public/assets/images/archive.svg';
-import profileImg from "../../../public/assets/images/dashuserimg.svg";
 import arrowDown from '../../../public/assets/images/arrow-down.svg';
 import iPhone from '../../../public/assets/images/blue14.png';
 import arrowBack from '../../../public/assets/images/arrow-right.svg';
 import arrowRight from '../../../public/assets/images/grey right arrow.png';
 import displayImg from '../../../public/assets/images/iphone14Img.svg'
 import {ProductAddedModal} from "@/components/productAddedModal";
+import {useSession} from "next-auth/react";
+
+type Category = {
+    id: string;
+    name: string;
+};
+
+type SubCategory = {
+    id: string;
+    name: string;
+};
 
 type ProductFormData = {
     productName: string;
     price: string;
     description: string;
     quantity: string;
-    provider: string;
-    position: string;
     categoryId?: string;
     categoryName?: string;
+    subCategoryId?: string;
+    subCategoryName?: string;
 };
-
-type Category = {
-    id: string;
+type ProductOne = {
+    id: number;
     name: string;
+    mainImageUrl: string;
+    price: number;
+    quantity: number;
+    quantitySold: number;
 };
 
 type InputFieldProps = {
@@ -113,7 +126,7 @@ const ProductTableRow = ({
                              product,
                              isLast
                          }: {
-    product: Product;
+    product: ProductOne;
     isLast: boolean
 }) => {
     return (
@@ -121,7 +134,7 @@ const ProductTableRow = ({
             <div className="flex items-center w-[284px] pr-[24px] gap-3">
                 <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
                     <Image
-                        src={product.image}
+                        src={product.mainImageUrl}
                         alt={product.name}
                         width={70}
                         height={70}
@@ -130,40 +143,40 @@ const ProductTableRow = ({
                 </div>
                 <div className="flex flex-col">
                     <p className="text-[14px] font-medium text-[#101828]">{product.name}</p>
-                    <p className="text-[12px] text-[#667085]">Review: {product.review}</p>
+                    {/*<p className="text-[12px] text-[#667085]">Review: {product.review}</p>*/}
                 </div>
             </div>
 
             <div className="flex items-center w-[90px] px-[24px]">
-                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    product.status === 'Active'
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium">{product.status}</p>
-                </div>
+                {/*<div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${*/}
+                {/*    product.status === 'Active'*/}
+                {/*        ? 'bg-[#ECFDF3] text-[#027A48]'*/}
+                {/*        : 'bg-[#FEF3F2] text-[#FF5050]'*/}
+                {/*}`}>*/}
+                {/*    <p className="text-[12px] font-medium">{product.status}</p>*/}
+                {/*</div>*/}
             </div>
 
             <div className="flex flex-col justify-center w-[149px] px-[15px]">
                 <p className="text-[14px] text-[#101828]">Sales</p>
-                <p className="text-[14px] font-medium text-[#101828]">{product.salesQty}</p>
+                <p className="text-[14px] font-medium text-[#101828]">{product.quantitySold}</p>
             </div>
 
             <div className="flex items-center w-[170px] px-[24px]">
                 <p className="text-[14px] font-medium text-[#101828]">
-                    NGN{Number(product.unitPrice).toLocaleString()}.00
+                    NGN {Number(product.price).toLocaleString()}.00
                 </p>
             </div>
 
             <div className="flex flex-col justify-center w-[173px] px-[24px]">
                 <p className="text-[14px] text-[#101828]">Sales</p>
                 <p className="text-[14px] font-medium text-[#101828]">
-                    NGN{Number(product.salesAmount).toLocaleString()}.00
+                    NGN {product.price * product.quantitySold}.00
                 </p>
             </div>
 
             <div className="flex items-center w-[115px] px-[24px]">
-                <p className="text-[14px] font-medium text-[#101828]">{product.totalStock}</p>
+                <p className="text-[14px] font-medium text-[#101828]">{product.quantity}</p>
             </div>
 
             <div className="flex items-center w-[200px] px-[24px] gap-2">
@@ -171,12 +184,12 @@ const ProductTableRow = ({
                     <div
                         className="h-full bg-[#C6EB5F] rounded-full"
                         style={{
-                            width: `${(Number(product.remainingStock) / Number(product.totalStock)) * 100}%`
+                            width: `${(Number(product.quantity-product.quantitySold) / Number(product.quantity)) * 100}%`
                         }}
                     />
                 </div>
                 <p className="text-[14px] font-medium text-[#101828] min-w-[40px]">
-                    {product.remainingStock}
+                    {product.quantity-product.quantitySold}
                 </p>
             </div>
 
@@ -238,6 +251,66 @@ const CategoryDropDown = ({
                                 }}
                             >
                                 {category.name}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const SubCategoryDropDown = ({
+                                 subcategories,
+                                 selected,
+                                 onSelect,
+                                 className = "",
+                                 loading = false,
+                                 disabled = false
+                             }: {
+    subcategories: SubCategory[];
+    selected: string;
+    onSelect: (subCategoryId: string, subCategoryName: string) => void;
+    className?: string;
+    loading?: boolean;
+    disabled?: boolean;
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className={`relative ${className}`}>
+            <div
+                onClick={() => !loading && !disabled && setIsOpen(!isOpen)}
+                className={`border-[1.5px] rounded-[14px] h-[44px] flex justify-between px-[18px] border-[#D1D1D1] items-center ${
+                    loading ? 'cursor-not-allowed opacity-50' :
+                        disabled ? 'cursor-not-allowed bg-gray-100' : 'cursor-pointer'
+                }`}
+            >
+                <p className={`text-[16px] font-medium ${
+                    selected === "SubCategory" ? "text-[#BDBDBD]" : "text-[#121212]"
+                }`}>
+                    {loading ? 'Loading subcategories...' : selected}
+                </p>
+                <ChevronDown
+                    size={18}
+                    className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    color={disabled ? "#BDBDBD" : "#D1D1D1"}
+                />
+            </div>
+
+            {isOpen && !loading && !disabled && (
+                <div className="absolute left-0 mt-2 w-full bg-white rounded-md shadow-lg z-10 border border-[#ededed] max-h-60 overflow-y-auto">
+                    <ul className="py-1">
+                        {subcategories.map((subcategory) => (
+                            <li
+                                key={subcategory.id}
+                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={() => {
+                                    onSelect(subcategory.id, subcategory.name);
+                                    setIsOpen(false);
+                                }}
+                            >
+                                {subcategory.name}
                             </li>
                         ))}
                     </ul>
@@ -416,6 +489,8 @@ const PreviewView = ({
                                 <Image
                                     src={uploadedImagePreview}
                                     alt="Product display"
+                                    width={500}
+                                    height={404}
                                     className="object-contain w-full h-full"
                                 />
                             ) : (
@@ -496,7 +571,9 @@ const TextAreaField = ({
     );
 };
 
-const NewProductView = () => {
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+const NewProductView = ({shopId}) => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [activeView, setActiveView] = useState<'New-item' | 'Products-management'>(
@@ -506,16 +583,18 @@ const NewProductView = () => {
     const [selectedFilter, setSelectedFilter] = useState("Last 24 Hrs");
     const [categories, setCategories] = useState<Category[]>([]);
     const [loadingCategories, setLoadingCategories] = useState(false);
+    const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
+    const [loadingSubcategories, setLoadingSubcategories] = useState(false);
     const [isPublishing, setIsPublishing] = useState(false);
     const [formData, setFormData] = useState<ProductFormData>({
         productName: "",
         price: "",
         description: "",
         quantity: "",
-        provider: "",
-        position: "",
         categoryId: "",
-        categoryName: ""
+        categoryName: "",
+        subCategoryId: "",
+        subCategoryName: ""
     });
     const [uploadedImage, setUploadedImage] = useState<File | null>(null);
     const [uploadedImagePreview, setUploadedImagePreview] = useState<string | null>(null);
@@ -526,7 +605,7 @@ const NewProductView = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const productsPerPage = 5;
     const timeFilters = ["Last 24 Hrs", "Last 7 days", "Last 30 days", "Last 90 days"];
-    const products = [
+    const mockProducts = [
         { id: 1, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
         { id: 2, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Disabled", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
         { id: 3, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
@@ -539,19 +618,18 @@ const NewProductView = () => {
         { id: 10, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" }
     ];
 
-    const totalPages = Math.ceil(products.length / productsPerPage);
+    const totalPages = Math.ceil(mockProducts.length / productsPerPage);
     const indexOfLastProduct = currentPage * productsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
-
-
+    const currentProducts = mockProducts.slice(indexOfFirstProduct, indexOfLastProduct);
 
     // Fetch categories on component mount
     useEffect(() => {
         const fetchCategories = async () => {
             setLoadingCategories(true);
             try {
-                const response = await axios.get('https://api.digitalmarke.bdic.ng/api/categories/all');
+                //https://api.digitalmarke.bdic.ng
+                const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/categories/all');
                 if (response.data && Array.isArray(response.data)) {
                     setCategories(response.data);
                 }
@@ -561,19 +639,82 @@ const NewProductView = () => {
                 setLoadingCategories(false);
             }
         };
-
         fetchCategories();
     }, []);
+
+    const fetchSubcategories = async (categoryName: string) => {
+        if (!categoryName) return;
+        setLoadingSubcategories(true);
+        try {
+            const response = await axios.get(
+                'https://digitalmarket.benuestate.gov.ng/api/categories/getAllCategorySub',
+                {
+                    params: {
+                        categoryName: categoryName
+                    }
+                }
+            );
+            if (response.data && Array.isArray(response.data)) {
+                setSubcategories(response.data);
+            }
+        } catch (error) {
+            console.error('Error fetching subcategories:', error);
+            alert('Failed to load subcategories. Please try again.');
+        } finally {
+            setLoadingSubcategories(false);
+        }
+    };
+
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading,setLoading] = useState(false)
+    const { data: session } = useSession();
+    const userEmail = session?.user?.email;
+    useEffect(() => {
+        if (!userEmail) return;
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.get(
+                    `https://digitalmarket.benuestate.gov.ng/api/products/getByUser?email=${userEmail}`
+                );
+                setProducts(response.data);
+                console.log("PRoducts: ",response.data)
+            } catch (err) {
+                console.error("Error fetching mockProducts:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProducts();
+    }, [userEmail]);
 
     const handleChange = (field: keyof ProductFormData) => (value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
-
     const handleCategorySelect = (categoryId: string, categoryName: string) => {
+        // Validate the category ID is a valid number
+        if (isNaN(Number(categoryId))) {
+            alert('Invalid category selected');
+            return;
+        }
+
+        // Reset subcategory when category changes
         setFormData(prev => ({
             ...prev,
             categoryId,
-            categoryName
+            categoryName,
+            subCategoryId: "",
+            subCategoryName: ""
+        }));
+        setSubcategories([]); // Clear previous subcategories
+        fetchSubcategories(categoryName);
+    };
+
+    const handleSubcategorySelect = (subCategoryId: string, subCategoryName: string) => {
+        setFormData(prev => ({
+            ...prev,
+            subCategoryId,
+            subCategoryName
         }));
     };
 
@@ -596,12 +737,9 @@ const NewProductView = () => {
         if (file) {
             const newSideImages = [...sideImages];
             const newPreviews = [...sideImagePreviews];
-
             // Ensure we don't exceed 4 side images
             if (newSideImages.length >= 4) return;
-
             newSideImages[index] = file;
-
             const reader = new FileReader();
             reader.onload = (event) => {
                 if (event.target?.result) {
@@ -610,7 +748,6 @@ const NewProductView = () => {
                 }
             };
             reader.readAsDataURL(file);
-
             setSideImages(newSideImages);
         }
     };
@@ -667,7 +804,8 @@ const NewProductView = () => {
 
     const handlePreview = () => {
         // Validate required fields
-        if (!formData.productName || !formData.price || !formData.description || !formData.quantity || !formData.categoryId) {
+        if (!formData.productName || !formData.price || !formData.description ||
+            !formData.quantity || !formData.categoryId || !formData.subCategoryId) {
             alert('Please fill in all required fields');
             return;
         }
@@ -687,20 +825,20 @@ const NewProductView = () => {
     // Add this state variable with your other useState declarations
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-// Updated handlePublish function
+    // Update the handlePublish function
     const handlePublish = async () => {
         setIsPublishing(true);
 
         try {
             const formDataToSend = new FormData();
-
             // Add form fields
             formDataToSend.append('name', formData.productName);
             formDataToSend.append('price', formData.price);
             formDataToSend.append('description', formData.description);
             formDataToSend.append('quantity', formData.quantity);
             formDataToSend.append('categoryId', formData.categoryId || '');
-            formDataToSend.append('shopId', '1'); // Make this dynamic if needed
+            formDataToSend.append('subCategoryId', formData.subCategoryId || '');
+            formDataToSend.append('shopId', shopId);
 
             // Add main image
             if (uploadedImage) {
@@ -715,7 +853,7 @@ const NewProductView = () => {
             });
 
             const response = await axios.post(
-                'https://api.digitalmarke.bdic.ng/api/products/add',
+                'http://localhost:8081/api/products/add',
                 formDataToSend,
                 {
                     headers: {
@@ -725,8 +863,6 @@ const NewProductView = () => {
             );
 
             console.log('Product published successfully:', response.data);
-
-            // Show success modal immediately after successful API call
             setIsModalOpen(true);
 
             // Reset form after successful publish
@@ -735,10 +871,10 @@ const NewProductView = () => {
                 price: "",
                 description: "",
                 quantity: "",
-                provider: "",
-                position: "",
                 categoryId: "",
-                categoryName: ""
+                categoryName: "",
+                subCategoryId: "",
+                subCategoryName: ""
             });
             setUploadedImage(null);
             setSideImages([]);
@@ -752,7 +888,7 @@ const NewProductView = () => {
             setIsPublishing(false);
         }
     };
-
+    
     if (viewMode === 'preview') {
         return (
             <>
@@ -768,8 +904,8 @@ const NewProductView = () => {
 
     );
     }
-    const renderNewItemView = () => {
 
+    const renderNewItemView = () => {
         return (
             <div className="flex justify-between px-55">
                 <div className="flex flex-col">
@@ -790,6 +926,14 @@ const NewProductView = () => {
                             selected={formData.categoryName || "Category"}
                             onSelect={handleCategorySelect}
                             loading={loadingCategories}
+                        />
+
+                        <SubCategoryDropDown
+                            subcategories={subcategories}
+                            selected={formData.subCategoryName || "SubCategory"}
+                            onSelect={handleSubcategorySelect}
+                            loading={loadingSubcategories}
+                            disabled={!formData.categoryId} // Disable if no category selected
                         />
                         <InputField
                             id="price"
@@ -921,7 +1065,6 @@ const NewProductView = () => {
         );
     };
 
-
     const renderProductsManagementView = () => (
         <div className="flex flex-col gap-[50px]">
             <div className="flex flex-col gap-[12px]">
@@ -933,10 +1076,10 @@ const NewProductView = () => {
                             <p>Total sales (741)</p>
                         </div>
                         <div className="flex justify-between px-[15px]">
-                            <p className="text-[#18181B] font-medium text-[16px]">N102,426,231.00</p>
+                            <p className="text-[#18181B] font-medium text-[16px]">N0.00</p>
                             <div className="flex items-center gap-[4px]">
                                 <Image src={arrowUp} alt={'image'} width={10} height={10}/>
-                                <p className="text-[#22C55E] text-[12px]">2%</p>
+                                {/*<p className="text-[#22C55E] text-[12px]">2%</p>*/}
                             </div>
                         </div>
                     </div>
@@ -947,11 +1090,11 @@ const NewProductView = () => {
                             <p>All products (in stock)</p>
                         </div>
                         <div className="flex justify-between px-[15px]">
-                            <p className="text-[#18181B] font-medium text-[16px]">1,232</p>
-                            <div className="flex items-center gap-[4px]">
-                                <Image src={arrowUp} alt={'image'} width={10} height={10}/>
-                                <p className="text-[#22C55E] text-[12px]">2%</p>
-                            </div>
+                            <p className="text-[#18181B] font-medium text-[16px]">{products.length}</p>
+                            {/*<div className="flex items-center gap-[4px]">*/}
+                            {/*    <Image src={arrowUp} alt={'image'} width={10} height={10}/>*/}
+                            {/*    <p className="text-[#22C55E] text-[12px]">2%</p>*/}
+                            {/*</div>*/}
                         </div>
                     </div>
 
@@ -981,28 +1124,14 @@ const NewProductView = () => {
                             </div>
                         </div>
                     </div>
-                    <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#ededed]">
-                        <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                            <Image src={profileImg} alt="pending orders" width={18} height={18} className="h-[18px] w-[18px]" />
-                            <p>Returns</p>
-                        </div>
-                        <div className="flex justify-between px-[15px]">
-                            <p className="text-[#18181B] font-medium text-[16px]">2</p>
-                            <div className="flex items-center gap-[4px]">
-                                <Image src={arrowUp} alt={'image'} width={10} height={10}/>
-                                <p className="text-[#22C55E] text-[12px]">2%</p>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
                 <div className="my-[20px] mx-[25px] flex flex-col">
-                    <p className="text-[#101828] font-medium">Inventory (500)</p>
+                    <p className="text-[#101828] font-medium">Inventory ({products.length})</p>
                     <p className="text-[#667085] text-[14px]">View and manage your products</p>
                 </div>
-
                 <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
                     <div className="flex items-center px-[24px] w-[284px] py-[12px] gap-[4px]">
                         <p className="text-[#667085] font-medium text-[12px]">Products</p>
@@ -1028,16 +1157,27 @@ const NewProductView = () => {
                     </div>
                     <div className="flex items-center w-[40px] py-[12px]"></div>
                 </div>
+                {loading ? (
+                    <div className="p-4">Loading products...</div>
+                ) : (
+                    <div className="flex flex-col">
+                        {products.map((product, index) => (
+                            <ProductTableRow
+                                key={product.id}
+                                product={{
+                                    id: product.id,
+                                    name: product.name,
+                                    mainImageUrl: product.image.src, // Convert StaticImageData to string URL
+                                    price: Number(product.unitPrice),
+                                    quantity: Number(product.totalStock),
+                                    quantitySold: product.salesQty
+                                }}
+                                isLast={index === currentProducts.length - 1}
+                            />
+                        ))}
+                    </div>
+                )}
 
-                <div className="flex flex-col">
-                    {currentProducts.map((product, index) => (
-                        <ProductTableRow
-                            key={product.id}
-                            product={product}
-                            isLast={index === currentProducts.length - 1}
-                        />
-                    ))}
-                </div>
             </div>
             <div className="flex justify-between items-center">
                 <div
@@ -1099,9 +1239,6 @@ const NewProductView = () => {
             </div>
         </div>
     );
-
-    // ... rest of the component implementation (ProductsManagementView, pagination, etc.) ...
-
     return (
         <div className="flex flex-col gap-[32px] py-[10px]">
             <div className="flex items-center justify-between mb-4">
@@ -1134,7 +1271,6 @@ const NewProductView = () => {
                         <p>Products management</p>
                     </div>
                 </div>
-
                 {activeView === 'Products-management' && (
                     <DropDown
                         options={timeFilters}
@@ -1144,7 +1280,6 @@ const NewProductView = () => {
                     />
                 )}
             </div>
-
             <div className="">
                 {activeView === 'New-item' ? renderNewItemView() : renderProductsManagementView()}
             </div>
@@ -1158,9 +1293,7 @@ const NewProductView = () => {
                     router.push('/vendor/dashboard/shop?tab=product');
                 }}
             />
-
         </div>
     );
 };
-
 export default NewProductView;

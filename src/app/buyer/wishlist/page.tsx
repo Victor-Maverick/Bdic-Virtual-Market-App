@@ -1,48 +1,157 @@
 'use client'
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
-import Dropdown from "@/components/dropDown";
 import Image from "next/image";
 import marketIcon from "../../../../public/assets/images/market element.png";
 import arrowBack from "../../../../public/assets/images/arrow-right.svg";
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import searchImg from "../../../../public/assets/images/search-normal.png";
 import arrowRight from '@/../public/assets/images/greyforwardarrow.svg'
-import iphone from "../../../../public/assets/images/iphone13.svg";
-import fan from "../../../../public/assets/images/table fan.png";
-import pepper from "../../../../public/assets/images/pepper.jpeg";
 import trashImg from "../../../../public/assets/images/trash.png";
 import {useRouter} from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useCart } from "@/context/CartContext";
+import toast from "react-hot-toast";
 
 const SearchBar = () => (
-    <div className="flex  gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
+    <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
         <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
         <input placeholder="Search for items here" className="w-[413px] text-[#707070] text-[14px] focus:outline-none"/>
     </div>
 );
 
-const initialProducts = [
-    { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "850,000", quantity: 1 },
-    { name: "Table Fan", description: "Powerful cooling fan", image: fan, price: "950,000", quantity: 1 },
-    { name: "Fresh Pepper", description: "Organic farm produce", image: pepper, price: "35,000", quantity: 1 },
-    { name: "Sea Blue iPhone 14", description: "6GB ROM / 128GB RAM", image: iphone, price: "40,000", quantity: 1 },
-];
+interface WishlistItem {
+    id: number; // Added product ID
+    name: string;
+    productId: number;
+    description: string;
+    productImage: string;
+    unitPrice: string;
+    quantity: number;
+}
 
-const Wishlist=()=>{
+const Wishlist = () => {
     const [selectedMarket, setSelectedMarket] = useState("Wurukum");
+    const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const router = useRouter();
-    return(
+    const { data: session } = useSession();
+    const { addToCart } = useCart();
+
+    useEffect(() => {
+        const fetchWishlist = async () => {
+            if (session?.user?.email) {
+                try {
+                    setLoading(true);
+                    const response = await fetch(
+                        `https://digitalmarket.benuestate.gov.ng/api/orders/get-wishlist?buyerEmail=${session.user.email}`,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        }
+                    );
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    setWishlistItems(data?.wishList || []);
+                    console.log("Wishlist: ", data.wishList)
+                } catch (error) {
+                    console.error("Error fetching wishlist:", error);
+                    setError("Failed to load wishlist. Please try again later.");
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchWishlist();
+    }, [session?.user?.email]);
+
+    const handleAddToCart = async (product: WishlistItem) => {
+        try {
+            await addToCart({
+                productId: product.productId,
+                name: product.name,
+                price: parseFloat(product.unitPrice),
+                imageUrl: product.productImage,
+                description: product.description
+            });
+
+            toast.success(`${product.name} added to cart!`, {
+                position: "bottom-right",
+                duration: 3000,
+            });
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            toast.error("Failed to add item to cart", {
+                position: "bottom-right",
+                duration: 3000,
+            });
+        }
+    };
+
+    const handleRemoveFromWishlist = async (productId: number) => {
+        try {
+            // Implement API call to remove from wishlist
+            const response = await fetch(
+                `https://digitalmarket.benuestate.gov.ng/api/orders/remove-from-wishlist?buyerEmail=${session?.user?.email}&productId=${productId}`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                }
+            );
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Update local state
+            setWishlistItems(prevItems => prevItems.filter(item => item.id !== productId));
+
+            toast.success("Item removed from wishlist", {
+                position: "bottom-right",
+                duration: 3000,
+            });
+        } catch (error) {
+            console.error("Error removing from wishlist:", error);
+            toast.error("Failed to remove item from wishlist", {
+                position: "bottom-right",
+                duration: 3000,
+            });
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p>Loading your wishlist...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <p className="text-red-500">{error}</p>
+            </div>
+        );
+    }
+
+    return (
         <>
             <MarketPlaceHeader />
-            <div className="h-[114px] w-full  border-b-[0.5px] border-[#EDEDED]">
-                <div
-                    className="h-[66px]  w-full flex justify-between items-center px-25 border-t-[0.5px] border-[#ededed]  "
-                >
+            <div className="h-[114px] w-full border-b-[0.5px] border-[#EDEDED]">
+                <div className="h-[66px] w-full flex justify-between items-center px-25 border-t-[0.5px] border-[#ededed]">
                     <div className="flex gap-[20px]">
-                        <Dropdown/>
                         <SearchBar/>
                     </div>
 
-                    <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between  border border-[#ededed] rounded-[4px]">
+                    <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between border border-[#ededed] rounded-[4px]">
                         <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px]">
                             <select className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] rounded-sm text-center w-full focus:outline-none">
                                 <option>Benue State</option>
@@ -68,7 +177,7 @@ const Wishlist=()=>{
                     </div>
                 </div>
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
-                    <Image src={arrowBack} alt={'imagw'}/>
+                    <Image src={arrowBack} alt={'arrow back'}/>
                     <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Wishlist</span></p>
                 </div>
             </div>
@@ -77,56 +186,75 @@ const Wishlist=()=>{
                     <div className="flex flex-col">
                         <div className="w-[381px] text-[#022B23] text-[12px] font-medium h-[44px] bg-[#f8f8f8] rounded-[10px] flex items-center px-[8px] justify-between">
                             <p>Go to profile</p>
-                            <Image src={arrowRight} alt={'image'}/>
+                            <Image src={arrowRight} alt={'arrow right'}/>
                         </div>
                         <div className="flex flex-col h-[80px] w-[381px] mt-[6px] rounded-[12px] border border-[#eeeeee]">
-                            <div className="w-full text-[#022B23]  text-[12px] font-medium h-[40px] bg-[#f8f8f8] rounded-t-[12px] flex items-center px-[8px] ">
+                            <div className="w-full text-[#022B23] text-[12px] font-medium h-[40px] bg-[#f8f8f8] rounded-t-[12px] flex items-center px-[8px]">
                                 <p>Wishlist</p>
                             </div>
-                            <div onClick={()=>{router.push("/buyer/orders")}} className="w-full text-[#022B23]  text-[12px]  h-[40px] rounded-b-[12px] flex items-center px-[8px] ">
+                            <div onClick={() => {router.push("/buyer/orders")}} className="w-full text-[#022B23] text-[12px] h-[40px] rounded-b-[12px] flex items-center px-[8px]">
                                 <p>My orders</p>
                             </div>
                         </div>
                     </div>
                     <div className="flex flex-col w-[779px] gap-[24px]">
-                        <p className="text-[#000000] text-[14] font-medium">My wishlist</p>
-                        <div className="h-[604px] border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
-                            {initialProducts.map((product, index) => {
-                                const isLastItem = index === initialProducts.length - 1;
-                                return (
-                                    <div key={index} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none"}`}>
-                                        <div className="flex border-r border-[#ededed] w-[169px] h-[151px] overflow-hidden">
-                                            <Image src={product.image} alt="image" width={133} height={100} className="w-full h-full overflow-hidden" />
-                                        </div>
-
-                                        <div className="flex items-center w-full px-[20px] justify-between">
-                                            <div className="flex flex-col w-[30%]">
-                                                <div className="mb-[13px]">
-                                                    <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">{product.name}</p>
-                                                    <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">{product.description}</p>
-                                                </div>
-                                                <p className="font-medium text-[#1E1E1E] text-[16px]">₦{product.price}.00</p>
+                        <p className="text-[#000000] text-[16px] font-medium">Wishlist</p>
+                        <p className="text-[#000000] text-[14px] font-medium">
+                            My wishlist ({wishlistItems.length})
+                        </p>
+                        <div className={`border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px] ${wishlistItems.length > 0 ? "h-auto" : "h-[200px] flex justify-center items-center"}`}>
+                            {wishlistItems.length > 0 ? (
+                                wishlistItems.map((product, index) => {
+                                    const isLastItem = index === wishlistItems.length - 1;
+                                    return (
+                                        <div key={index} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "h-[151px] border-none"}`}>
+                                            <div className="flex border-r border-[#ededed] w-[169px] h-[151px] overflow-hidden">
+                                                <Image
+                                                    src={product.productImage}
+                                                    alt="product"
+                                                    width={133}
+                                                    height={100}
+                                                    className="w-full h-full overflow-hidden object-cover"
+                                                />
                                             </div>
 
-                                            <div className="flex gap-[30px] items-center">
-                                                <div className="flex text-[14px] text-[#707070] gap-[4px] items-center w-[77px] h-[20px]">
-                                                    <Image src={trashImg} alt={'image'} className="w-[20px] h-[20px]"/>
-                                                    <p>Remove</p>
+                                            <div className="flex items-center w-full px-[20px] justify-between">
+                                                <div className="flex flex-col w-[30%]">
+                                                    <div className="mb-[13px]">
+                                                        <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">{product.name}</p>
+                                                        <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">{product.description}</p>
+                                                    </div>
+                                                    <p className="font-medium text-[#1E1E1E] text-[16px]">₦ {product.unitPrice}.00</p>
                                                 </div>
-                                                <div className="w-[105px] h-[48px] rounded-[12px] bg-[#022B23] flex items-center justify-center text-[#C6EB5F] text-[14px] font-semibold">
-                                                    <p>Add to cart</p>
+
+                                                <div className="flex gap-[30px] items-center">
+                                                    <div
+                                                        className="flex text-[14px] text-[#707070] gap-[4px] items-center w-[77px] h-[20px] cursor-pointer"
+                                                        onClick={() => handleRemoveFromWishlist(product.id)}
+                                                    >
+                                                        <Image src={trashImg} alt={'trash'} className="w-[20px] h-[20px]"/>
+                                                        <p>Remove</p>
+                                                    </div>
+                                                    <div
+                                                        className="w-[105px] h-[48px] rounded-[12px] bg-[#022B23] flex items-center justify-center text-[#C6EB5F] text-[14px] font-semibold cursor-pointer"
+                                                        onClick={() => handleAddToCart(product)}
+                                                    >
+                                                        <p>Add to cart</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })
+                            ) : (
+                                <p>Your wishlist is empty</p>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
         </>
-    )
-}
+    );
+};
 
 export default Wishlist;

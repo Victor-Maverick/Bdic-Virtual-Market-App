@@ -1,6 +1,7 @@
+//utils/api.ts
 import axios, { AxiosError } from 'axios';
 
-const API_BASE_URL = 'https://api.digitalmarke.bdic.ng/api';
+const API_BASE_URL = 'https://digitalmarket.benuestate.gov.ng/api';
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -51,6 +52,7 @@ export const fetchMarketSections = async () => {
 export const fetchLocalGovernments = async () => {
     try {
         const response = await api.get('/local-governments/all');
+        console.log("lgas: ",response.data)
         return response.data;
     } catch (error: unknown) {
         if (error instanceof AxiosError) {
@@ -78,13 +80,14 @@ export const addShop = async (shopData: {
         homeAddress: string;
         street: string;
         NIN: string;
+        phone: string;
         lgaId: number;
     };
     bankInfo: {
         bankName: string;
         accountNumber: string;
     };
-    userId: number;
+    email: string;
 }) => {
     try {
         // Create FormData object to match the API expectations
@@ -101,6 +104,7 @@ export const addShop = async (shopData: {
         formData.append('homeAddress', shopData.personalInfo.homeAddress);
         formData.append('streetName', shopData.personalInfo.street);
         formData.append('nin', shopData.personalInfo.NIN);
+        formData.append('phone', shopData.personalInfo.phone);
 
         // Add bank details
         formData.append('bankName', shopData.bankInfo.bankName);
@@ -109,8 +113,7 @@ export const addShop = async (shopData: {
         // Add IDs
         formData.append('marketId', shopData.shopInfo.marketId.toString());
         formData.append('marketSectionId', shopData.shopInfo.marketSectionId.toString());
-        formData.append('userId', shopData.userId.toString());
-        formData.append('statusId', '1'); // Default status is 1 (pending)
+        formData.append('email', shopData.email);
 
         // Add logo image if available
         if (shopData.shopInfo.logoImage) {
@@ -122,12 +125,10 @@ export const addShop = async (shopData: {
                     const blob = await response.blob();
                     formData.append('logoImage', blob, 'shop_logo.jpg');
                 } else {
-                    // If it's already a blob or file
                     formData.append('logoImage', shopData.shopInfo.logoImage);
                 }
             } catch (err) {
                 console.error('Error processing logo image:', err);
-                // Continue without the logo if there's an error
             }
         }
 

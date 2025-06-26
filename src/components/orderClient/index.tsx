@@ -9,19 +9,6 @@ import iPhone from "../../../public/assets/images/blue14.png";
 import badProduct from '@/../public/assets/images/brokenPhone.svg';
 import arrowRight from '@/../public/assets/images/green arrow.png'
 
-const products = [
-    { id: 1, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup", deliveryAddress:"",  reason: "Wrong item received", review: 4.2, status: "Delivered", stock: 200, price: 840000 },
-    { id: 2, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "Pending",stock:200, price: 840000 },
-    { id: 3, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received",deliveryAddress:"", status: "In transit",  stock:200, price: 840000 },
-    { id: 4, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",status: "Delivered",stock:200, price: 840000},
-    { id: 5, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max",  customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received",deliveryAddress:"", status: "Pending", comment: "It's okay",stock:200, price: 840000},
-    { id: 6, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi",  status: "Delivered", stock:200, price: 840000 },
-    { id: 7, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received", deliveryAddress:"",  status: "Pending", comment: "Not satisfied",stock:200, price: 840000},
-    { id: 8, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "In transit", stock:200, price: 840000 },
-    { id: 9, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Shop pickup",  reason: "Wrong item received",deliveryAddress:"", status: "Delivered", stock:200, price: 840000},
-    { id: 10, prodId:"1234567887654", image: iPhone, name: "iPhone 14 pro max", customerId: "Jude Tersoo", deliveryMethod: "Home delivery",  reason: "Wrong item received", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", status: "Pending",stock:200, price: 840000}
-];
-
 const disputes = [
     { id: 1, productId: 1, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Processed", reason: "Wrong item received", price: 840000 },
     { id: 2, productId: 2, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",   status: "Pending", reason: "Defect on product", price: 840000 },
@@ -35,19 +22,6 @@ const disputes = [
     { id: 10, productId: 10,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product", price: 840000}
 ];
 
-interface Product {
-    customerId: string;
-    id: number;
-    image: StaticImageData;
-    name: string;
-    prodId: string;
-    status: string;
-    deliveryMethod: string;
-    deliveryAddress: string;
-    price: number;
-    stock: number;
-    reason: string;
-}
 const ProductActionsDropdown = ({
 
                                     children
@@ -332,220 +306,165 @@ const DisputeTableRow = ({ dispute, isLast, onViewDispute }: { dispute: Dispute;
 };
 
 
+interface OrderResponse {
+    id: number;
+    orderNumber: string;
+    buyerEmail: string;
+    status: OrderStatus;
+    deliveryInfo: DeliveryInfo;
+    totalAmount: number;
+    deliveryFee: number;
+    grandTotal: number;
+    createdAt: string;
+    items: OrderItemDto[];
+    isParentOrder: boolean;
+    shopId: number;
+    shopOrdersCount: number;
+}
 
-const ProductTableRow = ({
-                             product,
-                             isLast
-                         }: {
-    product: Product;
-    isLast: boolean;
-}) => {
+interface OrderItemDto {
+    id: number;
+    productId: number;
+    productName: string;
+    description: string;
+    productImage: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+}
+
+interface DeliveryInfo {
+    method: string;
+    address: string;
+}
+
+enum OrderStatus {
+    PAID = 'PAID',
+    PENDING = 'PENDING',
+    SHIPPED = 'SHIPPED',
+    DELIVERED = 'DELIVERED',
+    CANCELLED = 'CANCELLED'
+}
+
+interface PendingOrdersProps {
+    orders: OrderResponse[];
+    loading: boolean;
+}
+
+const PendingOrders = ({ orders, loading }: PendingOrdersProps) => {
+    if (loading) {
+        return <div className="p-4 text-center">Loading orders...</div>;
+    }
+
+    if (!orders || orders.length === 0) {
+        return <div className="p-4 text-center">No pending orders found.</div>;
+    }
+
+    // Filter only pending orders if needed (your API might already do this)
+    const pendingOrders = orders.filter(order => order.status === OrderStatus.PAID);
+
     return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex items-center w-[30%] pr-[24px] gap-3">
-                <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
-                    <Image
-                        src={product.image}
-                        alt={product.name}
-                        width={70}
-                        height={70}
-                        className="object-cover"
-                    />
+        <div className="flex flex-col gap-[50px]">
+            <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
+                <div className="my-[20px] mx-[25px] flex flex-col">
+                    <p className="text-[#101828] font-medium">Pending Orders ({pendingOrders.length})</p>
+                    <p className="text-[#667085] text-[14px]">View your pending orders</p>
                 </div>
-                <div className="flex flex-col">
-                    <p className="text-[14px] font-medium text-[#101828]">{product.name}</p>
-                    <p className="text-[12px] text-[#667085]">ID #: {product.prodId}</p>
-                </div>
-            </div>
 
-            <div className="flex items-center  w-[10%] px-[24px]">
-                <div className={`w-[63px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    product.status === 'Delivered'
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : product.status === 'Pending'
-                            ? 'bg-[#FFFAEB] text-[#FF5050]'
-                            : 'w-[69px] bg-[#EDEDED] text-[#707070]'
-                }`}>
-                    <p className="text-[12px] font-medium">{product.status}</p>
+                <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
+                    <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Products</p>
+                        <Image src={arrowDown} alt="Sort" width={12} height={12} />
+                    </div>
+                    <div className="flex justify-center items-center px-[24px] w-[10%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                    </div>
+                    <div className="flex items-center px-[24px] w-[13%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Order Number</p>
+                    </div>
+                    <div className="flex items-center px-[15px] w-[20%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Delivery method</p>
+                    </div>
+                    <div className="flex items-center px-[10px] w-[15%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Total Amount</p>
+                    </div>
+                    <div className="flex items-center px-[10px] w-[10%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Items</p>
+                    </div>
+                    <div className="w-[2%]"></div>
                 </div>
-            </div>
-            <div className="flex items-center text-[#344054] text-[14px] w-[13%] px-[24px]">
-                <p>{product.customerId}</p>
-            </div>
-            <div className="flex flex-col justify-center text-[#101828] text-[14px] w-[20%] px-[24px]">
-                <p className="text-[#101828] text-[14px] ">{product.deliveryMethod}</p>
-                <p className="text-[#667085] text-[12px]">{product.deliveryAddress}</p>
-            </div>
-            <div className="flex items-center text-[#344054] text-[14px] w-[14%] px-[24px]">
-                <p>{product.price}</p>
-            </div>
-            <div className="flex items-center justify-center text-[#344054] text-[14px] w-[10%] px-[24px]">
-                <p>{product.stock}</p>
-            </div>
-            <div className="flex items-center justify-center w-[3%]">
-                {product.status === 'Pending' && (
-                    <ProductActionsDropdown productId={product.id}>
-                        <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
-                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+
+                <div className="flex flex-col">
+                    {pendingOrders.map((order) => (
+                        <div
+                            key={order.id}
+                            className="flex flex-col border-b-[1px] border-[#EAECF0] hover:bg-[#F9FAFB]"
+                        >
+                            {/* Order items */}
+                            {order.items.map((item) => (
+                                <div
+                                    key={`${order.id}-${item.id}`}
+                                    className="flex items-center h-[72px] px-[24px]"
+                                >
+                                    <div className="flex items-center w-[30%] gap-3">
+                                        <Image
+                                            src={item.productImage}
+                                            alt={item.productName}
+                                            className="w-10 h-10 rounded-md object-cover"
+                                        />
+                                        <div>
+                                            <p className="text-[#101828] text-[14px]">{item.productName}</p>
+                                            <p className="text-[#667085] text-[12px]">ID: {item.productId}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-center items-center w-[10%]">
+                                        <span className={`px-2 py-1 text-xs rounded-full ${
+                                            order.status === OrderStatus.PAID ? 'bg-green-100 text-green-800' :
+                                                order.status === OrderStatus.PENDING ? 'bg-yellow-100 text-yellow-800' :
+                                                    order.status === OrderStatus.CANCELLED ? 'bg-red-100 text-red-800' :
+                                                        'bg-gray-100 text-gray-800'
+                                        }`}>
+                                            {order.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center w-[13%]">
+                                        <p className="text-[#101828] text-[10px]">
+                                            {order.orderNumber}
+                                        </p>
+                                    </div>
+                                    <div className="flex pl-[24px] items-center w-[20%]">
+                                        <p className="text-[#101828] text-[14px] capitalize">
+                                            {order.deliveryInfo?.method || ''}
+                                        </p>
+                                    </div>
+                                    <div className="flex pl-[24px] items-center w-[15%]">
+                                        <p className="text-[#101828] text-[14px]">
+                                            ₦{item.totalPrice.toLocaleString()}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center pl-[24px] w-[10%]">
+                                        <p className="text-[#101828] text-[14px]">
+                                            {item.quantity}
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center justify-center w-[2%]">
+                                        <ProductActionsDropdown productId={item.productId}>
+                                            <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
+                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                            </div>
+                                        </ProductActionsDropdown>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                    </ProductActionsDropdown>
-                )}
+                    ))}
+                </div>
             </div>
         </div>
     );
 };
-
-const DeliveredOrders = () => {
-    const deliveredProducts = products.filter(product => product.status === 'Delivered');
-
-    return (
-        <>
-            <div className="flex flex-col gap-[50px]">
-                <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
-                    <div className="my-[20px] mx-[25px] flex flex-col">
-                        <p className="text-[#101828] font-medium">Delivered Reviews ({deliveredProducts.length})</p>
-                        <p className="text-[#667085] text-[14px]">View reviews on delivered products</p>
-                    </div>
-
-                    <div className="flex w-full h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                        <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Products</p>
-                            <Image src={arrowDown} alt="Sort" width={12} height={12} />
-                        </div>
-                        <div className="flex items-center justify-center px-[24px] w-[10%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Status</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[13%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Customer ID</p>
-                        </div>
-                        <div className="flex items-center px-[15px] w-[20%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Delivery method</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[15%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Price</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[10%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Total stock</p>
-                        </div>
-                        <div className="w-[2%]"></div>
-                    </div>
-
-                    <div className="flex flex-col">
-                        {deliveredProducts.map((product, index) => (
-                            <ProductTableRow
-                                key={product.id}
-                                product={product}
-                                isLast={index === deliveredProducts.length - 1}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </>
-    )
-}
-
-const PendingOrders = () => {
-    const pendingProducts = products.filter(product => product.status === 'Pending');
-
-    return (
-        <>
-            <div className="flex flex-col gap-[50px]">
-                <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
-                    <div className="my-[20px] mx-[25px] flex flex-col">
-                        <p className="text-[#101828] font-medium">Pending Reviews ({pendingProducts.length})</p>
-                        <p className="text-[#667085] text-[14px]">View reviews on pending products</p>
-                    </div>
-
-                    <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                        <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Products</p>
-                            <Image src={arrowDown} alt="Sort" width={12} height={12} />
-                        </div>
-                        <div className="flex justify-center items-center px-[24px] w-[10%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Status</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[13%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Customer ID</p>
-                        </div>
-                        <div className="flex items-center px-[15px] w-[20%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Delivery method</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[15%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Price</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[10%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Total stock</p>
-                        </div>
-                        <div className="w-[2%]"></div>
-                    </div>
-
-                    <div className="flex flex-col">
-                        {pendingProducts.map((product, index) => (
-                            <ProductTableRow
-                                key={product.id}
-                                product={product}
-                                isLast={index === pendingProducts.length - 1}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </>
-    )
-}
-
-const OrdersInTransit = () => {
-    const inTransitProducts = products.filter(product => product.status === 'In transit');
-
-    return (
-        <>
-            <div className="flex flex-col gap-[50px]">
-                <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
-                    <div className="my-[20px] mx-[25px] flex flex-col">
-                        <p className="text-[#101828] font-medium">In Transit Reviews ({inTransitProducts.length})</p>
-                        <p className="text-[#667085] text-[14px]">View reviews on products in transit</p>
-                    </div>
-
-                    <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                        <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Products</p>
-                            <Image src={arrowDown} alt="Sort" width={12} height={12} />
-                        </div>
-                        <div className="flex items-center justify-center px-[24px] w-[10%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Status</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[13%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Customer ID</p>
-                        </div>
-                        <div className="flex items-center px-[15px] w-[20%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Delivery method</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[15%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Price</p>
-                        </div>
-                        <div className="flex items-center px-[24px] w-[10%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Total stock</p>
-                        </div>
-                        <div className="w-[2%]"></div>
-                    </div>
-
-                    <div className="flex flex-col">
-                        {inTransitProducts.map((product, index) => (
-                            <ProductTableRow
-                                key={product.id}
-                                product={product}
-                                isLast={index === inTransitProducts.length - 1}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </>
-    )
-}
 
 const Disputes = () => {
     const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
@@ -557,7 +476,6 @@ const Disputes = () => {
     const closeModal = () => {
         setSelectedDispute(null);
     };
-
     return (
         <>
             <div className="flex flex-col gap-[50px]">
@@ -610,13 +528,43 @@ const Disputes = () => {
     );
 };
 
+import { useSession } from "next-auth/react";
+
 const OrderClient = () => {
     const searchParams = useSearchParams();
-    const initialTab = searchParams.get('tab') as 'pending' | 'in-transit' | 'delivered' || 'disputes';
-    const [activeTab, setActiveTab] = useState<'pending' | 'in-transit' | 'delivered' | 'disputes'>(initialTab);
+    const initialTab = searchParams.get('tab') as 'pending' | 'disputes' || 'pending';
+    const [activeTab, setActiveTab] = useState<'pending' | 'disputes'>(initialTab);
+    const [pendingOrders, setPendingOrders] = useState<OrderResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { data: session } = useSession();
     const router = useRouter();
 
-    const handleTabChange = (tab: 'pending' | 'in-transit' | 'delivered' | 'disputes') => {
+    useEffect(() => {
+        const fetchPendingOrders = async (): Promise<void> => {
+            if (session?.user?.email) {
+                try {
+                    setLoading(true);
+                    const response = await fetch(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch orders');
+                    }
+                    const data = await response.json();
+                    const orderResponse =  await fetch(`https://digitalmarket.benuestate.gov.ng/api/orders/get-shop-orders?shopId=${data.id}`)
+                    const orderData = await orderResponse.json();
+                    setPendingOrders(orderData);
+                    console.log("Orders: ",orderData)
+                } catch (error) {
+                    console.error('Error fetching orders:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchPendingOrders();
+    }, [session]);
+
+    const handleTabChange = (tab: 'pending' | 'disputes') => {
         setActiveTab(tab);
         router.replace(`/vendor/dashboard/order?tab=${tab}`, { scroll: false });
     };
@@ -636,18 +584,6 @@ const OrderClient = () => {
                             Pending
                         </p>
                         <p
-                            className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'in-transit' ? 'font-medium  border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
-                            onClick={() => handleTabChange('in-transit')}
-                        >
-                            Orders in transit
-                        </p>
-                        <p
-                            className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'delivered' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
-                            onClick={() => handleTabChange('delivered')}
-                        >
-                            Delivered
-                        </p>
-                        <p
                             className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'disputes' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
                             onClick={() => handleTabChange('disputes')}
                         >
@@ -657,9 +593,12 @@ const OrderClient = () => {
                 </div>
 
                 <div className="bg-white rounded-lg mx-[100px] mb-8">
-                    {activeTab === 'pending' && <PendingOrders />}
-                    {activeTab === 'in-transit' && <OrdersInTransit />}
-                    {activeTab === 'delivered' && <DeliveredOrders />}
+                    {activeTab === 'pending' && (
+                        <PendingOrders
+                            orders={pendingOrders}
+                            loading={loading}
+                        />
+                    )}
                     {activeTab === 'disputes' && <Disputes />}
                 </div>
             </div>

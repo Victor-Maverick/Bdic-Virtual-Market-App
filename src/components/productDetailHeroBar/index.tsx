@@ -1,5 +1,4 @@
 'use client'
-import Dropdown from "@/components/dropDown";
 import Image from "next/image";
 import marketIcon from "../../../public/assets/images/market element.png";
 import {useState} from "react";
@@ -17,7 +16,7 @@ const ProductDetailHeroBar = () => {
     return (
         <div className="flex justify-between px-[100px] mt-4 py-[10px]">
             <div className="flex items-center gap-[2px]">
-                <Dropdown/>
+                {/*<Dropdown/>*/}
                 <div className="flex gap-2 justify-between p-0.5 border border-[#ededed] rounded-sm">
                     <div className="bg-[#F9F9F9] text-black px-2 rounded-sm flex items-center justify-center h-10">
                         <select className="bg-[#F9F9F9] text-black px-2 rounded-sm text-center w-full focus:outline-none">

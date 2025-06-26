@@ -8,11 +8,13 @@ import heroImage4 from "../../../../../public/assets/images/hero4.png";
 import heroImage5 from "../../../../../public/assets/images/hero5.png";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 const images = [heroImage1, heroImage2, heroImage3, heroImage4, heroImage5];
 
 const HeroSection = () => {
     const router = useRouter();
+    const { data: session } = useSession();
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
@@ -52,16 +54,33 @@ const HeroSection = () => {
 
                     {/* Buttons - Row and centered on mobile */}
                     <div className="flex flex-row gap-[14px] mt-8 md:mt-12 justify-center md:justify-start">
-                        <button
-                            onClick={handleRegisterClick}
-                            className="bg-[#022B23] cursor-pointer w-[165px] h-[48px] text-[#c6eb5f] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-green-900 transition-colors"
-                        >
-                            <p>Get started</p>
-                            <Image src={limeArrow} alt="arrow icon" height={18} width={18} />
-                        </button>
-                        <button onClick={()=>{router.push("/marketPlace")}} className="bg-white cursor-pointer border-[2px] border-[#022B23] text-[#022B23] w-[127px] h-[48px] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-gray-50 transition-colors">
-                            <p>Visit Market</p>
-                        </button>
+                        {session ? (
+                            // Only show Visit Market button if authenticated
+                            <button
+                                onClick={() => router.push("/marketPlace")}
+                                className="bg-[#022B23] cursor-pointer w-[165px] h-[48px] text-[#c6eb5f] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-green-900 transition-colors"
+                            >
+                                <p>Visit Market</p>
+                                <Image src={limeArrow} alt="arrow icon" height={18} width={18} />
+                            </button>
+                        ) : (
+                            // Show both buttons if not authenticated
+                            <>
+                                <button
+                                    onClick={handleRegisterClick}
+                                    className="bg-[#022B23] cursor-pointer w-[165px] h-[48px] text-[#c6eb5f] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-green-900 transition-colors"
+                                >
+                                    <p>Get started</p>
+                                    <Image src={limeArrow} alt="arrow icon" height={18} width={18} />
+                                </button>
+                                <button
+                                    onClick={() => router.push("/marketPlace")}
+                                    className="bg-white cursor-pointer border-[2px] border-[#022B23] text-[#022B23] w-[127px] h-[48px] rounded-[12px] font-semibold flex items-center justify-center gap-2 p-2 hover:bg-gray-50 transition-colors"
+                                >
+                                    <p>Visit Market</p>
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -86,5 +105,4 @@ const HeroSection = () => {
         </section>
     );
 };
-
 export default HeroSection;

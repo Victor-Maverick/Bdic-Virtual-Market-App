@@ -10,6 +10,8 @@ import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
 import { useState, useEffect } from "react";
 import { fetchLocalGovernments } from "@/utils/api";
 
+
+
 type LocalGovernment = {
     id: number;
     name: string;
@@ -120,7 +122,10 @@ const Setup2 = () => {
         homeAddress: "",
         street: "",
         NIN: "",
+        phone: "",
     });
+
+
     const [filteredLgas, setFilteredLgas] = useState<LocalGovernment[]>([]);
     const [selectedLga, setSelectedLga] = useState<LocalGovernment | null>(null);
 
@@ -128,6 +133,7 @@ const Setup2 = () => {
         const fetchData = async () => {
             try {
                 const lgas = await fetchLocalGovernments();
+                console.log("Lgas: ",lgas)
                 // Filter for Benue state (stateId = 7)
                 const benueLgas = lgas.filter((lga: { stateId: number; }) => lga.stateId === 7);
                 setFilteredLgas(benueLgas);
@@ -189,7 +195,7 @@ const Setup2 = () => {
                 <div className="flex flex-col w-[400px] h-auto gap-[40px]">
                     <div className="flex-col flex gap-[10px]">
                         <div className="h-[58px] font-medium text-[#121212] w-full rounded-[14px] border-[1.5px] border-[#D1FAE7] flex items-center px-[18px] text-[14px] bg-[#ECFDF6]">
-                            <p>Terngu paul</p>
+                            {/*<p>{firstName} {lastName}</p>*/}
                         </div>
                         <div className="h-[58px] font-medium text-[#121212] w-full rounded-[14px] border-[1.5px] border-[#D1FAE7] flex items-center px-[18px] text-[14px] bg-[#ECFDF6]">
                             <p>Benue state</p>
@@ -208,6 +214,13 @@ const Setup2 = () => {
                             value={formData.homeAddress}
                             onChange={handleChange('homeAddress')}
                             placeholder="Home address"
+                        />
+                        <InputField
+                            id="phone"
+                            label="Phone Number"
+                            value={formData.phone}
+                            onChange={handleChange('phone')}
+                            placeholder="Phone Number"
                         />
                         <InputField
                             id="street"

@@ -9,7 +9,7 @@ import emailIcon from '../../../public/assets/images/sms.svg';
 import eyeOpen from '../../../public/assets/images/eye.svg';
 import eyeClosed from '../../../public/assets/images/eye.svg';
 import loginImg from '@/../public/assets/images/loginImg.svg';
-import Toast from '@/components/toast';
+import Toast from '@/components/Toast';
 
 type FormField = {
     id: keyof FormData;

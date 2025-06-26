@@ -12,7 +12,7 @@ import limeArrow from "../../../../public/assets/images/green arrow.png";
 import threeImages from '../../../../public/assets/images/threeImages.png';
 import greenTick from '@/../public/assets/images/greentick.svg';
 import greyTick from '@/../public/assets/images/greytick.svg';
-import Toast from "@/components/toast";
+import Toast from "@/components/Toast";
 
 type UserTypeOption = 'BUYER' | 'VENDOR' | 'LOGISTICS';
 
@@ -56,7 +56,7 @@ const UserType = () => {
             const roleName = selectedUserType === 'BUYER' ? 'BUYER' : selectedUserType.toUpperCase();
             console.log("email: ",email)
 
-            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/users/add-role', {
+            const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/users/add-role', {
                 email: email,
                 roleName: roleName
             });
@@ -104,7 +104,8 @@ const UserType = () => {
                 subMessage: errorMessage
             });
         } finally {
-            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/auth/login', {
+            //https://api.digitalmarke.bdic.ng/api/auth/login
+            const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/auth/login', {
                 email: email,
                 password: password
             });

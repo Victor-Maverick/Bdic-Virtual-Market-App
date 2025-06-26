@@ -10,7 +10,7 @@ import onboardImage from '../../../../public/assets/images/getStartedImg.svg';
 import emailIcon from '../../../../public/assets/images/sms.svg';
 import eyeOpen from '../../../../public/assets/images/eye.svg';
 import eyeClosed from '../../../../public/assets/images/eye.svg';
-import Toast from "@/components/toast";
+import Toast from "@/components/Toast";
 
 type FormField = {
     id: keyof FormData;
@@ -181,7 +181,8 @@ const GetStarted = () => {
     };
 
     const registerUser = async () => {
-        const API_URL = 'https://api.digitalmarke.bdic.ng';
+        //https://api.digitalmarke.bdic.ng
+        const API_URL = 'https://digitalmarket.benuestate.gov.ng';
 
         try {
             const formData = new FormData();
