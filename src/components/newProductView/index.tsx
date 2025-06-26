@@ -853,7 +853,7 @@ const NewProductView = ({shopId}) => {
             });
 
             const response = await axios.post(
-                'http://localhost:8081/api/products/add',
+                'https://digitalmarket.benuestate.gov.ng/api/products/add',
                 formDataToSend,
                 {
                     headers: {

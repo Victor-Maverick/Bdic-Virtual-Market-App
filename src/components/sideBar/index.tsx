@@ -88,7 +88,7 @@ export function Sidebar({ className }: SidebarProps) {
                     <NavItem
                         icon={<OverviewIcon />}
                         label="Overview"
-                        href="/admin/dashboard"
+                        href="/admin/dashboard/main"
                         isActive={isActive('/')}
                     />
                 </div>

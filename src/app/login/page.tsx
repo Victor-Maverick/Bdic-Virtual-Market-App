@@ -114,6 +114,8 @@ const Login = () => {
                     router.push(preAuthUrl);
                 } else if (roles.includes('VENDOR')) {
                     router.push('/vendor/dashboard');
+                } else if (roles.includes('ADMIN')) {
+                    router.push('/admin/dashboard/main');
                 } else if (roles.includes('LOGISTICS')) {
                     router.push('/logistics/dashboard');
                 } else if (roles.includes('RIDER')) {
