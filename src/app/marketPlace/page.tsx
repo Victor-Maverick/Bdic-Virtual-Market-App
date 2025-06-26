@@ -332,26 +332,24 @@ const MarketPlace = () => {
         try {
             setLoading(true);
             setError(null);
-            const PRIMARY_API = process.env.NEXT_PUBLIC_API_BASE_URL;
-            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
+            
 
             let response;
             try {
-                response = await axios.get(`${PRIMARY_API}/products/all`, {
+                response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/all`, {
                     headers: { 'Content-Type': 'application/json' }
                 });
+                if (response.data.success && response.data.data) {
+                    setApiProducts(response.data.data);
+                } else {
+                    throw new Error(response.data.message || 'Failed to fetch products');
+                }
             } catch (primaryError) {
                 console.warn('Primary API failed, trying fallback...', primaryError);
-                response = await axios.get(`${FALLBACK_API}/products/all`, {
-                    headers: { 'Content-Type': 'application/json' }
-                });
+                
             }
 
-            if (response.data.success && response.data.data) {
-                setApiProducts(response.data.data);
-            } else {
-                throw new Error(response.data.message || 'Failed to fetch products');
-            }
+            
         } catch (err) {
             console.error('Error fetching products:', err);
             if (axios.isAxiosError(err)) {
@@ -376,7 +374,7 @@ const MarketPlace = () => {
             setError(null);
             setIsSearching(true);
 
-            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
+            const FALLBACK_API = "https://digitalmarket.benuestate.gov.ng/api";
             const response = await axios.get(
                 `${FALLBACK_API}/products/search-product?keyword=${encodeURIComponent(query)}`,
                 { headers: { 'Content-Type': 'application/json' } }
@@ -401,8 +399,8 @@ const MarketPlace = () => {
 
     const fetchCategories = async () => {
         try {
-            const PRIMARY_API = process.env.NEXT_PUBLIC_API_BASE_URL;
-            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
+            const PRIMARY_API = 'https://digitalmarket.benuestate.gov.ng/api';
+            const FALLBACK_API = 'https://digitalmarket.benuestate.gov.ng/api';
 
             let response;
             try {
@@ -422,18 +420,17 @@ const MarketPlace = () => {
 
     const fetchSubCategories = async (categoryName: string) => {
         try {
-            const PRIMARY_API = process.env.NEXT_PUBLIC_API_BASE_URL;
-            const FALLBACK_API = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
-
             let response;
             try {
-                response = await axios.get(`${PRIMARY_API}/categories/getAllCategorySub?categoryName=${encodeURIComponent(categoryName)}`);
+                response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/categories/getAllCategorySub?categoryName=${encodeURIComponent(categoryName)}`);
             } catch (primaryError) {
                 console.warn('Primary API failed, trying fallback...', primaryError);
-                response = await axios.get(`${FALLBACK_API}/categories/getAllCategorySub?categoryName=${encodeURIComponent(categoryName)}`);
             }
-
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
             if (response.data) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
                 setSubCategories(response.data);
             } else {
                 setSubCategories([]);
