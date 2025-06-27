@@ -155,9 +155,8 @@ const Cart = () => {
                 if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
                     throw new Error('Payment amount does not match order total');
                 }
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                const buyerEmail = session?.email;
+
+                const buyerEmail = session?.user?.email;
                 if (!buyerEmail) {
                     throw new Error('User email not found in session. Please log in again.');
                 }

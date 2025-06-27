@@ -367,8 +367,8 @@ const PendingOrders = ({ orders, loading }: PendingOrdersProps) => {
         <div className="flex flex-col gap-[50px]">
             <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
                 <div className="my-[20px] mx-[25px] flex flex-col">
-                    <p className="text-[#101828] font-medium">Pending Orders ({pendingOrders.length})</p>
-                    <p className="text-[#667085] text-[14px]">View your pending orders</p>
+                    <p className="text-[#101828] font-medium">Orders ({pendingOrders.length})</p>
+                    <p className="text-[#667085] text-[14px]">View your product orders</p>
                 </div>
 
                 <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
@@ -404,13 +404,15 @@ const PendingOrders = ({ orders, loading }: PendingOrdersProps) => {
                             {order.items.map((item) => (
                                 <div
                                     key={`${order.id}-${item.id}`}
-                                    className="flex items-center h-[72px] px-[24px]"
+                                    className="flex items-center h-[72px] "
                                 >
-                                    <div className="flex items-center w-[30%] gap-3">
+                                    <div className="flex items-center w-[30%] px-[24px] gap-3">
                                         <Image
                                             src={item.productImage}
                                             alt={item.productName}
-                                            className="w-10 h-10 rounded-md object-cover"
+                                            width={70}
+                                            height={72}
+                                            className="h-full object-cover"
                                         />
                                         <div>
                                             <p className="text-[#101828] text-[14px]">{item.productName}</p>

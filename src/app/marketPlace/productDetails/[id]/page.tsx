@@ -2,9 +2,10 @@
 import { Star } from "lucide-react";
 import axios from "axios";
 import Image, { StaticImageData } from "next/image";
-import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 // Components
 import ProductDetailHeader from "@/components/productDetailHeader";
 import ProductDetailHeroBar from "@/components/productDetailHeroBar";
@@ -43,6 +44,7 @@ interface Product {
     sideImage2Url: string;
     sideImage3Url: string;
     sideImage4Url: string;
+    vendorEmail: string;
     shopId: number;
     shopName: string;
     shopNumber: string;
@@ -132,6 +134,14 @@ const ProductDetails = ({ params }: PageProps) => {
     const handleAddToCart = async () => {
         if (!product) return;
 
+        // Check if user is logged in
+        if (session?.user?.email) {
+            if (product.vendorEmail === session.user.email) {
+                toast.error("You cannot add your own product to cart");
+                return;
+            }
+        }
+
         try {
             await addToCart({
                 productId: product.id,
@@ -142,18 +152,14 @@ const ProductDetails = ({ params }: PageProps) => {
             });
 
             toast.success(`${product.name} added to cart!`, {
-                position: "bottom-right",
-                duration: 3000,
+
             });
             router.push("/cart");
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             toast.error("Failed to add item to cart", {
-                position: "bottom-right",
-                duration: 3000,
             });
         }
-        router.push("/cart")
     };
 
     const ratingsData: RatingData[] = [
@@ -169,8 +175,6 @@ const ProductDetails = ({ params }: PageProps) => {
     const handleAddToWishlist = async () => {
         if (!product || !session?.user?.email) {
             toast.error("You need to be logged in to add items to your wishlist", {
-                position: "bottom-right",
-                duration: 3000,
             });
             return;
         }
@@ -184,8 +188,6 @@ const ProductDetails = ({ params }: PageProps) => {
             );
 
             toast.success(response.data.message || "Added to wishlist successfully", {
-                position: "bottom-right",
-                duration: 3000,
             });
             console.log("message: ",response.data);
         } catch (error) {
@@ -195,8 +197,7 @@ const ProductDetails = ({ params }: PageProps) => {
                     ? error.response?.data?.message || "Failed to add to wishlist"
                     : "Failed to add to wishlist",
                 {
-                    position: "bottom-right",
-                    duration: 3000,
+
                 }
             );
         }
@@ -471,6 +472,17 @@ const ProductDetails = ({ params }: PageProps) => {
                     </div>
                 </div>
             </div>
+            <ToastContainer
+                position="top-right"
+                autoClose={3000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
         </>
     );
 };

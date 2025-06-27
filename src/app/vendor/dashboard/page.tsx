@@ -69,6 +69,19 @@ interface VerifyPaymentResponse {
     };
 }
 
+type Product = {
+    id: number;
+    mainImageUrl: string;
+    name: string;
+    review: number;
+    status: string;
+    quantitySold: number;
+    price: number;
+    salesAmount: string;
+    quantity: number;
+    remainingStock: string;
+};
+
 const DashBoard = () => {
     const [activeView, setActiveView] = useState('orders');
     const [shopData, setShopData] = useState<ShopData>();
@@ -87,6 +100,7 @@ const DashBoard = () => {
     const [completedTransactions, setCompletedTransactions] = useState(0);
     const [totalSales, setTotalSales] = useState(0);
     const [totalStock, setTotalStock] = useState(0);
+    const [bestSelling, setBestSelling] = useState<Product>()
 
     const showSuccessToast = (message: string, subMessage: string) => {
         setToastType("success");
@@ -126,6 +140,7 @@ const DashBoard = () => {
                     setCompletedTransactions(countResponse.data);
                     setTotalSales(amountResponse.data);
                     setTotalStock(stockResponse.data);
+                    setBestSelling(productResponse.data)
                     console.log("product: ", productResponse.data);
                 }
             } catch (error) {
@@ -399,7 +414,9 @@ const DashBoard = () => {
                                 <p>Top selling product</p>
                             </div>
                             <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">IPhone 13</p>
+                                <p className="text-[#18181B] font-medium text-[16px]">
+                                    {bestSelling?.name || 'No best selling product'}
+                                </p>
                                 <div className="flex items-center gap-[4px]">
                                     <Image src={arrowUp} alt={'image'} width={10} height={10}/>
                                     <p className="text-[#22C55E] text-[12px]">2%</p>

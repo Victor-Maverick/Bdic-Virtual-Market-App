@@ -29,6 +29,7 @@
     "react-rating-stars-component": "^2.2.0",
     "react-router-dom": "^7.5.3",
     "react-scroll-to-bottom": "^4.2.0",
+    "react-toastify": "^11.0.5",
     "recharts": "^2.15.3",
     "recoil": "^0.7.7",
     "sockjs-client": "^1.6.1",

@@ -11,7 +11,9 @@ interface OnboardModalProps {
     marketData: {
         name: string;
         address: string;
-        councilWardId?: number;
+        stateId: number;
+        localGovernmentId: number;
+        councilId: number;
     };
 }
 
@@ -33,13 +35,16 @@ const OnboardMarketModal = ({ isOpen, onClose, onSuccess, marketData }: OnboardM
         setIsSubmitting(true);
         try {
             const payload = {
-                ...marketData,
-                city: "Makurdi", // Hardcoded as per requirement
+                marketName: marketData.name,
+                location: marketData.address,
+                stateId: marketData.stateId,
+                localGovernmentId: marketData.localGovernmentId,
+                councilId: marketData.councilId,
                 lines: Number(lines),
-                shops: Number(shops),
+                shopNumber: Number(shops),
             };
 
-            const response = await axios.post('https://api.digitalmarke.bdic.ng/api/markets/add', payload);
+            const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/markets/add', payload);
 
             if (response.status === 200) {
                 onSuccess();

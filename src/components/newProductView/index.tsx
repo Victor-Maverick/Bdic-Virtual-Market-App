@@ -1,6 +1,6 @@
 'use client';
-import { useState, useRef, ChangeEvent, useEffect } from "react";
-import Image, {StaticImageData} from "next/image";
+import {useState, useRef, ChangeEvent, useEffect, useCallback} from "react";
+import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from 'axios';
@@ -62,14 +62,14 @@ type InputFieldProps = {
 
 type Product = {
     id: number;
-    image: StaticImageData;
+    mainImageUrl: string;
     name: string;
     review: number;
     status: string;
-    salesQty: number;
-    unitPrice: string;
+    quantitySold: number;
+    price: number;
     salesAmount: string;
-    totalStock: string;
+    quantity: number;
     remainingStock: string;
 };
 
@@ -137,8 +137,8 @@ const ProductTableRow = ({
                         src={product.mainImageUrl}
                         alt={product.name}
                         width={70}
-                        height={70}
-                        className="object-cover"
+                        height={72}
+                        className="object-cover h-full"
                     />
                 </div>
                 <div className="flex flex-col">
@@ -164,7 +164,7 @@ const ProductTableRow = ({
 
             <div className="flex items-center w-[170px] px-[24px]">
                 <p className="text-[14px] font-medium text-[#101828]">
-                    NGN {Number(product.price).toLocaleString()}.00
+                    NGN {product.price.toLocaleString()}.00
                 </p>
             </div>
 
@@ -710,6 +710,45 @@ const NewProductView = ({shopId}) => {
         fetchSubcategories(categoryName);
     };
 
+    const [completedTransactions, setCompletedTransactions] = useState(0);
+    const [totalSales, setTotalSales] = useState(0);
+    const [totalStock, setTotalStock] = useState(0);
+    const [bestSelling, setBestSelling] = useState<Product>()
+
+    const fetchShopData = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
+                console.log("Shop: ", response.data);
+                const data = response.data;
+
+                // Fetch transaction count and total sales after shop data is loaded
+                if (data.id) {
+                    const [countResponse, amountResponse, stockResponse, productResponse] = await Promise.all([
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionCount?shopId=${data.id}`),
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionAmount?shopId=${data.id}`),
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getShopStockCount?shopId=${data.id}`),
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getBestSelling?shopId=${data.id}`),
+                    ]);
+
+                    setCompletedTransactions(countResponse.data);
+                    setTotalSales(amountResponse.data);
+                    setTotalStock(stockResponse.data);
+                    setBestSelling(productResponse.data)
+                    console.log("product: ", productResponse.data);
+                }
+            } catch (error) {
+                console.error('Error fetching shop data:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+    }, [session]);
+
+    useEffect(() => {
+        fetchShopData();
+    }, [fetchShopData]);
+
     const handleSubcategorySelect = (subCategoryId: string, subCategoryName: string) => {
         setFormData(prev => ({
             ...prev,
@@ -888,7 +927,7 @@ const NewProductView = ({shopId}) => {
             setIsPublishing(false);
         }
     };
-    
+
     if (viewMode === 'preview') {
         return (
             <>
@@ -1076,7 +1115,7 @@ const NewProductView = ({shopId}) => {
                             <p>Total sales (741)</p>
                         </div>
                         <div className="flex justify-between px-[15px]">
-                            <p className="text-[#18181B] font-medium text-[16px]">N0.00</p>
+                            <p className="text-[#18181B] font-medium text-[16px]">N {totalSales.toLocaleString()}.00</p>
                             <div className="flex items-center gap-[4px]">
                                 <Image src={arrowUp} alt={'image'} width={10} height={10}/>
                                 {/*<p className="text-[#22C55E] text-[12px]">2%</p>*/}
@@ -1090,7 +1129,7 @@ const NewProductView = ({shopId}) => {
                             <p>All products (in stock)</p>
                         </div>
                         <div className="flex justify-between px-[15px]">
-                            <p className="text-[#18181B] font-medium text-[16px]">{products.length}</p>
+                            <p className="text-[#18181B] font-medium text-[16px]">{totalStock}</p>
                             {/*<div className="flex items-center gap-[4px]">*/}
                             {/*    <Image src={arrowUp} alt={'image'} width={10} height={10}/>*/}
                             {/*    <p className="text-[#22C55E] text-[12px]">2%</p>*/}
@@ -1104,7 +1143,9 @@ const NewProductView = ({shopId}) => {
                             <p>Top selling product</p>
                         </div>
                         <div className="flex justify-between px-[15px]">
-                            <p className="text-[#18181B] font-medium text-[16px]">Iphone 14 pro (82)</p>
+                            <p className="text-[#18181B] font-medium text-[16px]">
+                                {bestSelling?.name || 'No best selling product'}
+                            </p>
                             <div className="flex items-center gap-[4px]">
                                 <Image src={arrowUp} alt={'image'} width={10} height={10}/>
                                 <p className="text-[#22C55E] text-[12px]">2%</p>
@@ -1117,7 +1158,7 @@ const NewProductView = ({shopId}) => {
                             <p>Products sold</p>
                         </div>
                         <div className="flex justify-between px-[15px]">
-                            <p className="text-[#18181B] font-medium text-[16px]">782</p>
+                            <p className="text-[#18181B] font-medium text-[16px]">{completedTransactions}</p>
                             <div className="flex items-center gap-[4px]">
                                 <Image src={arrowUp} alt={'image'} width={10} height={10}/>
                                 <p className="text-[#22C55E] text-[12px]">2%</p>
@@ -1138,7 +1179,7 @@ const NewProductView = ({shopId}) => {
                         <Image src={arrowDown} alt="Sort" width={12} height={12} />
                     </div>
                     <div className="flex items-center px-[24px] w-[90px] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                        {/*<p className="text-[#667085] font-medium text-[12px]">Status</p>*/}
                     </div>
                     <div className="flex items-center px-[15px] w-[149px] py-[12px]">
                         <p className="text-[#667085] font-medium text-[12px]">Performance (Qty)</p>
@@ -1167,10 +1208,10 @@ const NewProductView = ({shopId}) => {
                                 product={{
                                     id: product.id,
                                     name: product.name,
-                                    mainImageUrl: product.image.src, // Convert StaticImageData to string URL
-                                    price: Number(product.unitPrice),
-                                    quantity: Number(product.totalStock),
-                                    quantitySold: product.salesQty
+                                    mainImageUrl: product.mainImageUrl, // Convert StaticImageData to string URL
+                                    price: Number(product.price),
+                                    quantity: Number(product.quantity),
+                                    quantitySold: product.quantitySold
                                 }}
                                 isLast={index === currentProducts.length - 1}
                             />

@@ -4,19 +4,19 @@ import arrowUp from "../../../../../public/assets/images/green arrow up.png";
 import redArrow from "../../../../../public/assets/images/red arrow.svg";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from '@/../public/assets/images/arrow-down.svg'
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import axios from "axios";
 
-// interface Market {
-//     id: number;
-//     name: string;
-//     state: string;
-//     marketId: string;
-//     lines: number;
-//     status: "Inactive" | "Active";
-//     numberOfShops: number;
-// }
+interface Market {
+    id: number;
+    name: string;
+    state: string;
+    marketId: string;
+    lines: number;
+    status: "INACTIVE" | "ACTIVE";
+    numberOfShops: number;
+}
 
 interface MarketData {
     totalMarkets: number;
@@ -24,7 +24,7 @@ interface MarketData {
     marketLines: number;
     shopsCount: number;
     inactiveMarkets: number;
-    // markets: Market[];
+    markets: Market[];
     marketsChangePercent: number;
     activeChangePercent: number;
     linesChangePercent: number;
@@ -32,92 +32,92 @@ interface MarketData {
     inactiveChangePercent: number;
 }
 
-// const ProductActionsDropdown = ({ children }: { marketId: string; children: React.ReactNode }) => {
-//     const [isOpen, setIsOpen] = useState(false)
-//     const router = useRouter();
-//     const dropdownRef = useRef<HTMLDivElement>(null)
-//     const triggerRef = useRef<HTMLDivElement>(null)
-//
-//     const handleToggle = (e: React.MouseEvent) => {
-//         e.stopPropagation()
-//         setIsOpen(!isOpen)
-//     }
-//
-//     useEffect(() => {
-//         const handleClickOutside = (event: MouseEvent) => {
-//             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-//                 setIsOpen(false)
-//             }
-//         }
-//
-//         document.addEventListener('click', handleClickOutside)
-//         return () => document.removeEventListener('click', handleClickOutside)
-//     }, [])
-//
-//     return (
-//         <div className="relative" ref={dropdownRef}>
-//             <div
-//                 ref={triggerRef}
-//                 onClick={handleToggle}
-//                 className="cursor-pointer flex flex-col gap-[3px] items-center justify-center"
-//             >
-//                 {children}
-//             </div>
-//
-//             {isOpen && (
-//                 <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
-//                     <ul className="py-1">
-//                         <li onClick={()=>{router.push("/admin/dashboard/markets/view-market")}} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View and edit market</li>
-//                         <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px]  cursor-pointer">Deactivate market</li>
-//                         <li className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
-//                             Delete
-//                         </li>
-//                     </ul>
-//                 </div>
-//             )}
-//         </div>
-//     )
-// }
-//
-// const MarketTableRow = ({ market, isLast }: { market: Market; isLast: boolean }) => {
-//     return (
-//         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-//             <div className="flex flex-col justify-center w-[40%] pl-[24px] ">
-//                 <p className="text-[#101828] text-[14px] font-medium">{market.name}</p>
-//                 <p className="text-[#667085] text-[14px]">{market.state}</p>
-//             </div>
-//             <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
-//                 <p className="text-[#101828] text-[14px]">{market.marketId}</p>
-//             </div>
-//
-//             <div className="flex items-center w-[13%]  px-[10px]">
-//                 <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-//                     market.status === 'Active'
-//                         ? 'bg-[#ECFDF3] text-[#027A48]'
-//                         : 'bg-[#FEF3F2] text-[#FF5050]'
-//                 }`}>
-//                     <p className="text-[12px] font-medium">{market.status}</p>
-//                 </div>
-//             </div>
-//             <div className="flex flex-col justify-center w-[10%] pl-[24px] ">
-//                 <p className="text-[#101828] text-[14px]">{market.lines}</p>
-//             </div>
-//             <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
-//                 <p className="text-[#101828] text-[14px]">{market.numberOfShops}</p>
-//                 <p className="underline text-[12px] font-medium text-[#667085]">View shop</p>
-//             </div>
-//             <div className="flex items-center justify-center w-[3%]">
-//                 <ProductActionsDropdown marketId={market.marketId}>
-//                     <div>
-//                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-//                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-//                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-//                     </div>
-//                 </ProductActionsDropdown>
-//             </div>
-//         </div>
-//     )
-// }
+const ProductActionsDropdown = ({ children }: { marketId: string; children: React.ReactNode }) => {
+    const [isOpen, setIsOpen] = useState(false)
+    const router = useRouter();
+    const dropdownRef = useRef<HTMLDivElement>(null)
+    const triggerRef = useRef<HTMLDivElement>(null)
+
+    const handleToggle = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        setIsOpen(!isOpen)
+    }
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false)
+            }
+        }
+
+        document.addEventListener('click', handleClickOutside)
+        return () => document.removeEventListener('click', handleClickOutside)
+    }, [])
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+            <div
+                ref={triggerRef}
+                onClick={handleToggle}
+                className="cursor-pointer flex flex-col gap-[3px] items-center justify-center"
+            >
+                {children}
+            </div>
+
+            {isOpen && (
+                <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
+                    <ul className="py-1">
+                        <li onClick={()=>{router.push("/admin/dashboard/markets/view-market")}} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View and edit market</li>
+                        <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px]  cursor-pointer">Deactivate market</li>
+                        <li className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
+                            Delete
+                        </li>
+                    </ul>
+                </div>
+            )}
+        </div>
+    )
+}
+
+const MarketTableRow = ({ market, isLast }: { market: Market; isLast: boolean }) => {
+    return (
+        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+            <div className="flex flex-col justify-center w-[40%] pl-[24px] ">
+                <p className="text-[#101828] text-[14px] font-medium">{market.name}</p>
+                <p className="text-[#667085] text-[14px]">{market.state}</p>
+            </div>
+            <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
+                <p className="text-[#101828] text-[14px]">{market.marketId}</p>
+            </div>
+
+            <div className="flex items-center w-[13%]  px-[10px]">
+                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
+                    market.status === 'ACTIVE'
+                        ? 'bg-[#ECFDF3] text-[#027A48]'
+                        : 'bg-[#FEF3F2] text-[#FF5050]'
+                }`}>
+                    <p className="text-[12px] font-medium">{market.status}</p>
+                </div>
+            </div>
+            <div className="flex flex-col justify-center w-[10%] pl-[24px] ">
+                <p className="text-[#101828] text-[14px]">{market.lines}</p>
+            </div>
+            <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
+                <p className="text-[#101828] text-[14px]">{market.numberOfShops}</p>
+                <p className="underline text-[12px] font-medium text-[#667085]">View shop</p>
+            </div>
+            <div className="flex items-center justify-center w-[3%]">
+                <ProductActionsDropdown marketId={market.marketId}>
+                    <div>
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                    </div>
+                </ProductActionsDropdown>
+            </div>
+        </div>
+    )
+}
 
 const Markets = () => {
     const router = useRouter();
@@ -135,40 +135,41 @@ const Markets = () => {
                     marketsRes,
                     shopsRes,
                     activeMarketsRes,
-                    // marketSectionsRes
+                    marketSectionsRes
                 ] = await Promise.all([
                     axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/all'),
                     axios.get('https://digitalmarket.benuestate.gov.ng/api/shops/allCount'),
                     axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/getActiveMarketsCount'),
-                    // axios.get('https://digitalmarketalmarket.benuestate.gov.ng/api/market-sections/allCount')
+                    axios.get('https://digitalmarket.benuestate.gov.ng/api/market-sections/all')
                 ]);
 
                 const markets = marketsRes.data;
                 const shopsCount = shopsRes.data;
                 console.log('Shops: ', shopsCount);
                 const activeMarkets = activeMarketsRes.data;
-                // const marketSections = marketSectionsRes.data;
-                // console.log('market sections: ', marketSections);
+                const marketSections = marketSectionsRes.data;
+                console.log('market sections: ', activeMarkets);
+                console.log('market: ', markets);
 
                 // Calculate total lines (assuming each market has lines)
-                // const marketLines = marketSections.length || 0;
+                const marketLines = marketSections.length || 0;
 
                 // Format the data
                 const data: MarketData = {
                     totalMarkets: markets.length || 0,
-                    activeMarkets: activeMarkets,
-                    marketLines: 10,
+                    activeMarkets: markets.length,
+                    marketLines: marketLines,
                     shopsCount: shopsCount,
-                    inactiveMarkets: markets.length - 0,
-                    // markets: markets.map((market: any) => ({
-                    //     id: market.id,
-                    //     name: market.name || "Modern market",
-                    //     state: market.state || "Benue State",
-                    //     marketId: market.marketId || "21367",
-                    //     lines: market.lines || 80,
-                    //     numberOfShops: market.numberOfShops || 80,
-                    //     status: market.status === "Active" ? "Active" : "Inactive"
-                    // })),
+                    inactiveMarkets: 0,
+                    markets: markets.map((market: Market) => ({
+                        id: market.id,
+                        name: market.name || "Modern market",
+                        state: market.state || "Benue State",
+                        marketId: market.marketId || "21367",
+                        lines: market.lines || 0,
+                        numberOfShops: market.numberOfShops || 0,
+                        status: market.status === "ACTIVE" ? "ACTIVE" : "INACTIVE"
+                    })),
                     marketsChangePercent: 6.41, // These would ideally come from API
                     activeChangePercent: 6.41,
                     linesChangePercent: 1.41,
@@ -327,8 +328,8 @@ const Markets = () => {
             </div>
 
             {/* Markets Table */}
-            <div className="px-[20px] mt-[50px]">
-                <div className="w-full flex flex-col h-[453px] border-[#EAECF0] border rounded-[24px]">
+            <div className="px-[20px] my-[50px]">
+                <div className="w-full flex flex-col  border-[#EAECF0] border rounded-[24px]">
                     <div className="w-full h-[121px] flex items-center justify-between px-[24px] pt-[20px] pb-[19px]">
                         <div className="flex flex-col gap-[4px]">
                             <div className="h-[28px] flex items-center">
@@ -381,15 +382,15 @@ const Markets = () => {
                         <div className="w-[3%]"></div>
                     </div>
 
-                    {/*<div className="flex flex-col">*/}
-                    {/*    {marketData.markets.map((market, index) => (*/}
-                    {/*        <MarketTableRow*/}
-                    {/*            key={market.id}*/}
-                    {/*            market={market}*/}
-                    {/*            isLast={index === marketData.markets.length - 1}*/}
-                    {/*        />*/}
-                    {/*    ))}*/}
-                    {/*</div>*/}
+                    <div className="flex flex-col">
+                        {marketData.markets.map((market, index) => (
+                            <MarketTableRow
+                                key={market.id}
+                                market={market}
+                                isLast={index === marketData.markets.length - 1}
+                            />
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>

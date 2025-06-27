@@ -2,7 +2,6 @@
 import React, {useCallback, useEffect, useState, useRef} from 'react';
 import BannerSection from "@/components/bannerSection";
 import Image, {StaticImageData} from 'next/image';
-import FeaturedCategories from "@/components/featuredCategories";
 import MarketProductCard from "@/components/marketProductCard";
 import marketIcon from '@/../public/assets/images/market element.png'
 import searchImg from '@/../public/assets/images/search-normal.png'
@@ -584,8 +583,6 @@ const MarketPlace = () => {
                         {!isSearching && <BannerSection/>}
                     </div>
                 </div>
-
-                {!isSearching && <FeaturedCategories/>}
 
                 {!isSearching && (
                     <div className="flex items-center w-full justify-between h-[66px] px-25 border-y border-[#ededed]">
