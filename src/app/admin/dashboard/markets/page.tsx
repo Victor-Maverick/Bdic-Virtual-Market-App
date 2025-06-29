@@ -7,6 +7,7 @@ import arrowDown from '@/../public/assets/images/arrow-down.svg'
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import axios from "axios";
+import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 
 interface Market {
     id: number;
@@ -32,91 +33,81 @@ interface MarketData {
     inactiveChangePercent: number;
 }
 
-const ProductActionsDropdown = ({ children }: { marketId: string; children: React.ReactNode }) => {
-    const [isOpen, setIsOpen] = useState(false)
+interface ProductActionsDropdownProps {
+    marketId: number;
+    children: React.ReactNode;
+    onDelete: () => void;
+}
+
+const ProductActionsDropdown = ({ marketId, children, onDelete }: ProductActionsDropdownProps) => {
+    const [isOpen, setIsOpen] = useState(false);
     const router = useRouter();
-    const dropdownRef = useRef<HTMLDivElement>(null)
-    const triggerRef = useRef<HTMLDivElement>(null)
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     const handleToggle = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        setIsOpen(!isOpen)
-    }
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+    };
+
+    const handleOpenDeleteModal = () => {
+        setIsOpen(false);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleCloseDeleteModal = () => {
+        setIsDeleteModalOpen(false);
+    };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
+                setIsOpen(false);
             }
-        }
+        };
 
-        document.addEventListener('click', handleClickOutside)
-        return () => document.removeEventListener('click', handleClickOutside)
-    }, [])
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     return (
-        <div className="relative" ref={dropdownRef}>
-            <div
-                ref={triggerRef}
-                onClick={handleToggle}
-                className="cursor-pointer flex flex-col gap-[3px] items-center justify-center"
-            >
-                {children}
-            </div>
-
-            {isOpen && (
-                <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
-                    <ul className="py-1">
-                        <li onClick={()=>{router.push("/admin/dashboard/markets/view-market")}} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View and edit market</li>
-                        <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px]  cursor-pointer">Deactivate market</li>
-                        <li className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
-                            Delete
-                        </li>
-                    </ul>
+        <>
+            <div className="relative" ref={dropdownRef}>
+                <div
+                    ref={triggerRef}
+                    onClick={handleToggle}
+                    className="cursor-pointer flex flex-col gap-[3px] items-center justify-center"
+                >
+                    {children}
                 </div>
-            )}
-        </div>
-    )
-}
 
-const MarketTableRow = ({ market, isLast }: { market: Market; isLast: boolean }) => {
-    return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex flex-col justify-center w-[40%] pl-[24px] ">
-                <p className="text-[#101828] text-[14px] font-medium">{market.name}</p>
-                <p className="text-[#667085] text-[14px]">{market.state}</p>
-            </div>
-            <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
-                <p className="text-[#101828] text-[14px]">{market.marketId}</p>
-            </div>
-
-            <div className="flex items-center w-[13%]  px-[10px]">
-                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    market.status === 'ACTIVE'
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium">{market.status}</p>
-                </div>
-            </div>
-            <div className="flex flex-col justify-center w-[10%] pl-[24px] ">
-                <p className="text-[#101828] text-[14px]">{market.lines}</p>
-            </div>
-            <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
-                <p className="text-[#101828] text-[14px]">{market.numberOfShops}</p>
-                <p className="underline text-[12px] font-medium text-[#667085]">View shop</p>
-            </div>
-            <div className="flex items-center justify-center w-[3%]">
-                <ProductActionsDropdown marketId={market.marketId}>
-                    <div>
-                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                {isOpen && (
+                    <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
+                        <ul className="py-1">
+                            <li onClick={() => { router.push("/admin/dashboard/markets/view-market") }} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View and edit market</li>
+                            <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px]  cursor-pointer">Deactivate market</li>
+                            <li onClick={handleOpenDeleteModal} className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
+                                Delete
+                            </li>
+                        </ul>
                     </div>
-                </ProductActionsDropdown>
+                )}
             </div>
-        </div>
-    )
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={handleCloseDeleteModal}
+                onDelete={() => {
+                    onDelete(); // This calls the function passed from the parent
+                    handleCloseDeleteModal();
+                    console.log(marketId)
+                }}
+                title="Delete Market"
+                message="Are you sure you want to delete this market? This action cannot be undone."
+            />
+        </>
+    );
 }
 
 const Markets = () => {
@@ -125,73 +116,124 @@ const Markets = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const fetchMarketData = async () => {
+        try {
+            setLoading(true);
+            // Fetch all data in parallel
+            const [
+                marketsRes,
+                shopsRes,
+                activeMarketsRes,
+                marketSectionsRes
+            ] = await Promise.all([
+                axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/all'),
+                axios.get('https://digitalmarket.benuestate.gov.ng/api/shops/allCount'),
+                axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/getActiveMarketsCount'),
+                axios.get('https://digitalmarket.benuestate.gov.ng/api/market-sections/all')
+            ]);
+
+            const markets = marketsRes.data;
+            const shopsCount = shopsRes.data;
+            const activeMarkets = activeMarketsRes.data;
+            const marketSections = marketSectionsRes.data;
+            console.log("active markets", activeMarkets);
+
+            // Calculate total lines (assuming each market has lines)
+            const marketLines = marketSections.length || 0;
+
+            // Format the data
+            const data: MarketData = {
+                totalMarkets: markets.length || 0,
+                activeMarkets: markets.length,
+                marketLines: marketLines,
+                shopsCount: shopsCount,
+                inactiveMarkets: 0,
+                markets: markets.map((market: Market) => ({
+                    id: market.id,
+                    name: market.name || "Modern market",
+                    state: market.state || "Benue State",
+                    marketId: market.marketId || "21367",
+                    lines: market.lines || 0,
+                    numberOfShops: market.numberOfShops || 0,
+                    status: market.status === "ACTIVE" ? "ACTIVE" : "INACTIVE"
+                })),
+                marketsChangePercent: 6.41,
+                activeChangePercent: 6.41,
+                linesChangePercent: 1.41,
+                shopsChangePercent: -0.41,
+                inactiveChangePercent: -0.41
+            };
+
+            setMarketData(data);
+            setLoading(false);
+        } catch (err) {
+            setError("Failed to fetch market data");
+            setLoading(false);
+            console.error("Error fetching market data:", err);
+        }
+    };
+
+    const handleDeleteMarket = async (marketId: number) => {
+        try {
+            await axios.delete(`https://digitalmarket.benuestate.gov.ng/api/markets/delete/${marketId}`);
+            // Refresh the market data after successful deletion
+            await fetchMarketData();
+        } catch (err) {
+            console.error("Error deleting market:", err);
+            // You might want to show an error message to the user here
+        }
+    };
+
     useEffect(() => {
-        const fetchMarketData = async () => {
-            try {
-                setLoading(true);
-
-                // Fetch all data in parallel
-                const [
-                    marketsRes,
-                    shopsRes,
-                    activeMarketsRes,
-                    marketSectionsRes
-                ] = await Promise.all([
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/all'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/shops/allCount'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/getActiveMarketsCount'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/market-sections/all')
-                ]);
-
-                const markets = marketsRes.data;
-                const shopsCount = shopsRes.data;
-                console.log('Shops: ', shopsCount);
-                const activeMarkets = activeMarketsRes.data;
-                const marketSections = marketSectionsRes.data;
-                console.log('market sections: ', activeMarkets);
-                console.log('market: ', markets);
-
-                // Calculate total lines (assuming each market has lines)
-                const marketLines = marketSections.length || 0;
-
-                // Format the data
-                const data: MarketData = {
-                    totalMarkets: markets.length || 0,
-                    activeMarkets: markets.length,
-                    marketLines: marketLines,
-                    shopsCount: shopsCount,
-                    inactiveMarkets: 0,
-                    markets: markets.map((market: Market) => ({
-                        id: market.id,
-                        name: market.name || "Modern market",
-                        state: market.state || "Benue State",
-                        marketId: market.marketId || "21367",
-                        lines: market.lines || 0,
-                        numberOfShops: market.numberOfShops || 0,
-                        status: market.status === "ACTIVE" ? "ACTIVE" : "INACTIVE"
-                    })),
-                    marketsChangePercent: 6.41, // These would ideally come from API
-                    activeChangePercent: 6.41,
-                    linesChangePercent: 1.41,
-                    shopsChangePercent: -0.41,
-                    inactiveChangePercent: -0.41
-                };
-
-                setMarketData(data);
-                setLoading(false);
-            } catch (err) {
-                setError("Failed to fetch market data");
-                setLoading(false);
-                console.error("Error fetching market data:", err);
-            }
-        };
-
         fetchMarketData();
     }, []);
 
     if (loading) return <div className="h-[900px] flex items-center justify-center">Loading market data...</div>;
     if (error) return <div className="h-[900px] flex items-center justify-center text-red-500">{error}</div>;
     if (!marketData) return <div className="h-[900px] flex items-center justify-center">No market data available</div>;
+
+    const MarketTableRow = ({ market, isLast }: { market: Market; isLast: boolean }) => {
+        return (
+            <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+                <div className="flex flex-col justify-center w-[40%] pl-[24px] ">
+                    <p className="text-[#101828] text-[14px] font-medium">{market.name}</p>
+                    <p className="text-[#667085] text-[14px]">{market.state}</p>
+                </div>
+                <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
+                    <p className="text-[#101828] text-[14px]">{market.marketId}</p>
+                </div>
+
+                <div className="flex items-center w-[13%]  px-[10px]">
+                    <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
+                        market.status === 'ACTIVE'
+                            ? 'bg-[#ECFDF3] text-[#027A48]'
+                            : 'bg-[#FEF3F2] text-[#FF5050]'
+                    }`}>
+                        <p className="text-[12px] font-medium">{market.status}</p>
+                    </div>
+                </div>
+                <div className="flex flex-col justify-center w-[10%] pl-[24px] ">
+                    <p className="text-[#101828] text-[14px]">{market.lines}</p>
+                </div>
+                <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
+                    <p className="text-[#101828] text-[14px]">{market.numberOfShops}</p>
+                    <p className="underline text-[12px] font-medium text-[#667085]">View shop</p>
+                </div>
+                <div className="flex items-center justify-center w-[3%]">
+                    <ProductActionsDropdown
+                        marketId={market.id}
+                        onDelete={() => handleDeleteMarket(market.id)}
+                    >
+                        <div>
+                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        </div>
+                    </ProductActionsDropdown>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className="h-[900px]">

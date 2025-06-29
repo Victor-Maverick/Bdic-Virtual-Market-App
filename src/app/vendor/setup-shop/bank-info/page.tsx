@@ -6,7 +6,6 @@ import arrow from "../../../../../public/assets/images/arrow-right.svg";
 import {ChevronDown} from "lucide-react";
 import {useRouter} from "next/navigation";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
-import greenTick from '../../../../../public/assets/images/green tick.png'
 import {useState, useEffect} from "react"
 import dashSlideImg from '@/../public/assets/images/dashSlideImg.png'
 
@@ -190,12 +189,6 @@ const BankInfo = () => {
                             onChange={setAccountNumber}
                             placeholder="Account number"
                         />
-                        <div className="flex-col flex ">
-                            <div className="h-[40px] flex justify-between font-medium text-[#121212] w-full rounded-[8px] items-center px-[18px] text-[14px] bg-[#ECFDF6]">
-                                <p>Terngu paul</p>
-                                <Image src={greenTick} alt={'verified account name'}/>
-                            </div>
-                        </div>
                     </div>
                     <div
                         className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] ${

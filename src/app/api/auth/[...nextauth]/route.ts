@@ -17,28 +17,27 @@ const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    //https://api.digitalmarke.bdic.ng/api/auth/login
                     const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/auth/login', {
                         email: credentials.email,
                         password: credentials.password,
                     });
 
                     const loginData = response.data.data;
+                    console.log('Login response data:', loginData); // Debug log
 
-                    console.log("Login response: ",response.data.data)
-                    if (loginData) {
-
+                    if (loginData && loginData.token) {
                         return {
-                            id: credentials.email, // Use email as ID
+                            id: loginData.id || credentials.email, // Use backend ID if available, fallback to email
                             email: credentials.email,
-                            accessToken: loginData.token, // Store backend token
-                            roles: loginData.roles,
-                            firstName: loginData.firstName,
-                            lastName: loginData.lastName
+                            accessToken: loginData.token,
+                            roles: loginData.roles || [],
+                            firstName: loginData.firstName || '',
+                            lastName: loginData.lastName || '',
                         };
                     }
-                    return null;
+                    throw new Error('Invalid login response from server');
                 } catch (error) {
+                    console.error('Authorize error:', error);
                     throw new Error(
                         axios.isAxiosError(error)
                             ? error.response?.data?.message || 'Invalid email or password'
@@ -53,41 +52,22 @@ const authOptions: NextAuthOptions = {
             if (user) {
                 token.id = user.id;
                 token.email = user.email;
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
-                token.accessToken = user.accessToken; // Backend token
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
+                token.accessToken = user.accessToken;
                 token.roles = user.roles;
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
                 token.firstName = user.firstName;
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
                 token.lastName = user.lastName;
             }
-
             return token;
         },
         async session({ session, token }) {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            session.user.id = token.id as string;
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            session.user.email = token.email as string;
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            session.accessToken = token.accessToken as string; // Backend token
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            session.user.roles = token.roles as string[];
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            session.user.firstName = token.firstName as string;
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            session.user.lastName = token.lastName as string;
+            if (token) {
+                session.user.id = token.id;
+                session.user.email = token.email;
+                session.accessToken = token.accessToken;
+                session.user.roles = token.roles;
+                session.user.firstName = token.firstName;
+                session.user.lastName = token.lastName;
+            }
             return session;
         },
     },
@@ -97,7 +77,7 @@ const authOptions: NextAuthOptions = {
     session: {
         strategy: 'jwt',
     },
-    secret: process.env.NEXTAUTH_SECRET, // Required for NextAuth session security
+    secret: process.env.NEXTAUTH_SECRET,
 };
 
 const handler = NextAuth(authOptions);

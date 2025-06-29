@@ -16,8 +16,6 @@ const DashboardHeader = () => {
     useEffect(() => {
         const fetchUserProfile = async () => {
             if (status === 'loading') return;
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
             if (status === 'unauthenticated' || !session?.accessToken) {
                 setIsLoading(false);
                 return;
@@ -26,8 +24,6 @@ const DashboardHeader = () => {
             try {
                 const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
                     headers: {
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
                         Authorization: `Bearer ${session.accessToken}`,
                     },
                 });

@@ -22,8 +22,6 @@ const DashboardHeader = () => {
     useEffect(() => {
         const fetchUserProfile = async () => {
             if (status === 'loading') return;
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
             if (status === 'unauthenticated' || !session?.accessToken) {
                 setIsLoading(false);
                 return;
@@ -32,8 +30,7 @@ const DashboardHeader = () => {
             try {
                 const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
                     headers: {
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
+
                         Authorization: `Bearer ${session.accessToken}`,
                     },
                 });
@@ -63,8 +60,6 @@ const DashboardHeader = () => {
         if (!userProfile?.roles) {
             return;
         }
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
         const roles = session?.user.roles || []
         console.log("rolesss: ",roles);
         if (roles.includes('VENDOR') && roles.includes('BUYER')) {
@@ -85,8 +80,6 @@ const DashboardHeader = () => {
                 {},
                 {
                     headers: {
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
                         Authorization: `Bearer ${session?.accessToken}`,
                     },
                 }
@@ -97,6 +90,7 @@ const DashboardHeader = () => {
                 redirect: false,
                 callbackUrl: '/'
             });
+            localStorage.removeItem("userEmail");
         } catch (error) {
             console.error('Logout failed:', error);
             // Even if backend logout fails, we should still clear the client session

@@ -1,7 +1,9 @@
 'use client'
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Image, { StaticImageData } from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import axios from 'axios';
 import shadow from "../../../public/assets/images/shadow.png";
 import dashboardImage from "../../../public/assets/images/dashboardImage.png";
 import shopImg from "../../../public/assets/images/shop-image.svg";
@@ -27,6 +29,7 @@ interface MenuItem {
     label: string;
     widthClass: string;
     notifications?: string;
+    isNotification?: boolean;
 }
 
 interface DashboardOptionsProps {
@@ -36,10 +39,39 @@ interface DashboardOptionsProps {
 const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsProps) => {
     const router = useRouter();
     const pathname = usePathname();
+    const { data: session } = useSession();
     const [selectedOption, setSelectedOption] = useState<MenuOption>(initialSelected);
     const [indicatorPosition, setIndicatorPosition] = useState({ left: 0, width: 0 });
+    const [notificationCount, setNotificationCount] = useState(0);
 
-    // Memoize routeToOption to prevent recreating on every render
+    const fetchNotifications = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                const response = await axios.get(
+                    `https://digitalmarket.benuestate.gov.ng/api/notification/getUserAllUnRead?email=${session.user.email}`
+                );
+                if (Array.isArray(response.data)) {
+                    setNotificationCount(response.data.length);
+                }
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            }
+        }
+    }, [session?.user?.email]);
+
+    const markNotificationsAsRead = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                await axios.put(
+                    `https://digitalmarket.benuestate.gov.ng/api/notification/readAllNotification?email=${session.user.email}`
+                );
+                fetchNotifications();
+            } catch (error) {
+                console.error('Error marking notifications as read:', error);
+            }
+        }
+    }, [session?.user?.email, fetchNotifications]);
+
     const routeToOption = useMemo(() => ({
         '/vendor/dashboard': 'dashboard',
         '/vendor/dashboard/shop': 'shop',
@@ -66,15 +98,22 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
         const matchedOption = Object.entries(routeToOption).find(([route]) =>
             pathname.startsWith(route)
         )?.[1] || 'dashboard';
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        setSelectedOption(matchedOption);
+        setSelectedOption(matchedOption as MenuOption);
     }, [pathname, routeToOption]);
 
-    const handleOptionClick = (option: MenuOption) => {
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 5000);
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
+
+    const handleOptionClick = useCallback((option: MenuOption, isNotification?: boolean) => {
+        if (isNotification) {
+            markNotificationsAsRead();
+        }
         setSelectedOption(option);
         router.push(optionToRoute[option]);
-    };
+    }, [markNotificationsAsRead, optionToRoute, router]);
 
     const menuItems: MenuItem[] = useMemo(() => [
         { id: 'dashboard', icon: dashboardImage, label: 'Dashboard', widthClass: 'w-[116px]' },
@@ -88,24 +127,25 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
             icon: notificationImg,
             label: 'Notifications',
             widthClass: 'w-[154px]',
-            notifications: '30+'
+            notifications: notificationCount > 0 ? (notificationCount > 9 ? '9+' : notificationCount.toString()) : undefined,
+            isNotification: true
         },
         { id: 'settings', icon: settingImg, label: 'Settings', widthClass: 'w-[97px]' },
-    ], []);
+    ], [notificationCount]);
 
-    const updateIndicatorPosition = (element: HTMLElement | null) => {
+    const updateIndicatorPosition = useCallback((element: HTMLElement | null) => {
         if (element) {
             setIndicatorPosition({
                 left: element.offsetLeft,
                 width: element.offsetWidth
             });
         }
-    };
+    }, []);
 
     useEffect(() => {
         const selectedElement = document.getElementById(`menu-item-${selectedOption}`);
         updateIndicatorPosition(selectedElement);
-    }, [selectedOption]);
+    }, [selectedOption, menuItems, updateIndicatorPosition]);
 
     return (
         <div className="relative w-full">
@@ -129,7 +169,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                             relative
                         `}
                         onClick={(e) => {
-                            handleOptionClick(item.id);
+                            handleOptionClick(item.id, item.isNotification);
                             updateIndicatorPosition(e.currentTarget);
                         }}
                     >

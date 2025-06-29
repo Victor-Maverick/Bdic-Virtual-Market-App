@@ -22,19 +22,43 @@ const disputes = [
     { id: 10, productId: 10,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product", price: 840000}
 ];
 
+interface ProductActionsDropdownProps {
+    children: React.ReactNode;
+    orderNumber: string;  // Changed from orderId to orderNumber
+    orderStatus: OrderStatus;
+    onMarkDelivered: (orderNumber: string) => Promise<void>;  // Now accepts orderNumber
+    onViewOrder: (orderNumber: string) => void;  // Now accepts orderNumber
+}
+
 const ProductActionsDropdown = ({
 
-                                    children
-                                }: {
-    productId: number;
-    children: React.ReactNode;
-}) => {
+                                    children,
+                                    orderNumber,
+                                    orderStatus,
+                                    onMarkDelivered,
+                                    onViewOrder
+                                }: ProductActionsDropdownProps) =>{
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(!isOpen);
+    };
+
+    const handleActionClick = async (e: React.MouseEvent, action: 'markDelivered' | 'viewOrder') => {
+        e.stopPropagation();
+        try {
+            if (action === 'markDelivered') {
+                await onMarkDelivered(orderNumber);  // Pass orderNumber instead of orderId
+            } else {
+                onViewOrder(orderNumber);  // Pass orderNumber instead of orderId
+            }
+            setIsOpen(false);
+        } catch (error) {
+            console.error('Error:', error);
+        }
+
     };
 
     useEffect(() => {
@@ -60,10 +84,21 @@ const ProductActionsDropdown = ({
             {isOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg z-50 border border-[#ededed] w-[125px]">
                     <ul className="py-1">
-                        <li className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer">Accept order</li>
-                        <li className="px-4 py-2 text-[12px] hover:bg-[#FFFAF9] cursor-pointer text-[#FF5050]">
-                            Reject order
-                        </li>
+                        {orderStatus === OrderStatus.PAID ? (
+                            <li
+                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={(e) => handleActionClick(e, 'markDelivered')}
+                            >
+                                Mark delivered
+                            </li>
+                        ) : (
+                            <li
+                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={(e) => handleActionClick(e, 'viewOrder')}
+                            >
+                                View order
+                            </li>
+                        )}
                     </ul>
                 </div>
             )}
@@ -340,7 +375,7 @@ interface DeliveryInfo {
 
 enum OrderStatus {
     PAID = 'PAID',
-    PENDING = 'PENDING',
+    PENDING_DELIVERY = 'PENDING_DELIVERY',
     SHIPPED = 'SHIPPED',
     DELIVERED = 'DELIVERED',
     CANCELLED = 'CANCELLED'
@@ -351,7 +386,50 @@ interface PendingOrdersProps {
     loading: boolean;
 }
 
-const PendingOrders = ({ orders, loading }: PendingOrdersProps) => {
+const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) => {
+    const [orders, setOrders] = useState<OrderResponse[]>(initialOrders);
+    const router = useRouter();
+
+
+    const handleMarkDelivered = async (orderNumber: string) => {
+        try {
+            const response = await axios.post(
+                'https://digitalmarket.benuestate.gov.ng/api/orders/process-order',
+                { orderNumber }, // Request body
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            if (response.status !== 200) {
+                throw new Error('Failed to mark order as delivered');
+            }
+
+            // Optimistically update the UI
+            setOrders(prevOrders =>
+                prevOrders.map(order =>
+                    order.orderNumber === orderNumber
+                        ? { ...order, status: OrderStatus.DELIVERED }
+                        : order
+                )
+            );
+        } catch (error) {
+            console.error('Error:', error);
+            // Optionally show an error message to the user
+        }
+    };
+
+    const handleViewOrder = (orderNumber: string) => {
+        router.push(`/vendor/dashboard/order/${orderNumber}`);
+    };
+
+    // Update orders if initialOrders changes
+    useEffect(() => {
+        setOrders(initialOrders);
+    }, [initialOrders]);
+
     if (loading) {
         return <div className="p-4 text-center">Loading orders...</div>;
     }
@@ -361,8 +439,11 @@ const PendingOrders = ({ orders, loading }: PendingOrdersProps) => {
     }
 
     // Filter only pending orders if needed (your API might already do this)
-    const pendingOrders = orders.filter(order => order.status === OrderStatus.PAID);
-
+    const pendingOrders = orders.filter(order =>
+        order.status === OrderStatus.PAID ||
+        order.status === OrderStatus.PENDING_DELIVERY ||
+        order.status === OrderStatus.DELIVERED
+    );
     return (
         <div className="flex flex-col gap-[50px]">
             <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
@@ -422,7 +503,8 @@ const PendingOrders = ({ orders, loading }: PendingOrdersProps) => {
                                     <div className="flex justify-center items-center w-[10%]">
                                         <span className={`px-2 py-1 text-xs rounded-full ${
                                             order.status === OrderStatus.PAID ? 'bg-green-100 text-green-800' :
-                                                order.status === OrderStatus.PENDING ? 'bg-yellow-100 text-yellow-800' :
+                                                order.status === OrderStatus.DELIVERED ? 'bg-green-100 text-green-800' :
+                                                order.status === OrderStatus.PENDING_DELIVERY ? 'bg-yellow-100 text-yellow-800' :
                                                     order.status === OrderStatus.CANCELLED ? 'bg-red-100 text-red-800' :
                                                         'bg-gray-100 text-gray-800'
                                         }`}>
@@ -450,7 +532,12 @@ const PendingOrders = ({ orders, loading }: PendingOrdersProps) => {
                                         </p>
                                     </div>
                                     <div className="flex items-center justify-center w-[2%]">
-                                        <ProductActionsDropdown productId={item.productId}>
+                                        <ProductActionsDropdown
+                                            orderNumber={order.orderNumber}  // Pass orderNumber instead of orderId
+                                            orderStatus={order.status}
+                                            onMarkDelivered={handleMarkDelivered}
+                                            onViewOrder={handleViewOrder}
+                                        >
                                             <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
                                                 <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                                                 <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -531,6 +618,7 @@ const Disputes = () => {
 };
 
 import { useSession } from "next-auth/react";
+import axios from "axios";
 
 const OrderClient = () => {
     const searchParams = useSearchParams();

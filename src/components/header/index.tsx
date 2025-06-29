@@ -31,8 +31,7 @@ const Header = () => {
                 //https://api.digitalmarke.bdic.ng/api/auth/profile
                 const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
                     headers: {
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
+
                         Authorization: `Bearer ${session.accessToken}`,
                     },
                     withCredentials: true
@@ -62,8 +61,7 @@ const Header = () => {
         if (!userProfile?.roles) {
             return;
         }
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
+
         const roles = session?.user.roles || []
         console.log("rolesss: ",roles);
         if (roles.includes('VENDOR') && roles.includes('BUYER')) {
@@ -84,8 +82,7 @@ const Header = () => {
                 {},
                 {
                     headers: {
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
+
                         Authorization: `Bearer ${session?.accessToken}`,
                     },
                 }
@@ -96,6 +93,7 @@ const Header = () => {
                 redirect: false,
                 callbackUrl: '/'
             });
+            localStorage.removeItem("userEmail");
         } catch (error) {
             console.error('Logout failed:', error);
             // Even if backend logout fails, we should still clear the client session

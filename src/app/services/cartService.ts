@@ -70,7 +70,6 @@ export const addToCart = async (cartId: string, productId: number, quantity: num
 export const getCart = async (cartId: string): Promise<CartResponse> => {
     try {
         const token = await getAuthToken();
-        console.log("Cart ID:", cartId);
         const response = await axios.get<CartResponse>(`${API_BASE_URL}/cart`, {
             headers: {
                 'X-Cart-Id': cartId,

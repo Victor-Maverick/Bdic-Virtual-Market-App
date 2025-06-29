@@ -272,6 +272,95 @@ const MarketPlace = () => {
     const [subCategories, setSubCategories] = useState<SubCategoryResponse[]>([]);
     const [selectedSubCategory, setSelectedSubCategory] = useState<SubCategoryResponse | null>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const [hoveredCategory, setHoveredCategory] = useState<CategoryResponse | null>(null);
+    const [showSubcategories, setShowSubcategories] = useState<boolean>(false);
+
+    const fetchProductsByCategory = async (categoryId: number) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/by-category?categoryId=${categoryId}`);
+            if (response.data) {
+                setApiProducts(response.data);
+            }
+        } catch (err) {
+            console.error('Error fetching products by category:', err);
+            setError('Failed to fetch products by category');
+        } finally {
+            setLoading(false);
+        }
+    };
+    const handleMarketSelect = (market: Market) => {
+        setSelectedMarket(market);
+        fetchProductsByMarket(market.id);
+    };
+
+    const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const handleCategoryHover = (category: CategoryResponse) => {
+        // Clear any pending leave timeout
+        if (leaveTimeoutRef.current) {
+            clearTimeout(leaveTimeoutRef.current);
+            leaveTimeoutRef.current = null;
+        }
+
+        setHoveredCategory(category);
+        setShowSubcategories(true);
+        fetchSubCategories(category.name);
+    };
+
+    const handleCategoryLeave = () => {
+        // Set a timeout before hiding subcategories
+        leaveTimeoutRef.current = setTimeout(() => {
+            setShowSubcategories(false);
+            setHoveredCategory(null);
+        }, 300); // 300ms delay
+    };
+
+    const handleSubcategoryLeave = () => {
+        // Same as category leave
+        leaveTimeoutRef.current = setTimeout(() => {
+            setShowSubcategories(false);
+            setHoveredCategory(null);
+        }, 300);
+    };
+
+    const cancelLeave = () => {
+        if (leaveTimeoutRef.current) {
+            clearTimeout(leaveTimeoutRef.current);
+            leaveTimeoutRef.current = null;
+        }
+    };
+
+
+    const fetchProductsBySubCategory = async (subCategoryId: number) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/by-subcategory?subCategoryId=${subCategoryId}`);
+            if (response.data) {
+                setApiProducts(response.data);
+            }
+        } catch (err) {
+            console.error('Error fetching products by subcategory:', err);
+            setError('Failed to fetch products by subcategory');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchProductsByMarket = async (marketId: number) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getByMarket?marketId=${marketId}`);
+            if (response.data) {
+                setApiProducts(response.data);
+            }
+        } catch (err) {
+            console.error('Error fetching products by market:', err);
+            setError('Failed to fetch products by market');
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
 
     const featuredProducts = [
@@ -331,7 +420,7 @@ const MarketPlace = () => {
         try {
             setLoading(true);
             setError(null);
-            
+
 
             let response;
             try {
@@ -345,10 +434,10 @@ const MarketPlace = () => {
                 }
             } catch (primaryError) {
                 console.warn('Primary API failed, trying fallback...', primaryError);
-                
+
             }
 
-            
+
         } catch (err) {
             console.error('Error fetching products:', err);
             if (axios.isAxiosError(err)) {
@@ -440,16 +529,31 @@ const MarketPlace = () => {
         }
     };
 
+
+
     const handleCategoryClick = (category: CategoryResponse) => {
+        cancelLeave();
         setSelectedCategory(category);
         setSelectedSubCategory(null);
-        fetchSubCategories(category.name);
-        setIsSearching(false);
         setSearchQuery('');
+        setIsSearching(false);
+        fetchProductsByCategory(category.id);
+        setShowSubcategories(false);
     };
 
     const handleSubCategoryClick = (subCategory: SubCategoryResponse) => {
+        cancelLeave();
+        // Find the parent category of this subcategory
+        const parentCategory = categories.find(cat =>
+            cat.name === hoveredCategory?.name
+        );
+
+        if (parentCategory) {
+            setSelectedCategory(parentCategory);
+        }
         setSelectedSubCategory(subCategory);
+        fetchProductsBySubCategory(subCategory.id);
+        setShowSubcategories(false);
     };
 
     useEffect(() => {
@@ -485,45 +589,72 @@ const MarketPlace = () => {
                     {!isSearching && (
                         <div className="w-[20%] flex flex-col drop-shadow-sm h-full">
                             <div className="rounded-t-[8px] gap-[8px] h-[52px] px-[10px] font-medium text-[16px] flex items-center bg-[#022B23]">
-                                <Image src={categoryImg} alt={'image'}/>
+                                <Image src={categoryImg} alt={'image'} />
                                 <p className="text-[#FFEEBE]">Categories</p>
                             </div>
-                            <div className="shadow-sm">
+                            <div className="shadow-sm relative">
                                 <ul>
+                                    <li
+                                        className={`flex items-center px-[14px] gap-[10px] h-[48px] text-[#1E1E1E] hover:bg-[#ECFDF6] cursor-pointer ${
+                                            !selectedCategory ? 'bg-[#ECFDF6]' : ''
+                                        }`}
+                                        onClick={() => {
+                                            setSelectedCategory(null);
+                                            setSelectedSubCategory(null);
+                                            fetchProducts();
+                                        }}
+                                    >
+                                        All Categories
+                                    </li>
                                     {categories.map((category) => (
                                         <li
                                             key={category.id}
                                             className={`flex items-center px-[14px] gap-[10px] h-[48px] text-[#1E1E1E] hover:bg-[#ECFDF6] cursor-pointer ${
                                                 selectedCategory?.id === category.id ? 'bg-[#ECFDF6]' : ''
                                             }`}
+                                            onMouseEnter={() => handleCategoryHover(category)}
+                                            onMouseLeave={handleCategoryLeave}
                                             onClick={() => handleCategoryClick(category)}
                                         >
                                             {category.name}
                                         </li>
                                     ))}
                                 </ul>
-                            </div>
 
-                            {selectedCategory && subCategories.length > 0 && (
-                                <div className="shadow-sm mt-4">
-                                    <div className="px-[14px] py-2 font-medium bg-gray-100">
-                                        Subcategories
+                                {showSubcategories && hoveredCategory && (
+                                    <div
+                                        className="absolute left-full top-0 ml-1 bg-white shadow-lg rounded-md z-50 min-w-[200px]"
+                                        onMouseEnter={cancelLeave}
+                                        onMouseLeave={handleSubcategoryLeave}
+                                        style={{
+                                            top: `${categories.findIndex(c => c.id === hoveredCategory.id) * 48 + 48}px`,
+                                            border: '1px solid #EDEDED',
+                                            maxHeight: '400px',
+                                            overflowY: 'auto'
+                                        }}
+                                    >
+                                        <div className="px-[14px] py-2 font-medium bg-gray-100">
+                                            {hoveredCategory.name}
+                                        </div>
+                                        <ul>
+                                            {subCategories.map((subCategory) => (
+                                                <li
+                                                    key={subCategory.id}
+                                                    className={`flex items-center px-[14px] gap-[10px] h-[48px] text-[#1E1E1E] hover:bg-[#ECFDF6] cursor-pointer ${
+                                                        selectedSubCategory?.id === subCategory.id ? 'bg-[#ECFDF6]' : ''
+                                                    }`}
+                                                    onClick={() => {
+                                                        cancelLeave();
+                                                        handleSubCategoryClick(subCategory);
+                                                    }}
+                                                >
+                                                    {subCategory.name}
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                    <ul>
-                                        {subCategories.map((subCategory) => (
-                                            <li
-                                                key={subCategory.id}
-                                                className={`flex items-center px-[14px] gap-[10px] h-[48px] text-[#1E1E1E] hover:bg-[#ECFDF6] cursor-pointer ${
-                                                    selectedSubCategory?.id === subCategory.id ? 'bg-[#ECFDF6]' : ''
-                                                }`}
-                                                onClick={() => handleSubCategoryClick(subCategory)}
-                                            >
-                                                {subCategory.name}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     )}
 
@@ -554,7 +685,7 @@ const MarketPlace = () => {
                                         <Dropdown
                                             items={markets}
                                             selectedItem={selectedMarket}
-                                            onSelect={setSelectedMarket}
+                                            onSelect={handleMarketSelect}
                                             placeholder="Wurukum market"
                                         />
                                     </div>
@@ -597,6 +728,31 @@ const MarketPlace = () => {
                                 <Image src={filterImg} alt={'image'} width={20} height={20} className="w-[20px] h-[20px]"/>
                                 <p>Sort by: <span className="text-[#022B23] font-medium">Popular</span></p>
                             </div>
+                        </div>
+
+                        {/* Show active filters */}
+                        <div className="flex items-center gap-2">
+                            {selectedCategory && (
+                                <div className="bg-[#ECFDF6] px-3 py-1 rounded-full flex items-center gap-1">
+                                    <span className="text-[#022B23] text-sm">{selectedCategory.name}</span>
+                                    {selectedSubCategory && (
+                                        <>
+                                            <span className="text-gray-400">/</span>
+                                            <span className="text-[#022B23] text-sm">{selectedSubCategory.name}</span>
+                                        </>
+                                    )}
+                                    <button
+                                        onClick={() => {
+                                            setSelectedCategory(null);
+                                            setSelectedSubCategory(null);
+                                            fetchProducts();
+                                        }}
+                                        className="text-gray-500 hover:text-gray-700"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}

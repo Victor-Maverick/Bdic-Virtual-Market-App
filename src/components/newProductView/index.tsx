@@ -1109,7 +1109,7 @@ const NewProductView = ({shopId}) => {
             <div className="flex flex-col gap-[12px]">
                 <p className="text-[#022B23] text-[16px] font-medium">Product metrics</p>
                 <div className="flex items-center gap-[20px] h-[100px]">
-                    <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#ECFDF6] border-[#52A43E]">
+                    <div className="w-[246px] hover:shadow-xl h-full border-[0.5px] rounded-[14px] bg-[#ECFDF6] border-[#52A43E]">
                         <div className="flex items-center gap-[8px] text-[12px] text-[#52A43E] font-medium p-[15px]">
                             <Image src={biArrows} alt="total sales" width={18} height={18} className="h-[18px] w-[18px]" />
                             <p>Total sales (741)</p>
@@ -1123,7 +1123,7 @@ const NewProductView = ({shopId}) => {
                         </div>
                     </div>
 
-                    <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#ededed]">
+                    <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#ededed]">
                         <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                             <Image src={flagImg} alt="completed transactions" width={18} height={18} className="h-[18px] w-[18px]" />
                             <p>All products (in stock)</p>
@@ -1137,7 +1137,7 @@ const NewProductView = ({shopId}) => {
                         </div>
                     </div>
 
-                    <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#ededed]">
+                    <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#ededed]">
                         <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                             <Image src={dropBoxImg} alt="pending orders" width={18} height={18} className="h-[18px] w-[18px]" />
                             <p>Top selling product</p>
@@ -1152,7 +1152,7 @@ const NewProductView = ({shopId}) => {
                             </div>
                         </div>
                     </div>
-                    <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#ededed]">
+                    <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#ededed]">
                         <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                             <Image src={archiveImg} alt="pending orders" width={18} height={18} className="h-[18px] w-[18px]" />
                             <p>Products sold</p>

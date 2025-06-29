@@ -123,27 +123,74 @@ const SetupComplete = () => {
     const [toastMessage, setToastMessage] = useState("");
     const [toastSubMessage, setToastSubMessage] = useState("");
     const [email, setEmail] = useState("");
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     useEffect(() => {
         try {
             const shopInfoStr = localStorage.getItem('shopInfo');
             const personalInfoStr = localStorage.getItem('personalInfo');
             const bankInfoStr = localStorage.getItem('bankInfo');
-            const paymentEmail = session?.user?.email
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            setEmail(paymentEmail)
-            console.log("Payment email: ",paymentEmail)
+            const paymentEmail = session?.user?.email;
+
+            setEmail(paymentEmail || "");
             setSummaryData({
                 shopInfo: shopInfoStr ? JSON.parse(shopInfoStr) : null,
                 personalInfo: personalInfoStr ? JSON.parse(personalInfoStr) : null,
                 bankInfo: bankInfoStr ? JSON.parse(bankInfoStr) : null
             });
+            setIsDataLoaded(true); // Mark data as loaded
         } catch (err) {
             console.error('Error loading data from localStorage', err);
             showErrorToast('Setup Error', 'Error loading your information. Please go back and try again.');
         }
-    }, [session?.user?.email]); // Added dependency here
+    }, [session?.user?.email]);
+
+    const verifyPayment = useCallback(async (transRef: string) => {
+        if (!email) {
+            console.error('Email not loaded yet');
+            return;
+        }
+
+        setIsVerifying(true);
+        setPaymentError(null);
+
+        try {
+            const response = await axios.get<VerifyPaymentResponse>(
+                `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
+                { timeout: 30000 }
+            );
+
+            if (response.data.data) {
+                const paymentData = response.data.data;
+                const expectedAmount = getStoredTotalAmount();
+
+                if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
+                    throw new Error('Payment amount does not match expected amount');
+                }
+
+                const shopVerified = await verifyShopStatus(email);
+                if (!shopVerified) {
+                    throw new Error('Shop verification failed');
+                }
+
+                clearStoredTotalAmount();
+                showSuccessToast('Payment Successful', 'Your shop has been activated successfully');
+
+                setTimeout(() => {
+                    router.replace('/vendor/dashboard', undefined);
+                }, 2000);
+            } else {
+                throw new Error('Payment verification failed');
+            }
+        } catch (error) {
+            console.error('Payment verification error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
+            setPaymentError(errorMessage);
+            showErrorToast('Payment Error', errorMessage);
+        } finally {
+            setIsVerifying(false);
+        }
+    }, [email, router]);
 
     const showSuccessToast = (message: string, subMessage: string) => {
         setToastType("success");
@@ -194,61 +241,20 @@ const SetupComplete = () => {
         }
     };
 
-    const verifyPayment = useCallback(async (transRef: string) => {
-        setIsVerifying(true);
-        setPaymentError(null);
-        // Get email directly from session
-        const currentEmail = session?.user?.email || '';
-        try {
-            const response = await axios.get<VerifyPaymentResponse>(
-                `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
-                { timeout: 30000 }
-            );
-
-            if (response.data.data) {
-                const paymentData = response.data.data;
-                const expectedAmount = getStoredTotalAmount();
-
-                if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
-                    throw new Error('Payment amount does not match expected amount');
-                }
-                // Use currentEmail from session
-                const shopVerified = await verifyShopStatus(currentEmail);
-                if (!shopVerified) {
-                    throw new Error('Shop verification failed');
-                }
-                clearStoredTotalAmount();
-                showSuccessToast('Payment Successful', 'Your shop has been activated successfully');
-
-                setTimeout(() => {
-                    router.push('/vendor/dashboard');
-                }, 2000);
-            } else {
-                throw new Error('Payment verification failed');
-            }
-        } catch (error) {
-            console.error('Payment verification error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
-            setPaymentError(errorMessage);
-            showErrorToast('Payment Error', errorMessage);
-        } finally {
-            setIsVerifying(false);
-        }
-    }, [session, router]);
-
     useEffect(() => {
+        if (!isDataLoaded) return; // Don't proceed until data is loaded
+
         const transRef = searchParams.get('transRef');
         const paymentStatus = searchParams.get('status');
 
-        // Only verify if we have a transaction reference
         if (transRef) {
             verifyPayment(transRef);
         }
-        // Clean up URL after verification
+
         if (paymentStatus && !transRef) {
             router.replace('/vendor/dashboard', undefined);
         }
-    }, [searchParams, verifyPayment, router]);
+    }, [searchParams, verifyPayment, router, isDataLoaded]);
 
     const initializePayment = async (): Promise<string> => {
         try {

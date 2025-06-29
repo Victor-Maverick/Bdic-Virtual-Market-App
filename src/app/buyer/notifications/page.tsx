@@ -1,11 +1,10 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
 import Image from "next/image";
-import iPhone from "../../../../../public/assets/images/blue14.png";
-import DashboardOptions from "@/components/dashboardOptions";
-import { useEffect, useState, useCallback } from "react";
+import iPhone from "../../../../public/assets/images/blue14.png";
+import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
+import MarketPlaceHeader from "@/components/marketPlaceHeader";
 
 interface Notification {
     id: number;
@@ -42,25 +41,25 @@ const Notifications = () => {
         }
     }, [session?.user?.email]);
 
-    useEffect(() => {
-        fetchNotifications();
-        // Set up polling every 5 seconds
-        const interval = setInterval(fetchNotifications, 5000);
-        return () => clearInterval(interval);
-    }, [fetchNotifications]);
-
     const markAllAsRead = async () => {
         if (session?.user?.email) {
             try {
                 await axios.put(
                     `https://digitalmarket.benuestate.gov.ng/api/notification/readAllNotification?email=${session.user.email}`
                 );
-                fetchNotifications(); // Refresh notifications after marking as read
+                fetchNotifications();
             } catch (error) {
                 console.error('Error marking notifications as read:', error);
             }
         }
     };
+
+    useEffect(() => {
+        fetchNotifications();
+        // Set up polling every 5 seconds
+        const interval = setInterval(fetchNotifications, 5000);
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
 
     const getNotificationIcon = (type: string) => {
         switch (type.toLowerCase()) {
@@ -91,9 +90,8 @@ const Notifications = () => {
 
     return (
         <>
-            <DashboardHeader />
-            <DashboardOptions />
-            <div className="flex px-4 md:px-8 lg:px-25 mt-[30px] gap-[40px] flex-col md:flex-row">
+            <MarketPlaceHeader />
+            <div className="flex px-25 mt-[30px] gap-[40px]">
                 <div className="flex flex-col gap-[14px]">
                     <div className="flex flex-col">
                         <p className="text-[18px] font-medium text-[#101828]">All Notifications</p>
@@ -108,15 +106,15 @@ const Notifications = () => {
                 </div>
 
                 {isLoading ? (
-                    <div className="flex items-center justify-center w-full md:w-[645px]">
+                    <div className="flex items-center justify-center w-[645px]">
                         <p>Loading notifications...</p>
                     </div>
                 ) : notifications.length === 0 ? (
-                    <div className="flex items-center justify-center w-full md:w-[645px]">
+                    <div className="flex items-center justify-center w-[645px]">
                         <p>No notifications found</p>
                     </div>
                 ) : (
-                    <div className="flex flex-col gap-[8px] mb-10 w-full md:w-[645px]">
+                    <div className="flex flex-col gap-[8px] mb-10 w-[645px]">
                         {notifications.map((notification) => (
                             <div
                                 key={notification.id}
@@ -136,7 +134,7 @@ const Notifications = () => {
 
                                 {notification.type.toLowerCase().includes('order') && (
                                     <>
-                                        <div className="w-full md:w-[550px] gap-[12px] flex items-center mt-[20px] bg-white h-[72px] rounded-[14px] border-[1px] border-[#EAECF0]">
+                                        <div className="w-[550px] gap-[12px] flex items-center mt-[20px] bg-white h-[72px] rounded-[14px] border-[1px] border-[#EAECF0]">
                                             <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden rounded-bl-[14px] rounded-tl-[14px]">
                                                 <Image
                                                     src={iPhone}

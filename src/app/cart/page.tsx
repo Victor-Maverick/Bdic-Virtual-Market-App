@@ -135,17 +135,22 @@ const Cart = () => {
     const [toastType, setToastType] = useState<"success" | "error">("success");
     const [toastMessage, setToastMessage] = useState("");
     const [toastSubMessage, setToastSubMessage] = useState("");
+    const [isSessionLoading, setIsSessionLoading] = useState(true);
 
+    useEffect(() => {
+        if (session !== undefined) { // Session state is resolved (either authenticated or not)
+            setIsSessionLoading(false);
+        }
+    }, [session]);
 
     const verifyPayment = useCallback(async (transRef: string) => {
         setIsVerifying(true);
         setPaymentError(null);
 
         try {
-
             const response = await axios.get<VerifyPaymentResponse>(
                 `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
-                { timeout: 30000 }
+                { timeout: 20000 }
             );
 
             if (response.data.data) {
@@ -156,14 +161,23 @@ const Cart = () => {
                     throw new Error('Payment amount does not match order total');
                 }
 
-                const buyerEmail = session?.user?.email;
-                if (!buyerEmail) {
+                // Wait for session to be ready if not already
+                if (session === undefined) {
+                    await new Promise(resolve => {
+                        const checkSession = () => {
+                            if (session !== undefined) resolve(true);
+                            else setTimeout(checkSession, 100);
+                        };
+                        checkSession();
+                    });
+                }
+
+                if (!session?.user?.email) {
                     throw new Error('User email not found in session. Please log in again.');
                 }
 
-                // Create order after successful payment verification
                 const checkoutResponse = await apiCheckout({
-                    buyerEmail,
+                    buyerEmail: session.user.email,
                     deliveryMethod: selectedDeliveryOption,
                     address: selectedAddress,
                     transRef
@@ -180,7 +194,6 @@ const Cart = () => {
 
                 setOrderDetails(orderDetails);
                 clearStoredTotalAmount();
-
                 clearCart();
                 setShowSuccessModal(true);
                 showSuccessToast('Payment Successful', 'Your order has been placed successfully');
@@ -194,7 +207,6 @@ const Cart = () => {
             setPaymentError(errorMessage);
             showErrorToast('Payment Error', errorMessage);
 
-            // If it's an authentication error, redirect to login
             if (errorMessage.includes('log in')) {
                 localStorage.setItem('preAuthUrl', window.location.pathname);
                 router.push('/login');
@@ -202,7 +214,8 @@ const Cart = () => {
         } finally {
             setIsVerifying(false);
         }
-    }, [selectedDeliveryOption, selectedAddress, apiCheckout, clearCart, router, session]); // Add session to dependencies
+    }, [selectedDeliveryOption, selectedAddress, apiCheckout, clearCart, router, session]);
+
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -225,15 +238,12 @@ const Cart = () => {
         }
     }, [isAuthenticated]);
 
-    // Update useEffect dependencies
     useEffect(() => {
-        if(getTotalItems() === undefined || getTotalItems() ===0){
-            return
-        }
-        else {
+        const storedCartId = localStorage.getItem('cartId');
+        if (storedCartId) {
             fetchCart();
         }
-    }, [fetchCart, getTotalItems]);
+    }, [fetchCart]);
 
     useEffect(() => {
         const transRef = searchParams.get('transRef');
@@ -291,14 +301,27 @@ const Cart = () => {
     };
 
     const initializePayment = async (): Promise<PaymentData> => {
-        const userEmail = session?.user?.email;
-        console.log("payment email: ", userEmail)
+        // Wait for session to be ready if not already
+        if (session === undefined) {
+            await new Promise(resolve => {
+                const checkSession = () => {
+                    if (session !== undefined) resolve(true);
+                    else setTimeout(checkSession, 100);
+                };
+                checkSession();
+            });
+        }
+
+        if (!session?.user?.email) {
+            throw new Error('User email not available');
+        }
+
         try {
             const totalAmount = getTotalPrice() + DELIVERY_FEE - discount;
 
             const requestData = {
-                email: userEmail, // Replace with actual customer email
-                amount: totalAmount * 100, // Convert to kobo
+                email: session.user.email,
+                amount: totalAmount * 100,
                 currency: 'NGN',
                 callbackUrl: `${window.location.origin}/cart`,
                 metadata: {
@@ -322,6 +345,7 @@ const Cart = () => {
                     timeout: 30000,
                 }
             );
+
             const paymentResponse = response.data;
 
             if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
@@ -354,9 +378,13 @@ const Cart = () => {
     };
 
     const handleCheckout = async () => {
-        if (!isAuthenticated) {
+        if (isSessionLoading) {
+            toast.loading('Checking your session...');
+            return;
+        }
+
+        if (!session) {
             toast.error('Please login to proceed with payment');
-            // Store the current URL to redirect back after login
             localStorage.setItem('preAuthUrl', window.location.pathname);
             router.push('/login');
             return;
@@ -371,6 +399,7 @@ const Cart = () => {
             // Store the expected amount before payment
             const totalAmount = getTotalPrice() + DELIVERY_FEE - discount;
             storeTotalAmount(totalAmount);
+
             // Initialize payment
             const paymentData = await initializePayment();
 
@@ -825,15 +854,17 @@ const Cart = () => {
                             )}
                             <button
                                 onClick={handleCheckout}
-                                disabled={isLoading || cartItems.length === 0}
+                                disabled={isLoading || cartItems.length === 0 || isSessionLoading}
                                 className={`bg-[#022B23] w-full h-[56px] gap-[9px] mt-[10px] rounded-[12px] flex justify-center items-center hover:bg-[#033a30] transition-colors ${
-                                    isLoading || cartItems.length === 0 ? 'opacity-70 cursor-not-allowed' : ''
+                                    isLoading || cartItems.length === 0 || isSessionLoading ? 'opacity-70 cursor-not-allowed' : ''
                                 }`}
                             >
-                                {isLoading ? (
+                                {isLoading || isSessionLoading ? (
                                     <div className="flex items-center gap-2">
                                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#C6EB5F]"></div>
-                                        <p className="text-[#C6EB5F] text-[14px] font-semibold">Processing...</p>
+                                        <p className="text-[#C6EB5F] text-[14px] font-semibold">
+                                            {isSessionLoading ? 'Checking session...' : 'Processing...'}
+                                        </p>
                                     </div>
                                 ) : (
                                     <>

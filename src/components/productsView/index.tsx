@@ -76,8 +76,7 @@ export default function ShopInformation({ shopData }: ShopInformationProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
+
     const fullName = session?.user?.firstName && session?.user?.lastName ? `${session.user.firstName} ${session.user.lastName}`
         : "Vendor Name";
     const userEmail = session?.user?.email;

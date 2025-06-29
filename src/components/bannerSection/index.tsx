@@ -4,7 +4,7 @@ import ButtonWithGreenArrow from "@/components/buttonWithGreenArrow";
 
 const BannerSection = ()=>{
     return (
-        <div className="bg-[#FDE3E2] h-full items-center">
+        <div className="bg-[#FDE3E2] mb-[20px] h-full items-center">
             <div className="flex  justify-between  w-full">
                 <div className="pl-[54px] flex-col mt-[115px] items-center ">
                     <h2 className="text-[32px] font-semibold leading-tight">

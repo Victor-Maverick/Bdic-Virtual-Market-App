@@ -1,6 +1,6 @@
 // CartContext.tsx
 'use client'
-import { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import {createContext, useContext, useState, ReactNode, useCallback, useEffect} from "react";
 import {
     addToCart as apiAddToCart,
     getCart as apiGetCart,
@@ -41,16 +41,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Load cartId from localStorage on initial render
+    useEffect(() => {
+        const storedCartId = localStorage.getItem('cartId');
+        if (storedCartId) {
+            setCartId(storedCartId);
+        }
+    }, []);
+
     const generateCartId = () => {
         return 'cart-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
     };
 
     const fetchCart = useCallback(async () => {
-        if (!cartItems) {
-            setCartItems([]);
-            return;
-        }
-        const currentCartId = localStorage.getItem('cartId');
+        const currentCartId = cartId || localStorage.getItem('cartId');
         if (!currentCartId) {
             setCartItems([]);
             return;
@@ -61,7 +65,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             const response = await apiGetCart(currentCartId);
             setCartItems(response.items);
 
-            if (response.items.length === 0) {
+            // Only remove cartId if the cart is truly empty
+            if (!response) {
                 localStorage.removeItem('cartId');
                 setCartId(null);
             }
@@ -75,21 +80,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setLoading(false);
         }
-    }, [cartItems]);
+    }, [cartId]); // Only depend on cartId
 
     const removeFromCart = useCallback(async (itemId: number) => {
-        if (!cartId) return;
+        const currentCartId = cartId || localStorage.getItem('cartId');
+        if (!currentCartId) return;
 
         try {
             setLoading(true);
-            const response = await apiRemoveFromCart(cartId, itemId);
+            const response = await apiRemoveFromCart(currentCartId, itemId);
 
-            if (!response.items || response.items.length === 0) {
+            // // Update local state with the new items
+            // setCartItems(response.items);
+            console.log("Response:: ",response)
+            // Only remove cartId if all items are gone
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            if (response === 0) {
                 localStorage.removeItem('cartId');
                 setCartId(null);
             }
-
-            setCartItems(response.items || []);
+            else {
+                fetchCart()
+            }
         } catch (err) {
             setError('Failed to remove item from cart');
             console.error('Error removing from cart:', err);
@@ -97,7 +110,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setLoading(false);
         }
-    }, [cartId]);
+    }, [cartId, fetchCart]);
 
     const clearCart = useCallback(async () => {
         localStorage.removeItem('cartId');

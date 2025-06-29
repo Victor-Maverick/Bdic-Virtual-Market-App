@@ -185,8 +185,7 @@ const DashBoard = () => {
 
             if (response.data.data) {
                 // Verify shop status after successful payment
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-expect-error
+                 
                 if (session?.user.email) {
                     const shopVerified = await verifyShopStatus(session.user.email);
                     if (shopVerified) {
@@ -352,7 +351,7 @@ const DashBoard = () => {
                 <div className="px-25 w-[919px] flex flex-col gap-[12px]">
                     <p className="font-medium text-[16px] text-[#022B23]">Sales summary</p>
                     <div className="flex items-center gap-[20px] h-[100px]">
-                        <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#ECFDF6] border-[#52A43E]">
+                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#ECFDF6] border-[#52A43E]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#52A43E] font-medium p-[15px]">
                                 <Image src={biArrows} alt="total sales" width={18} height={18} className="h-[18px] w-[18px]"/>
                                 <p>Total sales ({completedTransactions.toLocaleString()})</p>
@@ -366,7 +365,7 @@ const DashBoard = () => {
                             </div>
                         </div>
 
-                        <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
+                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                                 <Image src={archiveImg} alt="completed transactions" width={18} height={18}
                                        className="h-[18px] w-[18px]"/>
@@ -381,7 +380,7 @@ const DashBoard = () => {
                             </div>
                         </div>
 
-                        <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#FF9500]">
+                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#FF9500]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                                 <Image src={awardImg} alt="pending orders" width={18} height={18}
                                        className="h-[18px] w-[18px]"/>
@@ -391,9 +390,9 @@ const DashBoard = () => {
                         </div>
                     </div>
 
-                    <p className="font-medium text-[16px] text-[#022B23] mt-[20px]">Store performance</p>
+                    <p className="font-medium  text-[16px] text-[#022B23] mt-[20px]">Store performance</p>
                     <div className="flex items-center gap-[20px] h-[100px]">
-                        <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
+                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                                 <Image src={dashUser} alt="total visitors" width={18} height={18}
                                        className="h-[18px] w-[18px]"/>
@@ -407,7 +406,7 @@ const DashBoard = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
+                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                                 <Image src={dropBoxImg} alt="top product" width={18} height={18}
                                        className="h-[18px] w-[18px]"/>
@@ -424,7 +423,7 @@ const DashBoard = () => {
                             </div>
                         </div>
 
-                        <div className="w-[246px] h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
+                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
                             <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
                                 <Image src={flag} alt="inventory" width={18} height={18} className="h-[18px] w-[18px]"/>
                                 <p>All products (in stock)</p>
