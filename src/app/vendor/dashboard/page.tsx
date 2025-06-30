@@ -230,7 +230,7 @@ const DashBoard = () => {
                 email: session.user.email,
                 amount: 500000, // 5000 Naira in kobo
                 currency: 'NGN',
-                callbackUrl: `${window.location.origin}/vendor/dashboard`
+                callbackUrl: `/vendor/dashboard`
             };
 
             const response = await axios.post<InitializePaymentResponse>(
