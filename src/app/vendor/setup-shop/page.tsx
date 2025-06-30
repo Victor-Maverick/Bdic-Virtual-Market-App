@@ -8,11 +8,18 @@ import DashboardSubHeader from "@/components/dashboardSubHeader";
 import DashboardOptions from "@/components/dashboardOptions";
 import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
 import {useRouter} from "next/navigation";
+import {useSession} from "next-auth/react";
 
 const DashBoard = () => {
+    const { data: session } = useSession();
     const router = useRouter();
     const handleContinue =()=>{
         router.push("/vendor/setup-shop/shop-info");
+    }
+
+    if (!session) {
+        router.push("/login");
+        return null;
     }
     return (
         <div className="w-full pb-25 ">

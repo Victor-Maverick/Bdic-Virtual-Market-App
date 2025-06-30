@@ -9,6 +9,7 @@ import rating from "../../../public/assets/images/rating.svg";
 import emailIcon from "../../../public/assets/images/sms.svg";
 import eyeOpen from "../../../public/assets/images/eye.svg";
 import eyeClosed from "../../../public/assets/images/eye.svg";
+import {useSession} from "next-auth/react";
 
 const SearchBar = () => (
     <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
@@ -36,6 +37,14 @@ type PasswordValidation = {
     uppercase: boolean;
     specialChar: boolean;
     number: boolean;
+};
+
+type UserProfile = {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    address: string;
 };
 
 const formFields: FormField[] = [
@@ -69,7 +78,10 @@ const Profile = ()=>{
         specialChar: false,
         number: false
     });
-
+    const { data: session } = useSession();
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [showOldPassword, setShowOldPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -95,6 +107,41 @@ const Profile = ()=>{
         }
     };
 
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            if (!session?.user?.email) return;
+
+            try {
+                setLoading(true);
+                const response = await fetch(
+                    `https://digitalmarket.benuestate.gov.ng/api/users/get-profile?email=${session.user.email}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${session.accessToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user profile');
+                }
+
+                const data = await response.json();
+                setUserProfile(data);
+            } catch (err) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
+                setError(err.message || 'An error occurred while fetching profile');
+                console.error('Error fetching user profile:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserProfile();
+    }, [session]);
+    
     const handleFocus = (field: keyof FormData) => {
         setFocusedFields(prev => ({ ...prev, [field]: true }));
     };
@@ -193,7 +240,36 @@ const Profile = ()=>{
     const firstRowCriteria = passwordCriteria.slice(0, 2);
     const secondRowCriteria = passwordCriteria.slice(2);
     const [selectedMarket, setSelectedMarket] = useState("Wurukum");
-
+    if (loading) {
+        return (
+            <>
+                <MarketPlaceHeader />
+                <div className="flex justify-center items-center h-screen">
+                    <p>Loading profile...</p>
+                </div>
+            </>
+        );
+    }
+    if (error) {
+        return (
+            <>
+                <MarketPlaceHeader />
+                <div className="flex justify-center items-center h-screen">
+                    <p className="text-red-500">Error: {error}</p>
+                </div>
+            </>
+        );
+    }
+    if (!userProfile) {
+        return (
+            <>
+                <MarketPlaceHeader />
+                <div className="flex justify-center items-center h-screen">
+                    <p>No profile data available</p>
+                </div>
+            </>
+        );
+    }
     return(
         <>
             <MarketPlaceHeader />
@@ -273,7 +349,7 @@ const Profile = ()=>{
                             </div>
                             <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
                                 <p className="text-[#6A6C6E] text-[14px] ">Full Name</p>
-                                <p className="text-[#141415] text-[16px] font-medium">Tordue Francis</p>
+                                <p className="text-[#141415] text-[16px] font-medium">{userProfile.firstName} {userProfile.lastName}</p>
                             </div>
                             <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
                                 <p className="text-[#6A6C6E] text-[14px] ">Shop name</p>
@@ -291,7 +367,7 @@ const Profile = ()=>{
                             <div className="flex justify-between items-center h-[77px] w-full px-[37px] py-[14px] leading-tight">
                                 <div className="flex flex-col">
                                     <p className="text-[#6A6C6E] text-[14px] ">Address</p>
-                                    <p className="text-[#141415] text-[16px] font-medium">No. 24 Child Ave. High Level Makurdi, Lagos</p>
+                                    <p className="text-[#141415] text-[16px] font-medium">{userProfile.address}</p>
                                 </div>
                                 <div className="flex cursor-pointer hover:shadow-sm justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[58px] h-[40px] border-[1px] border-[#D0D5DD]">
                                     <p>Edit</p>
