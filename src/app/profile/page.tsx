@@ -121,12 +121,7 @@ const Profile = ()=>{
     const shouldShowPasswordToggle = (field: FormField) => {
         return (focusedFields[field.id] || form[field.id]) && field.type === 'password';
     };
-
-    // Calculate the header offset (height of fixed elements)
-    // 114px for the header + 5px padding
     const SCROLL_OFFSET = 119;
-
-    // Handle navigation clicks with offset
     const handleNavClick = (section: 'general' | 'security' | 'notifications') => {
         setActiveSection(section);
 

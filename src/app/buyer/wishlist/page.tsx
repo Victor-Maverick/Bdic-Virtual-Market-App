@@ -67,10 +67,11 @@ const Wishlist = () => {
     };
 
     useEffect(() => {
-        if(session){
-            fetchWishlist();
-        }
-    }, [fetchWishlist, session]);
+            if (session) {
+                fetchWishlist();
+            }
+        },
+        [session]);
 
     const handleAddToCart = async (product: WishlistItem) => {
         try {
