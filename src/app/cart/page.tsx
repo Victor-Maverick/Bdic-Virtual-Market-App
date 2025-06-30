@@ -137,6 +137,7 @@ const Cart = () => {
     const [toastSubMessage, setToastSubMessage] = useState("");
     const [isSessionLoading, setIsSessionLoading] = useState(true);
 
+
     useEffect(() => {
         if (session !== undefined) { // Session state is resolved (either authenticated or not)
             setIsSessionLoading(false);

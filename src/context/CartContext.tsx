@@ -100,7 +100,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 localStorage.removeItem('cartId');
                 setCartId(null);
             }
-            else {
+            if(currentCartId) {
                 fetchCart()
             }
         } catch (err) {

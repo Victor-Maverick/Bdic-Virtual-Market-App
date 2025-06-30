@@ -161,10 +161,12 @@ const MarketPlaceHeader = () => {
                                         width={20}
                                         className="w-5 h-5"
                                     />
-                                    {showBadge && badgeCount && badgeCount > 0 && (
+                                    {showBadge && badgeCount && badgeCount > 0 ? (
                                         <span className="absolute -top-2 -right-2 bg-[#FF5050] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                                             {badgeCount > 9 ? '9+' : badgeCount}
                                         </span>
+                                    ):(
+                                        <></>
                                     )}
                                 </div>
                                 <span className="text-sm font-medium text-gray-900 group-hover:text-primary">
@@ -208,10 +210,12 @@ const MarketPlaceHeader = () => {
                                         width={20}
                                         className="w-5 h-5"
                                     />
-                                    {showBadge && badgeCount && badgeCount > 0 && (
+                                    {showBadge && badgeCount && badgeCount > 0 ? (
                                         <span className="absolute -top-2 -right-2 bg-[#FF5050] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                                             {badgeCount > 9 ? '9+' : badgeCount}
                                         </span>
+                                    ):(
+                                        <></>
                                     )}
                                 </div>
                                 {text}

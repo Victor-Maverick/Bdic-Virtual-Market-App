@@ -9,6 +9,12 @@ import {useRouter} from "next/navigation";
 import axios from "axios";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 
+interface Shop{
+    id: number;
+    name: string;
+    address: string;
+}
+
 interface Market {
     id: number;
     name: string;
@@ -16,6 +22,7 @@ interface Market {
     marketId: string;
     lines: number;
     status: "INACTIVE" | "ACTIVE";
+    shops: Shop[];
     numberOfShops: number;
 }
 
@@ -85,7 +92,7 @@ const ProductActionsDropdown = ({ marketId, children, onDelete }: ProductActions
                 {isOpen && (
                     <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
                         <ul className="py-1">
-                            <li onClick={() => { router.push("/admin/dashboard/markets/view-market") }} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View and edit market</li>
+                            <li onClick={() => { router.push(`/admin/dashboard/markets/view-market/${marketId}`) }} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View and edit market</li>
                             <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px]  cursor-pointer">Deactivate market</li>
                             <li onClick={handleOpenDeleteModal} className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
                                 Delete
@@ -136,7 +143,7 @@ const Markets = () => {
             const shopsCount = shopsRes.data;
             const activeMarkets = activeMarketsRes.data;
             const marketSections = marketSectionsRes.data;
-            console.log("active markets", activeMarkets);
+            console.log("markets", markets);
 
             // Calculate total lines (assuming each market has lines)
             const marketLines = marketSections.length || 0;
@@ -144,7 +151,7 @@ const Markets = () => {
             // Format the data
             const data: MarketData = {
                 totalMarkets: markets.length || 0,
-                activeMarkets: markets.length,
+                activeMarkets: activeMarkets,
                 marketLines: marketLines,
                 shopsCount: shopsCount,
                 inactiveMarkets: 0,
@@ -154,7 +161,7 @@ const Markets = () => {
                     state: market.state || "Benue State",
                     marketId: market.marketId || "21367",
                     lines: market.lines || 0,
-                    numberOfShops: market.numberOfShops || 0,
+                    numberOfShops: 7,
                     status: market.status === "ACTIVE" ? "ACTIVE" : "INACTIVE"
                 })),
                 marketsChangePercent: 6.41,

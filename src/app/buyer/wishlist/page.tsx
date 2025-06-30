@@ -38,38 +38,39 @@ const Wishlist = () => {
     const { data: session } = useSession();
     const { addToCart } = useCart();
 
-    useEffect(() => {
-        const fetchWishlist = async () => {
-            if (session?.user?.email) {
-                try {
-                    setLoading(true);
-                    const response = await fetch(
-                        `https://digitalmarket.benuestate.gov.ng/api/orders/get-wishlist?buyerEmail=${session.user.email}`,
-                        {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            }
+    const fetchWishlist = async () => {
+        if (session?.user?.email) {
+            try {
+                setLoading(true);
+                const response = await fetch(
+                    `https://digitalmarket.benuestate.gov.ng/api/orders/get-wishlist?buyerEmail=${session.user.email}`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
                         }
-                    );
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
-
-                    const data = await response.json();
-                    setWishlistItems(data?.wishList || []);
-                    console.log("Wishlist: ", data.wishList)
-                } catch (error) {
-                    console.error("Error fetching wishlist:", error);
-                    setError("Failed to load wishlist. Please try again later.");
-                } finally {
-                    setLoading(false);
+                );
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
-            }
-        };
 
-        fetchWishlist();
-    }, [session?.user?.email]);
+                const data = await response.json();
+                setWishlistItems(data?.wishList || []);
+            } catch (error) {
+                console.error("Error fetching wishlist:", error);
+                setError("Failed to load wishlist. Please try again later.");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    useEffect(() => {
+        if(session){
+            fetchWishlist();
+        }
+    }, [fetchWishlist, session]);
 
     const handleAddToCart = async (product: WishlistItem) => {
         try {
@@ -96,23 +97,24 @@ const Wishlist = () => {
 
     const handleRemoveFromWishlist = async (productId: number) => {
         try {
-            // Implement API call to remove from wishlist
             const response = await fetch(
-                `https://digitalmarket.benuestate.gov.ng/api/orders/remove-from-wishlist?buyerEmail=${session?.user?.email}&productId=${productId}`,
+                'https://digitalmarket.benuestate.gov.ng/api/orders/remove-from-wishlist',
                 {
-                    method: 'DELETE',
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                    }
+                    },
+                    body: JSON.stringify({
+                        buyerEmail: session?.user?.email,
+                        productId: productId
+                    })
                 }
             );
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-
-            // Update local state
-            setWishlistItems(prevItems => prevItems.filter(item => item.id !== productId));
-
+            await fetchWishlist();
             toast.success("Item removed from wishlist", {
                 position: "bottom-right",
                 duration: 3000,
@@ -230,7 +232,7 @@ const Wishlist = () => {
                                                 <div className="flex gap-[30px] items-center">
                                                     <div
                                                         className="flex text-[14px] text-[#707070] gap-[4px] items-center w-[77px] h-[20px] cursor-pointer"
-                                                        onClick={() => handleRemoveFromWishlist(product.id)}
+                                                        onClick={() => handleRemoveFromWishlist(product.productId)}
                                                     >
                                                         <Image src={trashImg} alt={'trash'} className="w-[20px] h-[20px]"/>
                                                         <p>Remove</p>

@@ -1,9 +1,9 @@
 'use client'
 import Image from "next/image";
-import arrowBack from "../../../../../../public/assets/images/arrow-right.svg";
+import arrowBack from "../../../../../../../public/assets/images/arrow-right.svg";
 import { useRouter } from "next/navigation";
-import searchImg from "../../../../../../public/assets/images/search-normal.png";
-import arrowDown from "../../../../../../public/assets/images/arrow-down.svg";
+import searchImg from "../../../../../../../public/assets/images/search-normal.png";
+import arrowDown from "../../../../../../../public/assets/images/arrow-down.svg";
 import {useEffect, useRef, useState} from "react";
 import EditMarketLineModal from "@/components/editMarketLineModal";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
