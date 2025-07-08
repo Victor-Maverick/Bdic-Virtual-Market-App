@@ -23,11 +23,11 @@ const authOptions: NextAuthOptions = {
                     });
 
                     const loginData = response.data.data;
-                    console.log('Login response data:', loginData); // Debug log
+                    console.log('Login response data:', loginData);
 
                     if (loginData && loginData.token) {
                         return {
-                            id: loginData.id || credentials.email, // Use backend ID if available, fallback to email
+                            id: loginData.id || credentials.email,
                             email: credentials.email,
                             accessToken: loginData.token,
                             roles: loginData.roles || [],
@@ -71,6 +71,20 @@ const authOptions: NextAuthOptions = {
             return session;
         },
     },
+    // events: {
+    //     async signOut({ token }) {
+    //         // Call logout API when user signs out
+    //         try {
+    //             await axios.post('https://digitalmarket.benuestate.gov.ng/api/auth/logout', {}, {
+    //                 headers: {
+    //                     Authorization: `Bearer ${token.accessToken}`
+    //                 }
+    //             });
+    //         } catch (error) {
+    //             console.error('Logout error:', error);
+    //         }
+    //     },
+    // },
     pages: {
         signIn: '/login',
     },

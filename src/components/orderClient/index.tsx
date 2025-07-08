@@ -3,24 +3,35 @@ import {useEffect, useRef, useState} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardOptions from "@/components/dashboardOptions";
-import Image, {StaticImageData} from "next/image";
+import Image from "next/image";
+import { Toaster, toast } from 'react-hot-toast';
 import arrowDown from "../../../public/assets/images/arrow-down.svg";
-import iPhone from "../../../public/assets/images/blue14.png";
-import badProduct from '@/../public/assets/images/brokenPhone.svg';
-import arrowRight from '@/../public/assets/images/green arrow.png'
 
-const disputes = [
-    { id: 1, productId: 1, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Processed", reason: "Wrong item received", price: 840000 },
-    { id: 2, productId: 2, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",   status: "Pending", reason: "Defect on product", price: 840000 },
-    { id: 3, productId: 3,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Inspecting", reason: "Damaged product", price: 840000 },
-    { id: 4, productId: 4,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Processed", reason: "Damaged product",price: 840000},
-    { id: 5, productId: 5,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max",  customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product",price: 840000},
-    { id: 6, productId: 6, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo",  status: "Inspecting", reason: "Damaged product", price: 840000 },
-    { id: 7, productId: 7, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Not satisfied",price: 840000},
-    { id: 8, productId: 8, prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Inspecting", reason: "Damaged product", price: 840000 },
-    { id: 9, productId: 9,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Processed", reason: "Damaged product",price: 840000},
-    { id: 10, productId: 10,prodId:"1234567887654", productImage: iPhone, productName: "iPhone 14 pro max", customerId: "Jude Tersoo", status: "Pending", reason: "Damaged product", price: 840000}
-];
+interface OrderItemDto {
+    id: number;
+    productId: number;
+    productName: string;
+    description: string;
+    productImage: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    vendorName: string;
+    buyerName: string;
+}
+
+interface DisputeResponse {
+    id: number;
+    requestTime: string;
+    status: string;
+    resolvedDate: string;
+    orderNumber: string;
+    imageUrl: string;
+    reason: string;
+    orderTime: string;
+    deliveryMethod: string;
+    orderItem: OrderItemDto;
+}
 
 interface ProductActionsDropdownProps {
     children: React.ReactNode;
@@ -50,9 +61,9 @@ const ProductActionsDropdown = ({
         e.stopPropagation();
         try {
             if (action === 'markDelivered') {
-                await onMarkDelivered(orderNumber);  // Pass orderNumber instead of orderId
+                await onMarkDelivered(orderNumber);
             } else {
-                onViewOrder(orderNumber);  // Pass orderNumber instead of orderId
+                onViewOrder(orderNumber);
             }
             setIsOpen(false);
         } catch (error) {
@@ -107,32 +118,159 @@ const ProductActionsDropdown = ({
 };
 
 
-interface Dispute {
-    id: number;
-    customerId: string;
-    productId: number;
-    prodId: string;
-    productImage: StaticImageData;
-    productName: string;
-    status: string;
-    price: number;
-    reason: string;
-}
 
 const DisputeDetailsModal = ({
                                  dispute,
                                  onClose,
                              }: {
-    dispute: Dispute;
+    dispute: DisputeResponse;
     onClose: () => void;
 }) => {
-    return (
-        <div             className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-            <div
-                 className="absolute inset-0" onClick={onClose} />
+    const requestDate = new Date(dispute.requestTime);
+    const formattedRequestDate = requestDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const orderDate = new Date(dispute.orderTime);
+    const formattedOrderDate = orderDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const formattedOrderTime = orderDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
 
-            <div
-                className="relative z-10 bg-white w-[1100px]  mx-4 px-[60px] py-[40px] shadow-lg">
+    const handleProcessDispute = async () => {
+        try {
+            const response = await axios.put(
+                `https://digitalmarket.benuestate.gov.ng/api/dispute/process?disputeId=${dispute.id}`
+            );
+            console.log("Response:", response);
+            if (response.status === 200) {
+                toast.success('Dispute processed successfully', {
+                    position: 'top-center',
+                    style: {
+                        background: '#4BB543',
+                        color: '#fff',
+                    },
+                });
+                onClose();
+            } else {
+                throw new Error('Failed to process dispute');
+            }
+        } catch (error) {
+            console.error('Error processing dispute:', error);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            toast.error(error.response?.data?.message || 'Failed to process dispute', {
+                position: 'top-center',
+                style: {
+                    background: '#FF3333',
+                    color: '#fff',
+                },
+            });
+        }
+    };
+
+    const handleResolveDispute = async () => {
+        try {
+            const response = await axios.put(
+                `https://digitalmarket.benuestate.gov.ng/api/dispute/send-resolve?disputeId=${dispute.id}`
+            );
+            console.log("Resolve Response:", response);
+            if (response.status === 200) {
+                toast.success('Dispute resolved successfully', {
+                    position: 'top-center',
+                    style: {
+                        background: '#4BB543',
+                        color: '#fff',
+                    },
+                });
+                onClose();
+            } else {
+                throw new Error('Failed to resolve dispute');
+            }
+        } catch (error) {
+            console.error('Error resolving dispute:', error);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            toast.error(error.response?.data?.message || 'Failed to resolve dispute', {
+                position: 'top-center',
+                style: {
+                    background: '#FF3333',
+                    color: '#fff',
+                },
+            });
+        }
+    };
+
+    const handleRejectDispute = async () => {
+        try {
+            const response = await axios.put(
+                `https://digitalmarket.benuestate.gov.ng/api/dispute/reject?disputeId=${dispute.id}`
+            );
+            if (response.status === 200) {
+                toast.success('Dispute rejected successfully', {
+                    position: 'top-center',
+                    style: {
+                        background: '#4BB543',
+                        color: '#fff',
+                    },
+                });
+                onClose();
+            } else {
+                throw new Error('Failed to reject dispute');
+            }
+        } catch (error) {
+            console.error('Error rejecting dispute:', error);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            toast.error(error.response?.data?.message || 'Failed to reject dispute', {
+                position: 'top-center',
+                style: {
+                    background: '#FF3333',
+                    color: '#fff',
+                },
+            });
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+            <Toaster
+                position="top-center"
+                containerStyle={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: 0,
+                    right: 0,
+                }}
+                toastOptions={{
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                    success: {
+                        style: {
+                            background: '#4BB543',
+                        },
+                        duration: 3000,
+                    },
+                    error: {
+                        style: {
+                            background: '#FF3333',
+                        },
+                        duration: 4000,
+                    },
+                }}
+            />
+            <div className="absolute inset-0" onClick={onClose} />
+
+            <div className="relative z-10 bg-white w-[1100px]  mx-4 px-[60px] py-[40px] shadow-lg">
                 <div className="flex justify-between border-b-[0.5px] border-[#ededed] pb-[14px] items-start ">
                     <div className="flex flex-col">
                         <p className="text-[16px] text-[#022B23] font-medium">Dispute request</p>
@@ -140,38 +278,34 @@ const DisputeDetailsModal = ({
                     </div>
                     <div
                         className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            dispute.status === "Processed"
+                            dispute.status === "PENDING"
                                 ? "bg-[#ECFDF3] text-[#027A48]"
-                                : dispute.status === "Inspecting"
+                                : dispute.status === "PROCESSING"
                                     ? "bg-[#FFFAEB] text-[#F99007]"
                                     : "bg-[#EDEDED] text-[#707070]"
                         }`}
                     >
                         {dispute.status}
                     </div>
-
                 </div>
 
                 <div className="w-full flex ">
                     <div className="w-[50%] pt-[24px]  pr-[32px] border-r-[0.5px] border-[#ededed] pb-[2px] gap-[30px] flex flex-col">
                         <div className="flex flex-col gap-[14px]">
-                            <p className="text-[#022B23] text-[16px] font-semibold">#ORDR-1234</p>
+                            <p className="text-[#022B23] text-[16px] font-semibold">{dispute.orderNumber}</p>
                             <div>
-                                <p className="text-[#707070] font-medium text-[14px] leading-tight">Request date: <span className="text-[#000000]">April 20, 2025</span></p>
-                                <p className="text-[#707070] font-medium text-[14px] leading-tight">From: <span className="text-[#000000]">Jude Tersoo</span></p>
+                                <p className="text-[#707070] font-medium text-[14px] leading-tight">Request date: <span className="text-[#000000]">{formattedRequestDate}</span></p>
+                                <p className="text-[#707070] font-medium text-[14px] leading-tight">From: <span className="text-[#000000]">{dispute.orderItem.buyerName}</span></p>
                             </div>
                         </div>
                         <div className="w-[100%] flex items-center justify-between h-[72px] border-[1px] border-[#ededed] rounded-[14px]">
                             <div className="flex items-center h-full gap-[10px]">
                                 <div className="h-full bg-[#f9f9f9] rounded-bl-[14px] rounded-tl-[14px] w-[70px] border-l-[0.5px] border-[#ededed]">
-                                    <Image src={dispute.productImage} alt={'image'} className="h-full w-[70px] rounded-bl-[14px] rounded-tl-[14px]"/>
+                                    <Image src={dispute.orderItem.productImage} alt={'image'} width={70} height={70} className="h-full w-[70px] rounded-bl-[14px] rounded-tl-[14px]"/>
                                 </div>
                                 <div className="flex flex-col leading-tight">
                                     <p className="text-[#101828] text-[14px] font-medium">
-                                        {dispute.productName}
-                                    </p>
-                                    <p className="text-[#667085] text-[14px]">
-                                        ID: #{dispute.prodId}
+                                        {dispute.orderItem.productName}
                                     </p>
                                 </div>
                             </div>
@@ -180,10 +314,10 @@ const DisputeDetailsModal = ({
                         <div className="h-[230px] p-[20px] rounded-[24px] bg-[#FFFBF6] w-[100%] border-[#FF9500] flex flex-col gap-[12px] border">
                             <div className="flex flex-col leading-tight">
                                 <p className="text-[#101828] text-[14px] font-medium">Reason for return</p>
-                                <p className="text-[#525252] text-[14px]">Product was damaged when delivered</p>
+                                <p className="text-[#525252] text-[14px]">{dispute.reason}</p>
                             </div>
                             <div className="bg-[#EFEFEF] w-[100%] flex justify-center rounded-[24px] h-[150px]">
-                                <Image src={badProduct} alt={'image'} className="rounded-[24px] w-[100%] h-[150px]"/>
+                                <Image src={dispute.imageUrl} width={150} height={150} alt={'image'} className="rounded-[24px] w-[100%] h-[150px]"/>
                             </div>
                         </div>
                     </div>
@@ -192,47 +326,51 @@ const DisputeDetailsModal = ({
                         <div className="flex flex-col gap-[8px] pb-[25px] border-b-[0.5px] border-[#ededed]">
                             <div className="flex justify-between">
                                 <p className="text-[#707070] text-[14px] font-medium">Order date</p>
-                                <p className="text-[#000000] text-[14px] font-medium">4th April, 2025</p>
+                                <p className="text-[#000000] text-[14px] font-medium">{formattedOrderDate}</p>
                             </div>
                             <div className="flex justify-between ">
                                 <p className="text-[#707070] text-[14px] font-medium">Order time</p>
-                                <p className="text-[#000000] text-[14px] font-medium">02:32:00 PM</p>
+                                <p className="text-[#000000] text-[14px] font-medium">{formattedOrderTime}</p>
                             </div>
                             <div className="flex justify-between">
                                 <p className="text-[#707070] text-[14px] font-medium">Order amount</p>
-                                <p className="text-[#000000] text-[14px] font-medium">NGN {dispute.price}</p>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-[#707070] text-[14px] font-medium">Delivery method</p>
-                                <p className="text-[#000000] text-[14px] font-medium">Home delivery</p>
+                                <p className="text-[#000000] text-[14px] font-medium">NGN {dispute.orderItem.totalPrice}</p>
                             </div>
                         </div>
                         <div className="flex flex-col gap-[8px] pb-[25px] border-b-[0.5px] border-[#ededed]">
                             <div className="flex justify-between">
                                 <p className="text-[#707070] text-[14px] font-medium">Customer name</p>
-                                <p className="text-[#000000] text-[14px] font-medium">{dispute.customerId}</p>
-                            </div>
-                            <div className="flex justify-between ">
-                                <p className="text-[#707070] text-[14px] font-medium">Email</p>
-                                <p className="text-[#000000] text-[14px] font-medium">jtersoo@gmail.com</p>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-[#707070] text-[14px] font-medium">Phone</p>
-                                <p className="text-[#000000] text-[14px] font-medium">+234 801 2345 678</p>
+                                <p className="text-[#000000] text-[14px] font-medium">{dispute.orderItem.buyerName}</p>
                             </div>
                         </div>
-                        <div className="w-[466px] h-[48px]  flex gap-[4px]">
-                            <div className="flex text-[#707070] text-[16px] font-semibold items-center justify-center w-[116px] h-full border-[0.5px] border-[#707070] rounded-[12px]">
-                                Reject
+
+                        {dispute.status === "PENDING" && (
+                            <div className="h-[48px] flex gap-[4px]">
+                                <div
+                                    className="flex cursor-pointer text-[#707070] text-[16px] font-semibold items-center justify-center w-[116px] h-full border-[0.5px] border-[#707070] rounded-[12px]"
+                                    onClick={handleRejectDispute}
+                                >
+                                    Reject
+                                </div>
+                                <div
+                                    className="flex cursor-pointer text-[#461602] text-[16px] font-semibold items-center justify-center w-[163px] bg-[#FFEEBE] h-full rounded-[12px]"
+                                    onClick={handleProcessDispute}
+                                >
+                                    Process dispute
+                                </div>
                             </div>
-                            <div className="flex text-[#461602] text-[16px] font-semibold items-center justify-center w-[163px] bg-[#FFEEBE] h-full  rounded-[12px]">
-                                Start inspection
+                        )}
+
+                        {dispute.status === "PROCESSING" && (
+                            <div className="h-[48px] flex gap-[4px]">
+                                <div
+                                    className="flex cursor-pointer text-[#461602] text-[16px] font-semibold items-center justify-center w-full bg-[#FFEEBE] h-full rounded-[12px]"
+                                    onClick={handleResolveDispute}
+                                >
+                                    Resolve dispute
+                                </div>
                             </div>
-                            <div className="flex gap-[6px] text-[#C6EB5F] text-[16px] font-semibold items-center justify-center w-[179px] bg-[#033228] h-full  rounded-[12px]">
-                                Process refund
-                                <Image src={arrowRight} alt={'image'}/>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -293,22 +431,30 @@ const DisputeActionsDropdown = ({  onViewDispute }: { productId: number; onViewD
     );
 };
 
-const DisputeTableRow = ({ dispute, isLast, onViewDispute }: { dispute: Dispute; isLast: boolean; onViewDispute: () => void }) => {
+const DisputeTableRow = ({
+                             dispute,
+                             isLast,
+                             onViewDispute
+                         }: {
+    dispute: DisputeResponse;
+    isLast: boolean;
+    onViewDispute: () => void
+}) => {
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[30%] pr-[24px] gap-3">
                 <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
                     <Image
-                        src={dispute.productImage}
-                        alt={'image'}
+                        src={dispute.orderItem.productImage}
+                        alt={'product image'}
                         width={70}
                         height={70}
                         className="object-cover"
                     />
                 </div>
                 <div className="flex flex-col">
-                    <p className="text-[14px] font-medium text-[#101828]">{dispute.productName}</p>
-                    <p className="text-[12px] text-[#667085]">ID #: {dispute.prodId}</p>
+                    <p className="text-[14px] font-medium text-[#101828]">{dispute.orderItem.productName}</p>
+                    <p className="text-[12px] text-[#667085]">ID #: {dispute.orderItem.productId}</p>
                 </div>
             </div>
 
@@ -324,13 +470,13 @@ const DisputeTableRow = ({ dispute, isLast, onViewDispute }: { dispute: Dispute;
                 </div>
             </div>
             <div className="flex items-center text-[#344054] text-[14px] w-[15%] px-[24px]">
-                <p>{dispute.customerId}</p>
+                <p>{dispute.orderItem.buyerName || "Unknown"}</p>
             </div>
             <div className="flex items-center justify-center text-[#101828] text-[14px] w-[25%] px-[24px]">
-                <p className="text-[#101828] text-[14px] ">{dispute.reason}</p>
+                <p className="text-[#101828] text-[14px]">Product issue</p>
             </div>
             <div className="flex items-center text-[#344054] text-[14px] w-[15%] px-[24px]">
-                <p>₦{dispute.price.toLocaleString()}</p>
+                <p>₦{dispute.orderItem.totalPrice?.toLocaleString() || "0"}</p>
             </div>
 
             <div className="flex items-center justify-center w-[5%]">
@@ -339,7 +485,6 @@ const DisputeTableRow = ({ dispute, isLast, onViewDispute }: { dispute: Dispute;
         </div>
     );
 };
-
 
 interface OrderResponse {
     id: number;
@@ -390,23 +535,20 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
     const [orders, setOrders] = useState<OrderResponse[]>(initialOrders);
     const router = useRouter();
 
-
     const handleMarkDelivered = async (orderNumber: string) => {
         try {
             const response = await axios.post(
                 'https://digitalmarket.benuestate.gov.ng/api/orders/process-order',
-                { orderNumber }, // Request body
+                { orderNumber },
                 {
                     headers: {
                         'Content-Type': 'application/json',
                     },
                 }
             );
-
             if (response.status !== 200) {
                 throw new Error('Failed to mark order as delivered');
             }
-
             // Optimistically update the UI
             setOrders(prevOrders =>
                 prevOrders.map(order =>
@@ -417,14 +559,12 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
             );
         } catch (error) {
             console.error('Error:', error);
-            // Optionally show an error message to the user
         }
     };
 
     const handleViewOrder = (orderNumber: string) => {
         router.push(`/vendor/dashboard/order/${orderNumber}`);
     };
-
     // Update orders if initialOrders changes
     useEffect(() => {
         setOrders(initialOrders);
@@ -437,7 +577,6 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
     if (!orders || orders.length === 0) {
         return <div className="p-4 text-center">No pending orders found.</div>;
     }
-
     // Filter only pending orders if needed (your API might already do this)
     const pendingOrders = orders.filter(order =>
         order.status === OrderStatus.PAID ||
@@ -556,15 +695,63 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
 };
 
 const Disputes = () => {
-    const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
+    const [disputes, setDisputes] = useState<DisputeResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedDispute, setSelectedDispute] = useState<DisputeResponse | null>(null);
+    const { data: session } = useSession();
 
-    const handleViewDispute = (dispute: Dispute) => {
+    useEffect(() => {
+        const fetchDisputes = async () => {
+            if (session?.user?.email) {
+                try {
+                    setLoading(true);
+                    // First get the shop ID
+                    const shopResponse = await fetch(
+                        `https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`
+                    );
+                    if (!shopResponse.ok) {
+                        throw new Error('Failed to fetch shop details');
+                    }
+                    const shopData = await shopResponse.json();
+
+
+                    // Then get the disputes for this shop
+                    const disputesResponse = await fetch(
+                        `https://digitalmarket.benuestate.gov.ng/api/dispute/get-shop-disputes?id=${shopData.id}`
+                    );
+                    if (!disputesResponse.ok) {
+                        throw new Error('Failed to fetch disputes');
+                    }
+                    const disputesData = await disputesResponse.json();
+                    setDisputes(disputesData);
+                    console.log("Disputes: ",disputesData);
+                } catch (error) {
+                    console.error('Error fetching disputes:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchDisputes();
+    }, [session]);
+
+    const handleViewDispute = (dispute: DisputeResponse) => {
         setSelectedDispute(dispute);
     };
 
     const closeModal = () => {
         setSelectedDispute(null);
     };
+
+    if (loading) {
+        return <div className="p-4 text-center">Loading disputes...</div>;
+    }
+
+    if (!disputes || disputes.length === 0) {
+        return <div className="p-4 text-center">No disputes found.</div>;
+    }
+
     return (
         <>
             <div className="flex flex-col gap-[50px]">
@@ -609,7 +796,18 @@ const Disputes = () => {
 
             {selectedDispute && (
                 <DisputeDetailsModal
-                    dispute={selectedDispute}
+                    dispute={{
+                        id: selectedDispute.id,
+                        requestTime: selectedDispute.requestTime,
+                        status: selectedDispute.status,
+                        resolvedDate: selectedDispute.resolvedDate,
+                        orderNumber: selectedDispute.orderNumber,
+                        imageUrl: selectedDispute.orderItem.productImage,
+                        reason: selectedDispute.reason,
+                        orderTime: selectedDispute.orderTime,
+                        deliveryMethod: selectedDispute.deliveryMethod,
+                        orderItem: selectedDispute.orderItem
+                    }}
                     onClose={closeModal}
                 />
             )}

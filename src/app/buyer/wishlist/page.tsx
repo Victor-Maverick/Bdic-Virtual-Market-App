@@ -3,7 +3,7 @@ import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
 import marketIcon from "../../../../public/assets/images/market element.png";
 import arrowBack from "../../../../public/assets/images/arrow-right.svg";
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import searchImg from "../../../../public/assets/images/search-normal.png";
 import arrowRight from '@/../public/assets/images/greyforwardarrow.svg'
 import trashImg from "../../../../public/assets/images/trash.png";
@@ -20,7 +20,7 @@ const SearchBar = () => (
 );
 
 interface WishlistItem {
-    id: number; // Added product ID
+    id: number;
     name: string;
     productId: number;
     description: string;
@@ -38,7 +38,7 @@ const Wishlist = () => {
     const { data: session } = useSession();
     const { addToCart } = useCart();
 
-    const fetchWishlist = async () => {
+    const fetchWishlist = useCallback(async () => {
         if (session?.user?.email) {
             try {
                 setLoading(true);
@@ -64,14 +64,13 @@ const Wishlist = () => {
                 setLoading(false);
             }
         }
-    };
+    }, [session]);
 
     useEffect(() => {
-            if (session) {
-                fetchWishlist();
-            }
-        },
-        [session]);
+        if (session) {
+            fetchWishlist();
+        }
+    }, [session, fetchWishlist]);
 
     const handleAddToCart = async (product: WishlistItem) => {
         try {
@@ -191,12 +190,15 @@ const Wishlist = () => {
                             <p>Go to profile</p>
                             <Image src={arrowRight} alt={'arrow right'}/>
                         </div>
-                        <div className="flex flex-col h-[80px] w-[381px] mt-[6px] rounded-[12px] border border-[#eeeeee]">
+                        <div className="flex flex-col h-auto w-[381px] mt-[6px] rounded-[12px] border border-[#eeeeee]">
                             <div className="w-full text-[#022B23] text-[12px] font-medium h-[40px] bg-[#f8f8f8] rounded-t-[12px] flex items-center px-[8px]">
                                 <p>Wishlist</p>
                             </div>
                             <div onClick={() => {router.push("/buyer/orders")}} className="w-full text-[#022B23] text-[12px] h-[40px] rounded-b-[12px] flex items-center px-[8px]">
                                 <p>My orders</p>
+                            </div>
+                            <div onClick={() => {router.push("/buyer/disputes")}} className="w-full text-[#022B23] text-[12px] h-[40px] rounded-b-[12px] flex items-center px-[8px]">
+                                <p>Order disputes</p>
                             </div>
                         </div>
                     </div>

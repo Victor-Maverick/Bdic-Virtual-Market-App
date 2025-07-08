@@ -17,7 +17,6 @@ const EmailVerification = () => {
     const handleBack = () => {
         router.push("/register/getStarted");
     };
-
     return (
         <div className="flex flex-col md:flex-row min-h-screen">
             {/* Left Panel - Main content */}

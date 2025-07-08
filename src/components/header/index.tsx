@@ -23,35 +23,41 @@ const Header = () => {
 
     useEffect(() => {
         const fetchUserProfile = async () => {
-            if (status !== 'authenticated') {
+            if (status !== 'authenticated' || !session?.accessToken) {
                 setIsLoading(false);
                 return;
             }
             try {
-                //https://api.digitalmarke.bdic.ng/api/auth/profile
+                console.log('Fetching profile with token:', session.accessToken); // Debug log
                 const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
                     headers: {
-
                         Authorization: `Bearer ${session.accessToken}`,
                     },
-                    withCredentials: true
+                    withCredentials: true,
                 });
 
                 if (response.status === 200) {
                     setUserProfile({
                         firstName: response.data.firstName,
-                        roles: response.data.roles || []
+                        roles: session.user.roles || [],
                     });
                 }
             } catch (error) {
-                console.error('Error details:', error);
+                console.error('Error fetching profile:', error);
+                if (axios.isAxiosError(error) && error.response?.status === 401) {
+                    console.error('Unauthorized: Logging out');
+                    await signOut({ redirect: false });
+                    localStorage.removeItem('BDICAuthToken');
+                    localStorage.removeItem('userEmail');
+                    router.push('/login');
+                }
             } finally {
                 setIsLoading(false);
             }
         };
 
         fetchUserProfile();
-    }, [session, status]);
+    }, [session, status, router]);
 
     const handleProfileClick = () => {
         setIsProfileDropdownOpen(!isProfileDropdownOpen);
@@ -62,8 +68,7 @@ const Header = () => {
             return;
         }
 
-        const roles = session?.user.roles || []
-        console.log("rolesss: ",roles);
+        const roles = userProfile.roles;
         if (roles.includes('VENDOR') && roles.includes('BUYER')) {
             router.push('/vendor/dashboard');
         } else if (roles.includes('LOGISTICS')) {
@@ -76,32 +81,25 @@ const Header = () => {
 
     const handleLogout = async () => {
         try {
-            // Call the backend logout endpoint
             await axios.post(
                 'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
                 {},
                 {
                     headers: {
-
                         Authorization: `Bearer ${session?.accessToken}`,
                     },
                 }
             );
-
-            // Clear the NextAuth session
-            await signOut({
-                redirect: false,
-                callbackUrl: '/'
-            });
-            localStorage.removeItem("userEmail");
+            await signOut({ redirect: false });
+            localStorage.removeItem('BDICAuthToken');
+            localStorage.removeItem('userEmail');
+            router.push('/login');
         } catch (error) {
             console.error('Logout failed:', error);
-            // Even if backend logout fails, we should still clear the client session
-            await signOut({
-                redirect: false,
-                callbackUrl: '/'
-            });
-
+            await signOut({ redirect: false });
+            localStorage.removeItem('BDICAuthToken');
+            localStorage.removeItem('userEmail');
+            router.push('/login');
         }
     };
 
@@ -120,7 +118,7 @@ const Header = () => {
                     Home
                 </p>
                 <p className="cursor-pointer hover:text-[#c6eb5f]" onClick={() => router.push('/marketPlace')}>
-                    MarketPlace
+                    Market place
                 </p>
                 <p className="cursor-pointer hover:text-[#c6eb5f]" onClick={() => router.push('/aboutUs')}>
                     About us
@@ -266,4 +264,5 @@ const Header = () => {
         </div>
     );
 };
+
 export default Header;

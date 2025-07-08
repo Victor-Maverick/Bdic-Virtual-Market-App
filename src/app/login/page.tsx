@@ -91,9 +91,16 @@ const Login = () => {
 
 
             if (result?.error) {
-                setToastType('error');
-                setToastMessage('Login failed');
-                setToastSubMessage(result.error);
+                // Handle session conflict specifically
+                if (result.error.includes('logged in from another device')) {
+                    setToastType('error');
+                    setToastMessage('Session Conflict');
+                    setToastSubMessage('You were logged out because you logged in from another device');
+                } else {
+                    setToastType('error');
+                    setToastMessage('Login failed');
+                    setToastSubMessage(result.error);
+                }
                 setShowToast(true);
             } else {
                 const response = await fetch('/api/auth/session');

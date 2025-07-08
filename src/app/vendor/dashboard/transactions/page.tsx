@@ -7,7 +7,6 @@ import exportImg from "../../../../../public/assets/images/exportImg.svg";
 import archiveImg from "../../../../../public/assets/images/archive.svg";
 import Stats from "../../../../../public/assets/images/Stats.svg";
 import { useCallback, useEffect, useState } from "react";
-import iPhone from "../../../../../public/assets/images/blue14.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import PayoutRequestModal from "@/components/payoutRequestModal";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
@@ -75,7 +74,7 @@ const ProductTableRow = ({ order, isLast }: { order: OrderResponse; isLast: bool
             <div className="flex items-center w-[35%] pr-[24px] gap-3">
                 <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
                     <Image
-                        src={firstItem.productImage || iPhone}
+                        src={firstItem.productImage || ''}
                         alt={firstItem.productName}
                         width={70}
                         height={70}
@@ -139,6 +138,7 @@ const Transactions = () => {
                 setLoading(true);
                 const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
                 const data = response.data;
+                console.log("data for shop: ",data);
 
                 if (data.id) {
                     const [countResponse, amountResponse, orderResponse] = await Promise.all([
@@ -150,6 +150,7 @@ const Transactions = () => {
                     setCompletedTransactions(countResponse.data);
                     setTotalSales(amountResponse.data);
                     setOrders(orderResponse.data);
+                    console.log("Order : ",orderResponse.data);
                 }
             } catch (error) {
                 console.error('Error fetching shop data:', error);

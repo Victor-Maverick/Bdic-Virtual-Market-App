@@ -188,7 +188,7 @@ const Cart = () => {
                     orderId: checkoutResponse.orderNumber || generateOrderId(),
                     deliveryOption: selectedDeliveryOption,
                     deliveryAddress: selectedDeliveryOption === 'pickup'
-                        ? 'Shop 2C, Modern market, Makurdi'
+                        ? 'Shop'
                         : selectedAddress,
                     paymentAmount: paymentData.transAmount,
                 };

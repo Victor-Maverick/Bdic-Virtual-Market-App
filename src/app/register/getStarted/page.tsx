@@ -181,9 +181,7 @@ const GetStarted = () => {
     };
 
     const registerUser = async () => {
-        //https://api.digitalmarke.bdic.ng
         const API_URL = 'https://digitalmarket.benuestate.gov.ng';
-
         try {
             const formData = new FormData();
             formData.append('email', form.email);
@@ -201,7 +199,16 @@ const GetStarted = () => {
             localStorage.setItem('password',form.password);
             return { success: true, data: response.data };
         } catch (error) {
+            console.log("Error: ",error)
+
+
+
             let errorMessage = "Registration failed. Please try again.";
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            const subMessage = error.response?.data;
+            const mainError = "Registration failed. Please try again.";
+
 
             if (axios.isAxiosError(error)) {
                 errorMessage = error.response?.data?.message || error.message;
@@ -212,8 +219,8 @@ const GetStarted = () => {
             setToast({
                 show: true,
                 type: "error",
-                message: "Registration Error",
-                subMessage: errorMessage
+                message: mainError,
+                subMessage: subMessage.toString()
             });
 
             return { success: false, error: errorMessage };

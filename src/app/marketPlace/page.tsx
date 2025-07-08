@@ -5,7 +5,6 @@ import Image, { type StaticImageData } from "next/image"
 import MarketProductCard from "@/components/marketProductCard"
 import marketIcon from "@/../public/assets/images/market element.png"
 import searchImg from "@/../public/assets/images/search-normal.png"
-
 import axios from "axios"
 import Footer from "@/components/footer"
 import MarketPlaceHeader from "@/components/marketPlaceHeader"
@@ -123,10 +122,7 @@ const FlashSale = ({
         const seconds = timeInSeconds % 60
         return `${hours}Hr : ${minutes.toString().padStart(2, "0")}M : ${seconds.toString().padStart(2, "0")}Sec`
     }
-
-    // Filter products with quantity less than 5
     const lowQuantityProducts = apiProducts.filter(product => product.quantity < 5)
-
     return (
         <div className="flex-col rounded-3xl">
             <div className="bg-[#C6EB5F] h-[60px] sm:h-[80px] flex justify-between px-2 sm:px-4 pt-2">
@@ -138,7 +134,7 @@ const FlashSale = ({
                         </div>
                     </div>
                     <p className="font-lighter text-[10px] sm:text-[12px] hidden sm:block">
-                        Limited stock items - hurry before they&#39re gone!
+                        Limited stock items - hurry before they&#39;re gone!
                     </p>
                 </div>
                 <div className="flex justify-between items-center gap-4 sm:gap-[70px]">
@@ -187,7 +183,6 @@ const StoreSection = () => {
         ],
         [],
     )
-
     const PictureCard = ({ image }: { image: StaticImageData }) => {
         return (
             <div
@@ -205,7 +200,6 @@ const StoreSection = () => {
             </div>
         )
     }
-
     return (
         <div className="flex-col rounded-3xl mt-[20px] mx-4 sm:mx-6 lg:mx-25">
             <div className="bg-[#022B23] h-[60px] sm:h-[80px] flex justify-between px-2 sm:px-4 pt-2">

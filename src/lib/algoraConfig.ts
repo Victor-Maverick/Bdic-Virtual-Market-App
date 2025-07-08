@@ -1,2 +1,0 @@
-export const AGORA_APP_ID = 'f216fba525a8425b98dbacb547f8ed81'; // Replace with your App ID
-export const AGORA_TOKEN = '007eJxTYGCNWJZdvW2Xy3oPhoywErED/Z//39v11feXmNukhi2LdCMVGNKMDM3SkhJNjUwTLUyMTJMsLVKSEpOTTE3M0yxSUywM2dwDMxoCGRnmX3dlYWRgZWBkYGIA8RkYALG8HhU='; // Replace with your token
