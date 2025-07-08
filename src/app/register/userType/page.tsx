@@ -104,7 +104,6 @@ const UserType = () => {
                 subMessage: errorMessage
             });
         } finally {
-            //https://api.digitalmarke.bdic.ng/api/auth/login
             const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/auth/login', {
                 email: email,
                 password: password

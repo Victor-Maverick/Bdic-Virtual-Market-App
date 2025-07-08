@@ -232,7 +232,7 @@ const ProductDetails = ({ params }: PageProps) => {
     const handleBuyNow = async () => {
         if (!product) return;
         if (session?.user?.email && product.vendorEmail === session.user.email) {
-            toast.error('You cannot add your own product to cart');
+            toast.error('You cannot buy your own product to cart');
             return;
         }
 
