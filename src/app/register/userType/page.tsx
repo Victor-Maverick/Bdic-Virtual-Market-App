@@ -7,14 +7,14 @@ import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
 import arrowLeft from "../../../../public/assets/images/arrow-right.svg";
 import shop from "../../../../public/assets/images/shop.svg";
 import profileCirle from '../../../../public/assets/images/profile-circle.svg';
-import logCar from '../../../../public/assets/images/logCar.png';
+// import logCar from '../../../../public/assets/images/logCar.png';
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import threeImages from '../../../../public/assets/images/threeImages.png';
 import greenTick from '@/../public/assets/images/greentick.svg';
 import greyTick from '@/../public/assets/images/greytick.svg';
 import Toast from "@/components/Toast";
 
-type UserTypeOption = 'BUYER' | 'VENDOR' | 'LOGISTICS';
+type UserTypeOption = 'BUYER' | 'VENDOR';
 
 const UserType = () => {
     const router = useRouter();
@@ -80,9 +80,9 @@ const UserType = () => {
                     case 'VENDOR':
                         router.push("/welcome/vendor");
                         break;
-                    case 'LOGISTICS':
-                        router.push("/welcome/logistics");
-                        break;
+                    // case 'LOGISTICS':
+                    //     router.push("/welcome/logistics");
+                    //     break;
                     default:
                         router.push("/");
                 }
@@ -172,13 +172,13 @@ const UserType = () => {
                                 icon: profileCirle,
                                 title: 'Seller',
                                 description: 'Create your own shop and sell products'
-                            },
-                            {
-                                type: 'LOGISTIC',
-                                icon: logCar,
-                                title: 'Logistics',
-                                description: 'Help buyers and sellers pick-up and deliver products'
                             }
+                            // {
+                            //     type: 'LOGISTIC',
+                            //     icon: logCar,
+                            //     title: 'Logistics',
+                            //     description: 'Help buyers and sellers pick-up and deliver products'
+                            // }
                         ].map((option) => (
                             <div
                                 key={option.type}
