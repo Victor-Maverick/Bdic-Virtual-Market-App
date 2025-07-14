@@ -9,7 +9,7 @@ import farmGoLogo from "../../../public/assets/images/farmGoLogo.png";
 import { useRouter, usePathname } from "next/navigation";
 import {useEffect, useState, useCallback} from "react";
 import axios from "axios";
-import {useSession} from "next-auth/react";
+import {useSession, signOut} from "next-auth/react";
 import { FiMenu, FiX } from "react-icons/fi";
 
 interface HeaderItem {
@@ -21,19 +21,23 @@ interface HeaderItem {
     isNotification?: boolean;
 }
 
+interface UserProfile {
+    firstName: string;
+    roles: string[];
+}
+
 const MarketPlaceHeader = () => {
     const pathname = usePathname();
-    const [userName, setUserName] = useState<string | undefined>(undefined);
-    const [isLoading, setIsLoading] = useState(true);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [notificationCount, setNotificationCount] = useState(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const router = useRouter();
     const { data: session, status } = useSession();
 
     const fetchUserProfile = useCallback(async () => {
         if (status === 'loading') return;
         if (status === 'unauthenticated') {
-            setIsLoading(false);
             return;
         }
 
@@ -50,15 +54,22 @@ const MarketPlaceHeader = () => {
             });
 
             if (response.status === 200) {
-                setUserName(response.data.firstName);
+                setUserProfile({
+                    firstName: response.data.firstName,
+                    roles: session?.user?.roles || [],
+                });
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
             console.log('Profile fetch failed or user not authenticated');
-        } finally {
-            setIsLoading(false);
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+                console.error('Unauthorized: Logging out');
+                await signOut({ redirect: false });
+                localStorage.removeItem('BDICAuthToken');
+                localStorage.removeItem('userEmail');
+                router.push('/login');
+            }
         }
-    }, [session?.accessToken, status]);
+    }, [session?.accessToken, session?.user?.roles, status, router]);
 
     const fetchNotifications = useCallback(async () => {
         if (session?.user?.email) {
@@ -87,6 +98,51 @@ const MarketPlaceHeader = () => {
             }
         }
     }, [session?.user?.email, fetchNotifications]);
+
+    const handleProfileClick = () => {
+        setIsProfileDropdownOpen(!isProfileDropdownOpen);
+    };
+
+    const navigateToDashboard = () => {
+        if (!userProfile?.roles) {
+            return;
+        }
+
+        const roles = userProfile.roles;
+        if (roles.includes('VENDOR') && roles.includes('BUYER')) {
+            router.push('/vendor/dashboard');
+        } else if (roles.includes('LOGISTICS')) {
+            router.push('/logistics/dashboard');
+        } else {
+            router.push('/buyer/orders');
+        }
+        setIsProfileDropdownOpen(false);
+        setIsMobileMenuOpen(false);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await axios.post(
+                'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${session?.accessToken}`,
+                    },
+                }
+            );
+            await signOut({ redirect: false });
+            localStorage.removeItem('BDICAuthToken');
+            localStorage.removeItem('userEmail');
+            router.push('/');
+        } catch (error) {
+            console.error('Logout failed:', error);
+            await signOut({ redirect: false });
+            localStorage.removeItem('BDICAuthToken');
+            localStorage.removeItem('userEmail');
+            router.push('/');
+        }
+    };
 
     useEffect(() => {
         fetchUserProfile();
@@ -121,16 +177,6 @@ const MarketPlaceHeader = () => {
             isNotification: true
         },
     ];
-
-    if (!isLoading && userName) {
-        loggedInHeaderItems.push({
-            img: profileImg,
-            text: `Hey, ${userName}`,
-            path: "/profile",
-            showBadge: false,
-            badgeCount: 0
-        });
-    }
 
     const isLoggedIn = status === 'authenticated';
 
@@ -179,6 +225,42 @@ const MarketPlaceHeader = () => {
                                     </span>
                                 </div>
                             ))}
+
+                            {/* Profile dropdown */}
+                            <div className="relative">
+                                <div
+                                    className="flex items-center space-x-1 cursor-pointer hover:opacity-80 transition-opacity"
+                                    onClick={handleProfileClick}
+                                >
+                                    <Image
+                                        src={profileImg}
+                                        alt="Profile"
+                                        height={20}
+                                        width={20}
+                                        className="w-5 h-5 rounded-full"
+                                    />
+                                    <span className="text-sm font-medium text-gray-900">
+                                        Hey, {userProfile?.firstName}
+                                    </span>
+                                </div>
+
+                                {isProfileDropdownOpen && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                                        <button
+                                            onClick={navigateToDashboard}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Dashboard
+                                        </button>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                        >
+                                            Logout
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
                         </nav>
                     )}
 
@@ -229,6 +311,48 @@ const MarketPlaceHeader = () => {
                                 {text}
                             </div>
                         ))}
+
+                        {/* Mobile profile dropdown */}
+                        <div className="px-3 py-2">
+                            <div
+                                className="flex items-center cursor-pointer"
+                                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                            >
+                                <Image
+                                    src={profileImg}
+                                    alt="Profile"
+                                    height={20}
+                                    width={20}
+                                    className="w-5 h-5 rounded-full mr-3"
+                                />
+                                <span className="text-base font-medium text-gray-900">
+                                    Hey, {userProfile?.firstName}
+                                </span>
+                            </div>
+
+                            {isProfileDropdownOpen && (
+                                <div className="mt-2 ml-8 bg-white rounded-md shadow-inner py-1 border border-gray-200">
+                                    <button
+                                        onClick={() => {
+                                            navigateToDashboard();
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Dashboard
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            handleLogout();
+                                            setIsMobileMenuOpen(false);
+                                        }}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Logout
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

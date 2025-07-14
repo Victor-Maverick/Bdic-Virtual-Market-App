@@ -3,10 +3,19 @@ import {useState} from "react";
 import Image from "next/image";
 import limeArrow from "../../../public/assets/images/green arrow.png";
 
+interface ShopAccountDetails {
+    bankName: string;
+    accountNumber: string;
+}
+
 interface PayoutRequestModalProps {
     isPayoutRequestModalOpen: boolean;
     onClosePayoutRequestModal: () => void;
-    onRequestSuccess: () => void; // New prop for success flow
+    onRequestSuccess: () => void;
+    shopId: number;  // Required
+    amount: number;  // Required
+    accountDetails: ShopAccountDetails | null;
+    onUpdateAccount: (details: ShopAccountDetails) => Promise<boolean>;
 }
 
 type InputFieldProps = {
@@ -60,17 +69,20 @@ const InputField = ({
 
 const PayoutRequestModal = ({
                                 isPayoutRequestModalOpen,
-                                onRequestSuccess
+                                onRequestSuccess,
+                                accountDetails,
                             }: PayoutRequestModalProps) => {
     const [formData, setFormData] = useState({
         amount: "",
     });
 
     const handleChange = (field: keyof typeof formData) => (value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        console.log(accountDetails)
+        setFormData(prev => ({...prev, [field]: value}));
     };
 
     const handleContinue = () => {
+
         onRequestSuccess(); // Call parent's success handler
     };
 
@@ -78,7 +90,8 @@ const PayoutRequestModal = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-            <div className="bg-white px-10 py-20 w-[950px] max-h-[90vh] flex flex-col items-center gap-6 overflow-hidden">
+            <div
+                className="bg-white px-10 py-20 w-[950px] max-h-[90vh] flex flex-col items-center gap-6 overflow-hidden">
                 <div className="w-[530px] h-[447px] gap-[28px] flex flex-col flex-shrink-0 mx-auto">
                     <div>
                         <h2 className="text-[16px] font-medium text-[#022B23]">Payout request</h2>
@@ -93,13 +106,15 @@ const PayoutRequestModal = ({
                         onChange={handleChange('amount')}
                         placeholder="Amount to request"
                     />
-                    <div className="w-full h-[178px] flex flex-col gap-[10px] border border-[#ededed] rounded-[24px] px-[24px] py-[16px]">
+                    <div
+                        className="w-full h-[178px] flex flex-col gap-[10px] border border-[#ededed] rounded-[24px] px-[24px] py-[16px]">
                         <div className="flex flex-col gap-[14px]">
                             <p className="text-[16px] font-medium text-[#000000]">Bank details</p>
                             <p className="text-[14px] text-[#707070]">BANK NAME: ACCESS BANK</p>
                             <p className="text-[14px] text-[#707070]">ACCOUNT NUMBER: 00112233445</p>
                         </div>
-                        <button className="w-[80px] hover:shadow-sm cursor-pointer rounded-[8px] px-[8px] py-[6px] text-[#022B23] font-medium text-[12px] h-[32px] border border-[#E4E4E4]">
+                        <button
+                            className="w-[80px] hover:shadow-sm cursor-pointer rounded-[8px] px-[8px] py-[6px] text-[#022B23] font-medium text-[12px] h-[32px] border border-[#E4E4E4]">
                             Edit details
                         </button>
                     </div>
@@ -108,7 +123,7 @@ const PayoutRequestModal = ({
                         onClick={handleContinue}
                     >
                         <p className="text-[#C6EB5F] font-semibold text-[14px]">Request pay-out</p>
-                        <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                        <Image src={limeArrow} alt="Continue arrow" width={18} height={18}/>
                     </div>
                 </div>
             </div>

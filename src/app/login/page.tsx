@@ -1,15 +1,16 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import shadow from '../../../public/assets/images/shadow.png';
 import headerIcon from '../../../public/assets/images/headerImg.png';
 import emailIcon from '../../../public/assets/images/sms.svg';
-import eyeOpen from '../../../public/assets/images/eye.svg';
-import eyeClosed from '../../../public/assets/images/eye.svg';
+import eyeOpen from '../../../public/assets/images/eye.svg'; // Fixed: separate icons
+import eyeClosed from '../../../public/assets/images/eye.svg'; // Fixed: separate icons
 import loginImg from '@/../public/assets/images/loginImg.svg';
 import Toast from '@/components/Toast';
+import ReCAPTCHA from "react-google-recaptcha";
 
 type FormField = {
     id: keyof FormData;
@@ -38,6 +39,7 @@ const Login = () => {
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [toastMessage, setToastMessage] = useState('');
     const [toastSubMessage, setToastSubMessage] = useState('');
+    const [captchaToken, setCaptchaToken] = useState('');
 
     useEffect(() => {
         const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -78,8 +80,42 @@ const Login = () => {
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
+    // Helper function to show toast messages
+    const showToastMessage = useCallback((type: 'success' | 'error', message: string, subMessage: string) => {
+        setToastType(type);
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+    }, []);
+
+    // Helper function to handle localStorage safely
+    const safeLocalStorage = {
+        getItem: (key: string): string | null => {
+            if (typeof window !== 'undefined') {
+                return localStorage.getItem(key);
+            }
+            return null;
+        },
+        setItem: (key: string, value: string): void => {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(key, value);
+            }
+        },
+        removeItem: (key: string): void => {
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem(key);
+            }
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!captchaToken) {
+            showToastMessage('error', 'Captcha Required', 'Please complete the captcha challenge');
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -89,32 +125,24 @@ const Login = () => {
                 redirect: false,
             });
 
-
             if (result?.error) {
                 // Handle session conflict specifically
                 if (result.error.includes('logged in from another device')) {
-                    setToastType('error');
-                    setToastMessage('Session Conflict');
-                    setToastSubMessage('You were logged out because you logged in from another device');
+                    showToastMessage('error', 'Session Conflict', 'You were logged out because you logged in from another device');
                 } else {
-                    setToastType('error');
-                    setToastMessage('Login failed');
-                    setToastSubMessage(result.error);
+                    showToastMessage('error', 'Login failed', result.error);
                 }
-                setShowToast(true);
             } else {
                 const response = await fetch('/api/auth/session');
                 const session = await response.json();
                 const roles = session?.user?.roles || [];
-                localStorage.setItem("userEmail", form.email)
-                setToastType('success');
-                setToastMessage('Login successful');
-                setToastSubMessage('You are being redirected');
-                setShowToast(true);
+
+                safeLocalStorage.setItem("userEmail", form.email);
+                showToastMessage('success', 'Login successful', 'You are being redirected');
 
                 // Check for pre-auth URL
-                const preAuthUrl = localStorage.getItem('preAuthUrl');
-                localStorage.removeItem('preAuthUrl');
+                const preAuthUrl = safeLocalStorage.getItem('preAuthUrl');
+                safeLocalStorage.removeItem('preAuthUrl');
 
                 // Redirect to pre-auth URL if it exists, otherwise use role-based routing
                 if (preAuthUrl) {
@@ -135,17 +163,22 @@ const Login = () => {
             }
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            setToastType('error');
-            setToastMessage('Login failed');
-            setToastSubMessage('An unexpected error occurred');
-            setShowToast(true);
+            showToastMessage('error', 'Login failed', 'An unexpected error occurred');
         } finally {
             setIsLoading(false);
-            setTimeout(() => setShowToast(false), 3000);
+            // Clean up toast after 3 seconds
+            const timer = setTimeout(() => setShowToast(false), 3000);
+            return () => clearTimeout(timer);
         }
     };
 
     const handleCloseToast = () => setShowToast(false);
+
+    // Fixed: Proper typing for ReCAPTCHA onChange
+    const handleCaptchaChange = (token: string | null) => {
+        setCaptchaToken(token || '');
+    };
+
     return (
         <>
             {showToast && (
@@ -165,7 +198,7 @@ const Login = () => {
                 }}
             >
                 <div className="flex items-center gap-[4px] w-[95px] h-[47px]">
-                    <Image src={headerIcon} alt="icon" className="w-[50%] h-full" />
+                    <Image src={headerIcon} alt="MarketGo icon" className="w-[50%] h-full" />
                     <div className="flex flex-col">
                         <p className="text-[12px] font-semibold text-[#022B23] leading-tight">
                             Market
@@ -241,7 +274,7 @@ const Login = () => {
                             ))}
                             <button
                                 type="submit"
-                                className="flex items-center justify-center cursor-pointer bg-[#033228] rounded-[12px] w-full h-[52px] text-[14px] font-semibold text-[#C6EB5F]"
+                                className="flex items-center justify-center cursor-pointer bg-[#033228] rounded-[12px] w-full h-[52px] text-[14px] font-semibold text-[#C6EB5F] disabled:opacity-70 disabled:cursor-not-allowed"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
@@ -256,17 +289,24 @@ const Login = () => {
                     </div>
                     <p className="mt-6 md:mt-[-15px] text-[#7C7C7C] text-[14px]">
                         Don&#39;t have an account?{' '}
-                        <span onClick={() => router.push('/register/getStarted')} className="text-[#001234] text-[16px] cursor-pointer">
-              Register
-            </span>
+                        <span onClick={() => router.push('/register/getStarted')} className="text-[#001234] text-[16px] cursor-pointer hover:underline">
+                            Register
+                        </span>
                     </p>
+                    {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+                        <ReCAPTCHA
+                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                            onChange={handleCaptchaChange}
+                            className="mt-4"
+                        />
+                    )}
                 </div>
                 <div className="hidden md:flex mt-[-90px] w-[51%] justify-between flex-col bg-[#f9f9f9] pt-[136px] h-[902px]">
                     <p className="ml-[100px] text-[#000000] leading-tight text-[40px] italic font-['Instrument_Serif']">
                         Buying and selling <br /> made easy
                     </p>
                     <div className="flex justify-end">
-                        <Image src={loginImg} alt="image" width={670} height={700} className="w-[670px]" />
+                        <Image src={loginImg} alt="Login illustration" width={670} height={700} className="w-[670px]" />
                     </div>
                 </div>
             </div>

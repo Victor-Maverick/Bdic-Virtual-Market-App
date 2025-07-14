@@ -17,6 +17,16 @@ interface BuyNowSuccessModalProps {
     };
 }
 
+const getTransactionData = () => {
+    const data = sessionStorage.getItem('currentTransaction');
+    return data ? JSON.parse(data) : null;
+};
+
+// Clear transaction data
+const clearTransactionData = () => {
+    sessionStorage.removeItem('currentTransaction');
+};
+
 const BuyNowSuccessModal = ({ isOpen, onClose, orderDetails }: BuyNowSuccessModalProps) => {
     if (!isOpen) return null;
 
@@ -103,30 +113,23 @@ const SuccessPage = () => {
             }
 
             try {
-                setIsProcessing(true);
-                toast.loading('Processing your purchase...', { id: 'buy-now' });
+                const transactionData = getTransactionData();
+                if (!transactionData) {
+                    return
+                }
 
                 const verificationResponse = await axios.get(
                     `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
                     { timeout: 20000 }
                 );
-                console.log("Verification response: ",verificationResponse)
 
-                if (!verificationResponse.data.data) {
-                    throw new Error('Payment verification failed');
-                }
-
-                const paymentData = verificationResponse.data.data;
-                const expectedAmount = getStoredTotalAmount();
-
-                if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
+                // Verify amount matches
+                if (Math.abs(verificationResponse.data.data.transAmount - transactionData.amount) > 0.01) {
                     throw new Error('Payment amount does not match order total');
                 }
 
-                const productId = localStorage.getItem("productId")
-                const productName = verificationResponse.data.metadata?.productName;
                 const orderResponse = await axios.post(
-                    `https://digitalmarket.benuestate.gov.ng/api/orders/buy-product?productId=${productId}`,
+                    `https://digitalmarket.benuestate.gov.ng/api/orders/buy-product?productId=${transactionData.productId}`,
                     {
                         buyerEmail: session?.user.email,
                         deliveryMethod: 'pickup',
@@ -135,19 +138,15 @@ const SuccessPage = () => {
                     }
                 );
 
-                console.log("Order response: ",orderResponse)
                 setOrderDetails({
-                    orderId: orderResponse.data.orderNumber || `#${Math.random().toString(36).substr(2, 8).toUpperCase()}`,
-                    productName: productName,
+                    orderId: orderResponse.data.orderNumber,
+                    productName: transactionData.productName,
                     deliveryOption: 'Pickup at market',
                     deliveryAddress: 'Shop 2C, Modern market, Makurdi',
-                    amountPaid: paymentData.transAmount
+                    amountPaid: verificationResponse.data.data.transAmount
                 });
 
-                clearStoredTotalAmount();
-                toast.dismiss('buy-now');
-                localStorage.removeItem("productId")
-
+                clearTransactionData();
             } catch (error) {
                 console.error('Purchase processing error:', error);
                 toast.dismiss('buy-now');
@@ -217,16 +216,6 @@ const SuccessPage = () => {
             )}
         </div>
     );
-};
-const getStoredTotalAmount = (): number | null => {
-    const paymentData = localStorage.getItem('expectedPayment');
-    if (!paymentData) return null;
-    const { amount } = JSON.parse(paymentData);
-    return amount;
-};
-
-const clearStoredTotalAmount = () => {
-    localStorage.removeItem('expectedPayment');
 };
 
 export default SuccessPage;

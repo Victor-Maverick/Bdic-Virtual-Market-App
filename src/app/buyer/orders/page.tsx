@@ -49,6 +49,7 @@ const OrderItemActionsDropdown = ({
     const dropdownRef = useRef<HTMLDivElement>(null);
     const buttonRef = useRef<HTMLDivElement>(null);
 
+
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(!isOpen);
@@ -146,6 +147,8 @@ const OrderModal = ({
         switch (status) {
             case 'DELIVERED':
                 return 'Delivered';
+            case 'PENDING':
+                return 'Pending';
             case 'PENDING_DELIVERY':
                 return 'Pending Delivery';
             default:
@@ -440,6 +443,13 @@ const Orders = () => {
     const [disputeImage, setDisputeImage] = useState<File | null>(null);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [reviewItem, setReviewItem] = useState<OrderItemDto | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const ordersPerPage = 6;
+    // Calculate pagination
+    const indexOfLastOrder = currentPage * ordersPerPage;
+    const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+    const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
+    const totalPages = Math.ceil(orders.length / ordersPerPage);
 
     const handleOpenReviewModal = (item: OrderItemDto) => {
         setReviewItem(item);
@@ -548,12 +558,11 @@ const Orders = () => {
                             if (axios.isAxiosError(data) && data.response?.data?.message) {
                                 return data.response.data.message;
                             }
-                            return 'Failed to submit dispute. Please try again.';
+                            return 'Dispute already in queue.';
                         }
                     }
                 }
             );
-
             handleCloseDisputeModal();
         } catch (error) {
             console.error('Error submitting dispute:', error);
@@ -750,12 +759,12 @@ const Orders = () => {
                     <div className="flex flex-col w-[779px] gap-[24px]">
                         <p className="text-[#000000] text-[14px] font-medium">My orders ({orders.length})</p>
                         <div className="border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
-                            {orders.length === 0 ? (
+                            {currentOrders.length === 0 ? (
                                 <div className="flex items-center justify-center h-[151px] text-[#3D3D3D] text-[14px]">
                                     <p>No orders yet</p>
                                 </div>
                             ) : (
-                                orders
+                                currentOrders
                                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                                     .map((order, index) => {
                                     const isLastItem = index === orders.length - 1;
@@ -928,6 +937,39 @@ const Orders = () => {
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+            {orders.length > ordersPerPage && (
+                <div className="flex justify-center mb-4">
+                    <div className="flex items-center gap-[70px] justify-between">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                        >
+                            Previous
+                        </button>
+
+                        <div className="flex items-center gap-[5px]">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-3 py-1 rounded-md ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             )}

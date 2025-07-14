@@ -1,5 +1,5 @@
 'use client';
-import { Star } from 'lucide-react';
+import {Eye, Star} from 'lucide-react';
 import axios from 'axios';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -37,6 +37,7 @@ interface Product {
     name: string;
     description: string;
     price: number;
+    salesPrice: number;
     quantity: number;
     mainImageUrl: string;
     sideImage1Url: string;
@@ -88,12 +89,14 @@ interface PageProps {
     searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const storeTotalAmount = (amount: number) => {
-    const paymentData = {
+const storeTransactionData = (productId: number, productName: string, amount: number) => {
+    const transactionData = {
+        productId,
+        productName,
         amount,
-        timestamp: new Date().getTime()
+        timestamp: Date.now()
     };
-    localStorage.setItem('expectedPayment', JSON.stringify(paymentData));
+    sessionStorage.setItem('currentTransaction', JSON.stringify(transactionData));
 };
 
 
@@ -106,6 +109,7 @@ const ProductDetails = ({ params }: PageProps) => {
     const [productId, setProductId] = useState<string | null>(null);
     const [suggestedProducts, setSuggestedProducts] = useState<Product[]>([]);
     const [productReviews, setProductReviews] = useState<Review[]>([]);
+    const [showFullDescription, setShowFullDescription] = useState(false);
     const router = useRouter();
     const { data: session } = useSession();
     const ratingDistribution = calculateRatingDistribution(productReviews);
@@ -148,7 +152,15 @@ const ProductDetails = ({ params }: PageProps) => {
             toast.error('You cannot chat with yourself');
             return;
         }
-        router.push(`/chat?vendorEmail=${encodeURIComponent(product?.vendorEmail || '')}&buyerEmail=${encodeURIComponent(session.user.email)}`);
+        if (!product?.vendorEmail) return;
+        const userEmail = session.user.email;
+        const vendorEmail = product?.vendorEmail;
+        const query = new URLSearchParams({
+            user: userEmail,
+            with: vendorEmail,
+        });
+
+        router.push(`/chat?${query.toString()}`);
     };
 
     const handleAddToCart = async () => {
@@ -239,7 +251,7 @@ const ProductDetails = ({ params }: PageProps) => {
         setIsLoading(true);
         try {
             const totalAmount = product.price + DELIVERY_FEE;
-            storeTotalAmount(totalAmount);
+            storeTransactionData(product.id, product.name, totalAmount);
 
             const requestData = {
                 email: session?.user?.email,
@@ -253,7 +265,9 @@ const ProductDetails = ({ params }: PageProps) => {
                     isBuyNow: true
                 }
             };
+
             localStorage.setItem("productId", String(product.id))
+            localStorage.setItem("productName", String(product.name))
 
             const response = await axios.post(
                 'https://digitalmarket.benuestate.gov.ng/api/payments/initialize',
@@ -262,12 +276,24 @@ const ProductDetails = ({ params }: PageProps) => {
 
             if (response.data.data?.authorizationUrl) {
                 window.location.href = response.data.data.authorizationUrl;
+            } else if (response.data.error) {
+                throw new Error(response.data.error);
             } else {
-                throw new Error('Payment initialization failed');
+                throw new Error('Payment initialization failed - no authorization URL received');
             }
         } catch (error) {
             console.error('Buy Now error:', error);
-            toast.error(error instanceof Error ? error.message : 'Payment failed');
+            let errorMessage = 'Payment failed';
+
+            if (axios.isAxiosError(error)) {
+                errorMessage = error.response?.data?.message ||
+                    error.response?.data?.error ||
+                    'Payment service unavailable';
+            } else if (error instanceof Error) {
+                errorMessage = error.message;
+            }
+
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -304,52 +330,69 @@ const ProductDetails = ({ params }: PageProps) => {
             <ProductDetailHeader />
             <ProductDetailHeroBar />
             <NavigationBar page={` // ${product.subCategory} //`} name={product.name} />
-            <div className='flex flex-col lg:flex-row gap-4 lg:gap-[10px] px-4 sm:px-6 md:px-8 lg:px-[100px]'>
-                <div className='flex-col items-center w-full lg:w-auto'>
-                    <div className='w-full lg:w-[719px] h-[300px] sm:h-[400px] md:h-[500px] lg:h-[749px] bg-[#F9F9F9] mb-[10px] overflow-hidden rounded-lg'>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-[40px] px-4 sm:px-6 md:px-8 lg:px-[100px]">
+                <div className="grid gap-[10px]">
+                    <div className="w-full h-[300px] sm:h-[400px] md:h-[400px] lg:h-[480px] bg-[#F9F9F9] overflow-hidden">
                         {productImages.length > 0 && (
                             <Image
-                                src={productImages[0] || '/placeholder.svg'}
+                                src={productImages[0]}
                                 alt={product.name}
-                                width={719}
-                                height={749}
-                                className='w-full h-full object-cover'
-                                style={{ objectPosition: 'center' }}
+                                width={500}
+                                height={480}
+                                className="w-full h-full object-cover"
+                                priority
                             />
                         )}
                     </div>
-                    <div className='flex items-center gap-2 lg:gap-[8px] mb-2 overflow-x-auto'>
+
+                    <div className="grid grid-cols-3 gap-2">
                         {productImages.slice(1, 4).map((image, index) => (
-                            <div
-                                key={index}
-                                className='flex-shrink-0 w-[100px] sm:w-[150px] lg:w-[235px] h-[100px] sm:h-[150px] lg:h-[235px] bg-[#F9F9F9] overflow-hidden rounded-lg'
-                            >
+                            <div key={index} className="aspect-square bg-[#F9F9F9] overflow-hidden ">
                                 <Image
-                                    src={image || '/placeholder.svg'}
-                                    alt={product.name}
-                                    width={235}
+                                    src={image}
+                                    alt={`${product.name} view ${index + 1}`}
+                                    width={205}
                                     height={235}
-                                    className='w-full h-full object-cover'
-                                    style={{ objectPosition: 'center' }}
+                                    className="w-full h-full object-cover"
                                 />
                             </div>
                         ))}
                     </div>
                 </div>
-                <div className='flex-col justify-start pt-4 lg:pt-[40px] w-full lg:w-auto'>
-                    <h1 className='text-2xl sm:text-3xl lg:text-[36px] font-medium mb-2'>{product.name}</h1>
-                    <p className='font-semibold text-xl sm:text-2xl lg:text-[26px] mb-4'>₦{product.price.toLocaleString()}</p>
-                    <div className='border-y border-[#ededed] py-[8px] px-[8px] mt-4 lg:mt-[30px]'>
-                        <p className='font-medium'>Description</p>
+
+                {/* Right Column - Product Details */}
+                <div className="flex flex-col">
+                    <h1 className="text-2xl sm:text-3xl lg:text-[36px] font-medium mb-2">{product.name}</h1>
+                    <p className="font-semibold text-xl sm:text-2xl lg:text-[26px] mb-4">₦{product.salesPrice.toLocaleString()}</p>
+
+                    {/* Description Section */}
+                    <div className="border-y border-[#ededed] py-2">
+                        <p className="font-medium">Description</p>
                     </div>
-                    <p className='text-sm lg:text-[14px] text-gray-700 mt-2 mb-4'>{product.description}</p>
-                    <div className='mb-6'>
-                        {product.quantity < 5 ? (
-                            <p className='text-red-600 font-medium text-sm'>Few units left</p>
-                        ) : (
-                            <p className='text-green-600 font-medium text-sm'>In stock</p>
+                    <div className="relative mt-2 mb-4">
+                        <p className="text-sm lg:text-[14px] text-gray-700 line-clamp-3">
+                            {product.description}
+                        </p>
+                        {product.description.length > 150 && (
+                            <button
+                                onClick={() => setShowFullDescription(true)}
+                                className="absolute right-0 bottom-0 bg-white pl-2 text-blue-500"
+                            >
+                                <Eye className="h-5 w-5 text-green" />
+                            </button>
                         )}
                     </div>
+
+                    {/* Stock Status */}
+                    <div className="mb-6">
+                        {product.quantity < 5 ? (
+                            <p className="text-red-600 font-medium text-sm">Few units left</p>
+                        ) : (
+                            <p className="text-green-600 font-medium text-sm">In stock</p>
+                        )}
+                    </div>
+
+                    {/* Vendor Card - This will push the buttons to the bottom */}
                     <div className='border border-[#ededed] rounded-3xl p-4 lg:p-0 lg:h-[260px] mt-6 lg:mt-[40px]'>
                         <div className='flex items-center border-b border-[#ededed] px-0 lg:px-[20px] pt-0 lg:pt-[10px] justify-between pb-4 lg:pb-[8px]'>
                             <div className='flex gap-[8px]'>
@@ -418,6 +461,7 @@ const ProductDetails = ({ params }: PageProps) => {
                     </div>
                 </div>
             </div>
+
             {suggestedProducts.length > 0 && (
                 <div className='px-4 sm:px-6 md:px-8 lg:px-[100px] mt-8 lg:mt-[40px]'>
                     <p className='font-medium text-[16px] mb-[18px]'>Suggested products</p>
@@ -505,6 +549,24 @@ const ProductDetails = ({ params }: PageProps) => {
                     </div>
                 )}
             </div>
+            {showFullDescription && (
+                <div className="fixed inset-0 bg-[#808080]/10 bg-opacity-50 flex items-center justify-end z-50 p-4">
+                    <div className="bg-white max-w-lg w-full p-6 max-h-[80vh] overflow-y-auto mr-[5%]">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-medium">Product Description</h3>
+                            <button
+                                onClick={() => setShowFullDescription(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p className="text-gray-700 text-[13px] whitespace-pre-line">{product.description}</p>
+                    </div>
+                </div>
+            )}
             <ToastContainer
                 position='top-right'
                 autoClose={3000}

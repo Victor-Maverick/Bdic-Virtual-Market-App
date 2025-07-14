@@ -3,6 +3,8 @@ import { useState } from "react";
 import Image from "next/image";
 import limeArrow from "../../../public/assets/images/green arrow.png";
 
+
+
 interface AddNewLineModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -93,12 +95,14 @@ const InputField = ({
         </div>
     );
 };
+interface AddNewLineModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onContinue: () => void;
+    marketId: number; // Add this line
+}
 
-const AddNewLineModal = ({
-                             isOpen,
-                             onClose,
-                             onContinue,
-                         }: AddNewLineModalProps) => {
+const AddNewLineModal = ({ isOpen, onClose, onContinue, marketId }: AddNewLineModalProps) => {
     const [formData, setFormData] = useState({
         name: "",
         description: "",
@@ -131,7 +135,7 @@ const AddNewLineModal = ({
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    marketId: 1, // You might want to pass this as a prop
+                    marketId: marketId, // You might want to pass this as a prop
                     name: formData.name.trim(),
                     description: formData.description.trim()
                 }),

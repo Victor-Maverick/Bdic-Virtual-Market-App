@@ -487,8 +487,10 @@ const MarketPlace = () => {
                 response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/all`, {
                     headers: { "Content-Type": "application/json" },
                 })
-                if (response.data.success && response.data.data) {
+                if (response.data.data) {
                     setApiProducts(response.data.data)
+                    console.log("Products here: ", response.data)
+                    console.log("Products here2: ", response.data.data)
                 } else {
                     throw new Error(response.data.message || "Failed to fetch products")
                 }

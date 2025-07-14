@@ -10,7 +10,6 @@ import Stats from "../../../../../public/assets/images/Stats.svg";
 import { useState } from "react";
 import iPhone from "../../../../../public/assets/images/blue14.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-import PayoutRequestModal from "@/components/payoutRequestModal";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
 
 type Product = {
@@ -92,7 +91,6 @@ const ProductTableRow = ({ product, isLast }: { product: Product; isLast: boolea
 const Transactions = () => {
     const [activeView, setActiveView] = useState<'product-transactions' | 'pay-outs'>('product-transactions');
     const [currentPage, setCurrentPage] = useState(1);
-    const [isPayoutRequestModalOpen, setIsPayoutRequestModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
     const productsPerPage = 5;
@@ -101,11 +99,11 @@ const Transactions = () => {
     const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
     const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
 
-    const handleOpenPayoutRequest = () => setIsPayoutRequestModalOpen(true);
-    const handlePayoutRequestSuccess = () => {
-        setIsPayoutRequestModalOpen(false);
-        setIsSuccessModalOpen(true);
-    };
+    // const handleOpenPayoutRequest = () => setIsPayoutRequestModalOpen(true);
+    // const handlePayoutRequestSuccess = () => {
+    //     setIsPayoutRequestModalOpen(false);
+    //     setIsSuccessModalOpen(true);
+    // };
     const handleCloseSuccessModal = () => setIsSuccessModalOpen(false);
 
     const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
@@ -142,7 +140,7 @@ const Transactions = () => {
                                         <p>Available for payout</p>
                                     </div>
                                     <span
-                                        onClick={handleOpenPayoutRequest}
+                                        // onClick={handleOpenPayoutRequest}
                                         className="text-[#C6EB5F] cursor-pointer flex justify-center items-center text-[12px] font-medium h-[30px] w-[113px] rounded-[100px] px-[8px] py-[6px] bg-[#022B23]"
                                     >
                     Request payout
@@ -354,11 +352,11 @@ const Transactions = () => {
                 )}
             </div>
 
-            <PayoutRequestModal
-                isPayoutRequestModalOpen={isPayoutRequestModalOpen}
-                onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}
-                onRequestSuccess={handlePayoutRequestSuccess}
-            />
+            {/*<PayoutRequestModal*/}
+            {/*    isPayoutRequestModalOpen={isPayoutRequestModalOpen}*/}
+            {/*    onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}*/}
+            {/*    onRequestSuccess={handlePayoutRequestSuccess}*/}
+            {/*/>*/}
 
             <PayoutRequestSuccessModal
                 isOpen={isSuccessModalOpen}

@@ -8,11 +8,11 @@ import archiveImg from "../../../../../public/assets/images/archive.svg";
 import Stats from "../../../../../public/assets/images/Stats.svg";
 import { useCallback, useEffect, useState } from "react";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-import PayoutRequestModal from "@/components/payoutRequestModal";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
 import DashboardOptions from "@/components/dashboardOptions";
 import axios from "axios";
 import { useSession } from "next-auth/react";
+import FilterDropdown from "@/components/filterDropdown";
 
 interface OrderResponse {
     id: number;
@@ -29,6 +29,11 @@ interface OrderResponse {
     shopId: number;
     shopOrdersCount: number;
 }
+
+// interface ShopAccountDetails {
+//     bankName: string;
+//     accountNumber: string;
+// }
 
 interface OrderItemDto {
     id: number;
@@ -70,7 +75,7 @@ const ProductTableRow = ({ order, isLast }: { order: OrderResponse; isLast: bool
     const firstItem = order.items[0];
 
     return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : 'border-b border-[#EAECF0]'}`}>
             <div className="flex items-center w-[35%] pr-[24px] gap-3">
                 <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
                     <Image
@@ -117,20 +122,16 @@ const ProductTableRow = ({ order, isLast }: { order: OrderResponse; isLast: bool
 const Transactions = () => {
     const [activeView, setActiveView] = useState<'product-transactions' | 'pay-outs'>('product-transactions');
     const [currentPage, setCurrentPage] = useState(1);
-    const [isPayoutRequestModalOpen, setIsPayoutRequestModalOpen] = useState(false);
+    // const [isPayoutRequestModalOpen, setIsPayoutRequestModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const { data: session } = useSession();
     const [loading, setLoading] = useState(false);
     const [orders, setOrders] = useState<OrderResponse[]>([]);
     const [completedTransactions, setCompletedTransactions] = useState(0);
     const [totalSales, setTotalSales] = useState(0);
+    const [payoutAmount, setPayoutAmount] = useState(0);
+    const [filter, setFilter] = useState<'all' | 'today' | '1day' | '7days' | '30days'>('all');
 
-    const PRODUCTS_PER_PAGE = 5;
-    const totalPages = Math.ceil(orders.length / PRODUCTS_PER_PAGE);
-    const currentOrders = orders.slice(
-        (currentPage - 1) * PRODUCTS_PER_PAGE,
-        currentPage * PRODUCTS_PER_PAGE
-    );
 
     const fetchShopData = useCallback(async () => {
         if (session?.user?.email) {
@@ -141,16 +142,17 @@ const Transactions = () => {
                 console.log("data for shop: ",data);
 
                 if (data.id) {
-                    const [countResponse, amountResponse, orderResponse] = await Promise.all([
+                    const [countResponse, amountResponse, orderResponse,payoutAmountResponse] = await Promise.all([
                         axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionCount?shopId=${data.id}`),
                         axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionAmount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/get-shop-orders?shopId=${data.id}`)
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/get-shop-orders?shopId=${data.id}`),
+                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getPayoutAmount?shopId=${data.id}`)
                     ]);
-
                     setCompletedTransactions(countResponse.data);
                     setTotalSales(amountResponse.data);
                     setOrders(orderResponse.data);
-                    console.log("Order : ",orderResponse.data);
+                    setPayoutAmount(payoutAmountResponse.data)
+                    console.log("Payout amount: ", payoutAmountResponse.data);
                 }
             } catch (error) {
                 console.error('Error fetching shop data:', error);
@@ -165,13 +167,60 @@ const Transactions = () => {
     }, [fetchShopData]);
 
     const handleOpenPayoutRequest = () => {
-        setIsPayoutRequestModalOpen(true);
+        return;
     };
 
-    const handlePayoutRequestSuccess = () => {
-        setIsPayoutRequestModalOpen(false);
-        setIsSuccessModalOpen(true);
+    const getFilteredOrders = () => {
+        const now = new Date();
+        const today = new Date(now.setHours(0, 0, 0, 0));
+
+        switch (filter) {
+            case 'today':
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    console.log("Order today: ",orderDate);
+                    console.log("Order date: ",order.createdAt);
+                    return orderDate >= today;
+                });
+            case '1day':
+                const oneDayAgo = new Date(today);
+                oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= oneDayAgo && orderDate < today;
+                });
+            case '7days':
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= sevenDaysAgo;
+                });
+            case '30days':
+                const thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= thirtyDaysAgo;
+                });
+            default:
+                return orders;
+        }
     };
+
+    const PRODUCTS_PER_PAGE = 5;
+    const filteredOrders = getFilteredOrders();
+    const totalPages = Math.ceil(filteredOrders.length / PRODUCTS_PER_PAGE);
+    const currentOrders = filteredOrders.slice(
+        (currentPage - 1) * PRODUCTS_PER_PAGE,
+        currentPage * PRODUCTS_PER_PAGE
+    );
+
+
+    // const handlePayoutRequestSuccess = () => {
+    //     // setIsPayoutRequestModalOpen(false);
+    //     setIsSuccessModalOpen(true);
+    // };
 
     const handleCloseSuccessModal = () => {
         setIsSuccessModalOpen(false);
@@ -231,7 +280,7 @@ const Transactions = () => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <p className="text-[#18181B] text-[16px] font-medium">N {totalSales.toLocaleString()}.00</p>
+                                    <p className="text-[#18181B] text-[16px] font-medium">N {payoutAmount.toLocaleString()}.00</p>
                                     <div className="flex gap-[4px] items-center">
                                         <Image src={arrowUp} alt="Increase" />
                                         <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
@@ -294,10 +343,19 @@ const Transactions = () => {
                 {activeView === 'product-transactions' ? (
                     <>
                         <div className="flex flex-col">
-                            <div className="mx-6 mb-6 flex flex-col">
-                                <p className="text-[#101828] font-medium">All transactions</p>
-                                <p className="text-[#667085] text-[14px]">View all your transaction details</p>
+                            <div className="flex item-center justify-between">
+                                <div className="mx-6 mb-6 flex flex-col">
+                                    <p className="text-[#101828] font-medium">All transactions</p>
+                                    <p className="text-[#667085] text-[14px]">View all your transaction details</p>
+                                </div>
+                                <FilterDropdown
+                                    filter={filter}
+                                    setFilter={setFilter}
+                                    setCurrentPage={setCurrentPage}
+                                />
+
                             </div>
+
 
                             <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
                                 <div className="flex items-center px-[24px] w-[35%] py-[12px] gap-[4px]">
@@ -461,11 +519,14 @@ const Transactions = () => {
                 )}
             </div>
 
-            <PayoutRequestModal
-                isPayoutRequestModalOpen={isPayoutRequestModalOpen}
-                onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}
-                onRequestSuccess={handlePayoutRequestSuccess}
-            />
+            {/*<PayoutRequestModal*/}
+            {/*    isPayoutRequestModalOpen={isPayoutRequestModalOpen}*/}
+            {/*    onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}*/}
+            {/*    onRequestSuccess={handlePayoutRequestSuccess} shopId={0} amount={0} accountDetails={null}*/}
+            {/*    onUpdateAccount={function (details: ShopAccountDetails): Promise<boolean> {*/}
+            {/*        console.log("details: ",details);*/}
+            {/*        throw new Error("Function not implemented.");*/}
+            {/*    }}            />*/}
 
             <PayoutRequestSuccessModal
                 isOpen={isSuccessModalOpen}

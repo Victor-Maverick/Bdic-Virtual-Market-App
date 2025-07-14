@@ -74,10 +74,15 @@ type Product = {
 };
 
 const ProductActionsDropdown = ({
+                                    productId,
                                     children,
+                                    onEdit,
+                                    onDelete,
                                 }: {
     productId: number;
     children: React.ReactNode;
+    onEdit: (productId: number) => void;
+    onDelete: (productId: number) => void;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -110,9 +115,23 @@ const ProductActionsDropdown = ({
             {isOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg z-50 border border-[#ededed] w-[125px]">
                     <ul className="py-1">
-                        <li className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer">Edit</li>
+                        <li
+                            className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                            onClick={() => {
+                                onEdit(productId);
+                                setIsOpen(false);
+                            }}
+                        >
+                            Edit
+                        </li>
                         <li className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer">Promote</li>
-                        <li className="px-4 py-2 text-[12px] hover:bg-[##FFFAF9] cursor-pointer text-[#FF5050]">
+                        <li
+                            className="px-4 py-2 text-[12px] hover:bg-[#FFFAF9] cursor-pointer text-[#FF5050]"
+                            onClick={() => {
+                                onDelete(productId);
+                                setIsOpen(false);
+                            }}
+                        >
                             Remove product
                         </li>
                     </ul>
@@ -122,14 +141,143 @@ const ProductActionsDropdown = ({
     );
 };
 
+type EditProductModalProps = {
+    isOpen: boolean;
+    onClose: () => void;
+    product: ProductOne | null;
+    onSave: (productId: number, price: number, quantity: number) => Promise<void>;
+};
+
+const EditProductModal = ({ isOpen, onClose, product, onSave }: EditProductModalProps) => {
+    const [price, setPrice] = useState(product?.price.toString() || '');
+    const [quantity, setQuantity] = useState(product?.quantity.toString() || '');
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => {
+        if (product) {
+            setPrice(product.price.toString());
+            setQuantity(product.quantity.toString());
+        }
+    }, [product]);
+
+    const handleSave = async () => {
+        if (!product) return;
+
+        try {
+            setIsSaving(true);
+            await onSave(product.id, Number(price), Number(quantity));
+            onClose();
+        } catch (error) {
+            console.error('Error updating product:', error);
+            alert('Failed to update product. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    if (!isOpen || !product) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+            <div className="bg-white rounded-[4px] p-6 w-[90%] max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-[#022B23] text-[18px] font-medium">Edit Product</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                        &times;
+                    </button>
+                </div>
+
+                <div className="mb-4">
+                    <label className="block text-[#6D6D6D] text-[12px] font-medium mb-1">Price (NGN)</label>
+                    <input
+                        type="number"
+                        value={price}
+                        onChange={(e) => setPrice(e.target.value)}
+                        className="w-full px-4 h-[44px] border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none"
+                    />
+                </div>
+
+                <div className="mb-6">
+                    <label className="block text-[#6D6D6D] text-[12px] font-medium mb-1">Quantity to add to stock or reduce stock(-ve or +ve)</label>
+                    <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) => setQuantity(e.target.value)}
+                        className="w-full px-4 h-[44px] border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none"
+                    />
+                </div>
+
+                <div className="flex justify-end gap-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 border border-[#D1D1D1] rounded-[2px] text-[#022B23]"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className={`px-4 py-2 bg-[#022B23] cursor-pointer text-white rounded-[4px] ${isSaving ? 'opacity-50' : ''}`}
+                    >
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+type ConfirmationModalProps = {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+};
+
+const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }: ConfirmationModalProps) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+            <div className="bg-white rounded-[4px] p-6 w-[90%] max-w-md">
+                <div className="mb-4">
+                    <h2 className="text-[#022B23] text-[18px] font-medium">{title}</h2>
+                    <p className="text-[#6D6D6D] mt-2">{message}</p>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 border cursor-pointer border-[#D1D1D1] rounded-[4px] text-[#022B23]"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={onConfirm}
+                        className="px-4 py-2 bg-[#FF5050] cursor-pointer text-white rounded-[4px]"
+                    >
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const ProductTableRow = ({
                              product,
-                             isLast
+                             isLast,
+                             onEdit,
+                             onDelete
                          }: {
     product: ProductOne;
-    isLast: boolean
+    isLast: boolean;
+    onEdit: (productId: number) => void;
+    onDelete: (productId: number) => void;
 }) => {
     return (
+        <>
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[284px] pr-[24px] gap-3">
                 <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
@@ -194,7 +342,11 @@ const ProductTableRow = ({
             </div>
 
             <div className="flex items-center justify-center w-[40px]">
-                <ProductActionsDropdown productId={product.id}>
+                <ProductActionsDropdown
+                    productId={product.id}
+                    onEdit={onEdit}
+                    onDelete={onDelete}
+                >
                     <>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -203,6 +355,8 @@ const ProductTableRow = ({
                 </ProductActionsDropdown>
             </div>
         </div>
+
+        </>
     );
 };
 
@@ -320,54 +474,54 @@ const SubCategoryDropDown = ({
     );
 };
 
-const DropDown = ({
-                      options,
-                      selected,
-                      onSelect,
-                      className = ""
-                  }: {
-    options: string[];
-    selected: string;
-    onSelect: (option: string) => void;
-    className?: string;
-}) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className={`relative ${className}`}>
-            <div
-                onClick={() => setIsOpen(!isOpen)}
-                className="border-[1.5px] rounded-[14px] h-[44px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
-            >
-                <p className="text-[#BDBDBD] text-[16px] font-medium">{selected}</p>
-                <ChevronDown
-                    size={18}
-                    className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                    color="#D1D1D1"
-                />
-            </div>
-
-            {isOpen && (
-                <div className="absolute left-0 mt-2 w-full bg-white rounded-md shadow-lg z-10 border border-[#ededed]">
-                    <ul className="py-1">
-                        {options.map((option, index) => (
-                            <li
-                                key={index}
-                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                                onClick={() => {
-                                    onSelect(option);
-                                    setIsOpen(false);
-                                }}
-                            >
-                                {option}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            )}
-        </div>
-    );
-};
+// const DropDown = ({
+//                       options,
+//                       selected,
+//                       onSelect,
+//                       className = ""
+//                   }: {
+//     options: string[];
+//     selected: string;
+//     onSelect: (option: string) => void;
+//     className?: string;
+// }) => {
+//     const [isOpen, setIsOpen] = useState(false);
+//
+//     return (
+//         <div className={`relative ${className}`}>
+//             <div
+//                 onClick={() => setIsOpen(!isOpen)}
+//                 className="border-[1.5px] rounded-[14px] h-[44px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
+//             >
+//                 <p className="text-[#BDBDBD] text-[16px] font-medium">{selected}</p>
+//                 <ChevronDown
+//                     size={18}
+//                     className={`ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`}
+//                     color="#D1D1D1"
+//                 />
+//             </div>
+//
+//             {isOpen && (
+//                 <div className="absolute left-0 mt-2 w-full bg-white rounded-md shadow-lg z-10 border border-[#ededed]">
+//                     <ul className="py-1">
+//                         {options.map((option, index) => (
+//                             <li
+//                                 key={index}
+//                                 className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+//                                 onClick={() => {
+//                                     onSelect(option);
+//                                     setIsOpen(false);
+//                                 }}
+//                             >
+//                                 {option}
+//                             </li>
+//                         ))}
+//                     </ul>
+//                 </div>
+//             )}
+//         </div>
+//     );
+// };
 
 const InputField = ({
                         id,
@@ -580,7 +734,6 @@ const NewProductView = ({shopId}) => {
         searchParams.get('tab') === 'product' ? 'Products-management' : 'New-item'
     );
     const [viewMode, setViewMode] = useState<'edit' | 'preview'>('edit');
-    const [selectedFilter, setSelectedFilter] = useState("Last 24 Hrs");
     const [categories, setCategories] = useState<Category[]>([]);
     const [loadingCategories, setLoadingCategories] = useState(false);
     const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
@@ -604,7 +757,7 @@ const NewProductView = ({shopId}) => {
     const sideImageInputRefs = useRef<(HTMLInputElement | null)[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const productsPerPage = 5;
-    const timeFilters = ["Last 24 Hrs", "Last 7 days", "Last 30 days", "Last 90 days"];
+    // const timeFilters = ["Last 24 Hrs", "Last 7 days", "Last 30 days", "Last 90 days"];
     const mockProducts = [
         { id: 1, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
         { id: 2, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Disabled", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", totalStock: "200", remainingStock: "128" },
@@ -619,9 +772,7 @@ const NewProductView = ({shopId}) => {
     ];
 
     const totalPages = Math.ceil(mockProducts.length / productsPerPage);
-    const indexOfLastProduct = currentPage * productsPerPage;
-    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    const currentProducts = mockProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    // const indexOfLastProduct = currentPage * productsPerPage;
 
     // Fetch categories on component mount
     useEffect(() => {
@@ -641,6 +792,62 @@ const NewProductView = ({shopId}) => {
         };
         fetchCategories();
     }, []);
+
+    const [editingProduct, setEditingProduct] = useState<ProductOne | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [productToDelete, setProductToDelete] = useState<number | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    // Add these handler functions
+    const handleEditProduct = (productId: number) => {
+        const product = products.find(p => p.id === productId);
+        if (product) {
+            setEditingProduct(product);
+            setIsEditModalOpen(true);
+        }
+    };
+
+    const handleDeleteProduct = (productId: number) => {
+        setProductToDelete(productId);
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!productToDelete) return;
+        try {
+            await axios.delete(`https://digitalmarket.benuestate.gov.ng/api/products/delete/${productToDelete}`);
+            // Refresh products
+            const response = await axios.get(
+                `https://digitalmarket.benuestate.gov.ng/api/products/getByUser?email=${userEmail}`
+            );
+            setProducts(response.data);
+            setIsDeleteModalOpen(false);
+            setProductToDelete(null);
+        } catch (error) {
+            console.error('Error deleting product:', error);
+        }
+    };
+
+    const handleSaveProduct = async (productId: number, price: number, quantity: number) => {
+        try {
+            await axios.put(
+                `https://digitalmarket.benuestate.gov.ng/api/products/${productId}/totalStock`,
+                { quantity }
+            );
+
+            await axios.put(
+                `https://digitalmarket.benuestate.gov.ng/api/products/update-price?productId=${productId}&price=${price}`
+            );
+
+            // Refresh products list
+            const response = await axios.get(
+                `https://digitalmarket.benuestate.gov.ng/api/products/getByUser?email=${userEmail}`
+            );
+            setProducts(response.data);
+        } catch (error) {
+            console.error('Error updating product:', error);
+            throw error;
+        }
+    };
 
     const fetchSubcategories = async (categoryName: string) => {
         if (!categoryName) return;
@@ -1208,12 +1415,14 @@ const NewProductView = ({shopId}) => {
                                 product={{
                                     id: product.id,
                                     name: product.name,
-                                    mainImageUrl: product.mainImageUrl, // Convert StaticImageData to string URL
+                                    mainImageUrl: product.mainImageUrl,
                                     price: Number(product.price),
                                     quantity: Number(product.quantity),
                                     quantitySold: product.quantitySold
                                 }}
-                                isLast={index === currentProducts.length - 1}
+                                isLast={index === products.length - 1}
+                                onEdit={handleEditProduct}
+                                onDelete={handleDeleteProduct}
                             />
                         ))}
                     </div>
@@ -1312,14 +1521,7 @@ const NewProductView = ({shopId}) => {
                         <p>Products management</p>
                     </div>
                 </div>
-                {activeView === 'Products-management' && (
-                    <DropDown
-                        options={timeFilters}
-                        selected={selectedFilter}
-                        onSelect={setSelectedFilter}
-                        className="w-[150px]"
-                    />
-                )}
+                {activeView === 'Products-management'}
             </div>
             <div className="">
                 {activeView === 'New-item' ? renderNewItemView() : renderProductsManagementView()}
@@ -1333,6 +1535,22 @@ const NewProductView = ({shopId}) => {
                     setActiveView('Products-management');
                     router.push('/vendor/dashboard/shop?tab=product');
                 }}
+
+            />
+
+            <EditProductModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                product={editingProduct}
+                onSave={handleSaveProduct}
+            />
+
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Product"
+                message="Are you sure you want to delete this product? This action cannot be undone."
             />
         </div>
     );

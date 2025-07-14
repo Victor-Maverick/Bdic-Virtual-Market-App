@@ -20,6 +20,10 @@ const Notifications = () => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const notificationsPerPage = 6;
+
     const fetchNotifications = useCallback(async () => {
         if (session?.user?.email) {
             try {
@@ -41,15 +45,21 @@ const Notifications = () => {
         }
     }, [session?.user?.email]);
 
-    const markAllAsRead = async () => {
-        if (session?.user?.email) {
+    // Calculate current notifications
+    const indexOfLastNotification = currentPage * notificationsPerPage;
+    const indexOfFirstNotification = indexOfLastNotification - notificationsPerPage;
+    const currentNotifications = notifications.slice(indexOfFirstNotification, indexOfLastNotification);
+    const totalPages = Math.ceil(notifications.length / notificationsPerPage);
+
+    const clearNotifications = async () => {
+        if (session?.user?.email && notifications.length > 0) {
             try {
-                await axios.put(
-                    `https://digitalmarket.benuestate.gov.ng/api/notification/readAllNotification?email=${session.user.email}`
+                await axios.delete(
+                    `https://digitalmarket.benuestate.gov.ng/api/notification/deleteAllUser?email=${session.user.email}`
                 );
                 fetchNotifications();
             } catch (error) {
-                console.error('Error marking notifications as read:', error);
+                console.error('Error deleting notifications:', error);
             }
         }
     };
@@ -94,15 +104,17 @@ const Notifications = () => {
             <div className="flex px-25 mt-[30px] gap-[40px]">
                 <div className="flex flex-col gap-[14px]">
                     <div className="flex flex-col">
-                        <p className="text-[18px] font-medium text-[#101828]">All Notifications</p>
+                        <p className="text-[18px] font-medium text-[#101828]">All Notifications ({notifications.length})</p>
                         <p className="text-[#667085] text-[14px]">View all your notifications here</p>
                     </div>
-                    <p
-                        className="text-[#667085] text-[14px] underline cursor-pointer"
-                        onClick={markAllAsRead}
-                    >
-                        Mark all as read
-                    </p>
+                    {notifications.length > 0 && (
+                        <p
+                            className="text-[#667085] text-[14px] underline cursor-pointer"
+                            onClick={clearNotifications}
+                        >
+                            Clear all notifications
+                        </p>
+                    )}
                 </div>
 
                 {isLoading ? (
@@ -115,7 +127,7 @@ const Notifications = () => {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-[8px] mb-10 w-[645px]">
-                        {notifications.map((notification) => (
+                        {currentNotifications.map((notification) => (
                             <div
                                 key={notification.id}
                                 className="flex px-[20px] rounded-[14px] py-[15px] h-auto w-full flex-col bg-[#F9F9F9] border-[0.5px] border-[#EDEDED]"
@@ -156,6 +168,38 @@ const Notifications = () => {
                                 )}
                             </div>
                         ))}
+
+                        {notifications.length > notificationsPerPage && (
+                            <div className="flex justify-center mt-6">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={currentPage === 1}
+                                        className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                                    >
+                                        Previous
+                                    </button>
+
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                        <button
+                                            key={page}
+                                            onClick={() => setCurrentPage(page)}
+                                            className={`px-3 py-1 rounded-md ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                        disabled={currentPage === totalPages}
+                                        className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                                    >
+                                        Next
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

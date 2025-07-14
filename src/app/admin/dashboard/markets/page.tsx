@@ -387,23 +387,6 @@ const Markets = () => {
                             <div className="flex h-[20px] items-center">
                                 <p className="text-[14px] text-[#667085]">View and manage markets here</p>
                             </div>
-                            <div className="w-[302px] h-[26px] flex rounded-[6px] border-[0.5px] border-[#f2f2f2]">
-                                <div className="w-[69px] text-[#03071E] text-[10px] flex items-center justify-center h-full border-r-[0.5px] border-[#F2F2F2] rounded-bl-[6px] rounded-tl-[6px] bg-[#F8FAFB]">
-                                    All Markets
-                                </div>
-                                <div className="w-[57px] text-[#8c8c8c] text-[10px] flex items-center justify-center h-full border-r-[0.5px] border-[#F2F2F2]">
-                                    Market 1
-                                </div>
-                                <div className="w-[58px] text-[#8c8c8c] text-[10px] flex items-center justify-center h-full border-r-[0.5px] border-[#F2F2F2]">
-                                    Market 2
-                                </div>
-                                <div className="w-[59px] text-[#8c8c8c] text-[10px] flex items-center justify-center h-full border-r-[0.5px] border-[#F2F2F2]">
-                                    Market 3
-                                </div>
-                                <div className="w-[59px] text-[#8c8c8c] text-[10px] flex items-center justify-center h-full border-r-[0.5px] border-[#F2F2F2] rounded-br-[6px] rounded-tr-[6px]">
-                                    Market 4
-                                </div>
-                            </div>
                         </div>
                         <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
                             <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>

@@ -161,7 +161,7 @@ const ShopClient = () => {
                 <div className="bg-white rounded-lg mx-[100px] mb-8">
                     {activeTab === 'shop-information' && <ShopInformation shopData={shopData} />}
                     {activeTab === 'products' && <NewProductView shopId={shopData.id}/>}
-                    {activeTab === 'reviews' && <ReviewsView />}
+                    {activeTab === 'reviews' && <ReviewsView shopId={shopData.id}/>}
                 </div>
             </div>
 

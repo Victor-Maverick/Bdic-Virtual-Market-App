@@ -340,7 +340,7 @@ const Settings = () => {
         }
     }, [session]);
 
-// Then update the useEffect hook to include fetchUserData in dependencies:
+    // Then update the useEffect hook to include fetchUserData in dependencies:
     useEffect(() => {
         if (session?.user?.email) {
             fetchUserData();
@@ -574,11 +574,7 @@ const Settings = () => {
         };
     }, []);
 
-    useEffect(() => {
-        if (session?.user?.email) {
-            fetchUserData();
-        }
-    }, [session]);
+
 
     // Split password criteria into two rows
     const firstRowCriteria = passwordCriteria.slice(0, 2);

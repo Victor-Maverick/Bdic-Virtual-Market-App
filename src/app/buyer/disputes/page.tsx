@@ -305,6 +305,9 @@ const Disputes = () => {
     const [loading, setLoading] = useState(true);
     const [selectedDispute, setSelectedDispute] = useState<DisputeResponse | null>(null);
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const disputesPerPage = 6;
 
     const fetchDisputes = useCallback(async () => {
         if (session?.user?.email) {
@@ -328,6 +331,12 @@ const Disputes = () => {
             }
         }
     }, [session]);
+
+    // Calculate current disputes to display
+    const indexOfLastDispute = currentPage * disputesPerPage;
+    const indexOfFirstDispute = indexOfLastDispute - disputesPerPage;
+    const currentDisputes = disputes.slice(indexOfFirstDispute, indexOfLastDispute);
+    const totalPages = Math.ceil(disputes.length / disputesPerPage);
 
     useEffect(() => {
         fetchDisputes();
@@ -450,16 +459,48 @@ const Disputes = () => {
                             </div>
 
                             <div className="flex flex-col">
-                                {disputes.map((dispute, index) => (
+                                {currentDisputes.map((dispute, index) => (
                                     <DisputeTableRow
                                         key={dispute.id}
                                         dispute={dispute}
-                                        isLast={index === disputes.length - 1}
+                                        isLast={index === currentDisputes.length - 1}
                                         onViewDispute={() => handleViewDispute(dispute)}
                                         onAcceptResolution={() => handleAcceptResolution(dispute.id)}
                                     />
                                 ))}
                             </div>
+                            {/* Pagination controls */}
+                            {disputes.length > disputesPerPage && (
+                                <div className="flex justify-center mt-4 mb-[50px]">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                                        >
+                                            Previous
+                                        </button>
+
+                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                            <button
+                                                key={page}
+                                                onClick={() => setCurrentPage(page)}
+                                                className={`px-3 py-1 rounded-md ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                            >
+                                                {page}
+                                            </button>
+                                        ))}
+
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                            className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -472,6 +513,7 @@ const Disputes = () => {
                     onAcceptResolution={() => handleAcceptResolution(selectedDispute.id)}
                 />
             )}
+
 
             <Toaster
                 position="top-center"

@@ -7,6 +7,8 @@ import Image from "next/image";
 import { Toaster, toast } from 'react-hot-toast';
 import arrowDown from "../../../public/assets/images/arrow-down.svg";
 
+import FilterDropdown from "@/components/filterDropdown";
+
 interface OrderItemDto {
     id: number;
     productId: number;
@@ -35,20 +37,25 @@ interface DisputeResponse {
 
 interface ProductActionsDropdownProps {
     children: React.ReactNode;
-    orderNumber: string;  // Changed from orderId to orderNumber
+    orderNumber: string;
     orderStatus: OrderStatus;
-    onMarkDelivered: (orderNumber: string) => Promise<void>;  // Now accepts orderNumber
-    onViewOrder: (orderNumber: string) => void;  // Now accepts orderNumber
+    items: OrderItemDto[];
+    onProcessOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
+    onDeclineOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
+    onShipOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
+    onViewOrder: (orderNumber: string) => void;
 }
 
 const ProductActionsDropdown = ({
-
                                     children,
                                     orderNumber,
                                     orderStatus,
-                                    onMarkDelivered,
+                                    items,
+                                    onProcessOrder,
+                                    onDeclineOrder,
+                                    onShipOrder,
                                     onViewOrder
-                                }: ProductActionsDropdownProps) =>{
+                                }: ProductActionsDropdownProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -57,19 +64,57 @@ const ProductActionsDropdown = ({
         setIsOpen(!isOpen);
     };
 
-    const handleActionClick = async (e: React.MouseEvent, action: 'markDelivered' | 'viewOrder') => {
+    const handleActionClick = async (
+        e: React.MouseEvent,
+        action: 'process' | 'decline' | 'ship' | 'view'
+    ) => {
         e.stopPropagation();
         try {
-            if (action === 'markDelivered') {
-                await onMarkDelivered(orderNumber);
-            } else {
-                onViewOrder(orderNumber);
+            // Validate we have items
+            if (!items || items.length === 0) {
+                throw new Error('No items found in this order');
             }
+
+            // For view action, we don't need itemIds
+            if (action === 'view') {
+                onViewOrder(orderNumber);
+                setIsOpen(false);
+                return;
+            }
+
+            // Get all item IDs
+            const itemIds = items.map(item => item.id);
+            console.log("Item IDs: ", itemIds);
+
+            // Validate we have itemIds
+            if (itemIds.length === 0) {
+                throw new Error('No item IDs found');
+            }
+
+            // Call the appropriate handler
+            switch (action) {
+                case 'process':
+                    await onProcessOrder(orderNumber, itemIds);
+                    break;
+                case 'decline':
+                    await onDeclineOrder(orderNumber, itemIds);
+                    break;
+                case 'ship':
+                    await onShipOrder(orderNumber, itemIds);
+                    break;
+            }
+
             setIsOpen(false);
         } catch (error) {
             console.error('Error:', error);
+            toast.error((error as Error).message || 'Failed to perform action', {
+                position: 'top-center',
+                style: {
+                    background: '#FF3333',
+                    color: '#fff',
+                },
+            });
         }
-
     };
 
     useEffect(() => {
@@ -93,19 +138,50 @@ const ProductActionsDropdown = ({
             </div>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg z-50 border border-[#ededed] w-[125px]">
+                <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg z-50 border border-[#ededed] w-[150px]">
                     <ul className="py-1">
-                        {orderStatus === OrderStatus.PAID ? (
+                        {orderStatus === OrderStatus.PENDING && (
+                            <>
+                                <li
+                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                    onClick={(e) => handleActionClick(e, 'process')}
+                                >
+                                    Process order
+                                </li>
+                                <li
+                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                    onClick={(e) => handleActionClick(e, 'decline')}
+                                >
+                                    Decline order
+                                </li>
+                                <li
+                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                    onClick={(e) => handleActionClick(e, 'ship')}
+                                >
+                                    Ship order
+                                </li>
+                            </>
+                        )}
+                        {orderStatus === OrderStatus.PROCESSING && (
                             <li
                                 className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                                onClick={(e) => handleActionClick(e, 'markDelivered')}
+                                onClick={(e) => handleActionClick(e, 'ship')}
                             >
-                                Mark delivered
+                                Ship order
                             </li>
-                        ) : (
+                        )}
+                        {orderStatus === OrderStatus.SHIPPED && (
                             <li
                                 className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                                onClick={(e) => handleActionClick(e, 'viewOrder')}
+                                onClick={(e) => handleActionClick(e, 'view')}
+                            >
+                                View order
+                            </li>
+                        )}
+                        {orderStatus === OrderStatus.DELIVERED && (
+                            <li
+                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={(e) => handleActionClick(e, 'view')}
                             >
                                 View order
                             </li>
@@ -116,7 +192,6 @@ const ProductActionsDropdown = ({
         </div>
     );
 };
-
 
 
 const DisputeDetailsModal = ({
@@ -520,11 +595,107 @@ interface DeliveryInfo {
 
 enum OrderStatus {
     PAID = 'PAID',
+    PENDING = 'PENDING',
+    PROCESSING = 'PROCESSING',
     PENDING_DELIVERY = 'PENDING_DELIVERY',
     SHIPPED = 'SHIPPED',
     DELIVERED = 'DELIVERED',
+    DECLINED = 'DECLINED',
     CANCELLED = 'CANCELLED'
 }
+
+interface ProductTableRowProps {
+    order: OrderResponse;
+    isLast: boolean;
+    onProcessOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
+    onDeclineOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
+    onShipOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
+    onViewOrder: (orderNumber: string) => void;
+}
+
+const ProductTableRow = ({
+                             order,
+                             isLast,
+                             onProcessOrder,
+                             onDeclineOrder,
+                             onShipOrder,
+                             onViewOrder
+                         }: ProductTableRowProps) => {
+    const firstItem = order.items[0];
+
+    return (
+        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : 'border-b border-[#EAECF0]'}`}>
+            <div className="flex items-center w-[30%] pr-[24px] gap-3">
+                <div className="bg-[#f9f9f9] h-[70px] w-[70px] flex items-center justify-center overflow-hidden">
+                    {firstItem.productImage && (
+                        <Image
+                            src={firstItem.productImage}
+                            alt={firstItem.productName}
+                            width={70}
+                            height={70}
+                            className="object-cover w-full h-full"
+                        />
+                    )}
+                </div>
+                <div className="flex flex-col">
+                    <p className="text-[14px] font-medium text-[#101828]">{firstItem.productName}</p>
+                    {order.items.length > 1 && (
+                        <p className="text-[12px] text-[#667085]">+{order.items.length - 1} more items</p>
+                    )}
+                </div>
+            </div>
+
+            <div className="flex justify-center items-center w-[10%]">
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                    order.status === OrderStatus.DELIVERED ? 'bg-green-100 text-green-800' :
+                        order.status === OrderStatus.SHIPPED ? 'bg-green-100 text-green-800' :
+                            order.status === OrderStatus.PROCESSING ? 'bg-yellow-100 text-yellow-800' :
+                                order.status === OrderStatus.DECLINED ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                }`}>
+                    {order.status}
+                </span>
+            </div>
+            <div className="flex items-center w-[13%]">
+                <p className="text-[#101828] text-[10px]">
+                    {order.orderNumber}
+                </p>
+            </div>
+            <div className="flex pl-[24px] items-center w-[20%]">
+                <p className="text-[#101828] text-[14px] capitalize">
+                    {order.deliveryInfo?.method || ''}
+                </p>
+            </div>
+            <div className="flex pl-[24px] items-center w-[15%]">
+                <p className="text-[#101828] text-[14px]">
+                    ₦{order.items.reduce((sum, item) => sum + item.totalPrice, 0).toLocaleString()}
+                </p>
+            </div>
+            <div className="flex items-center pl-[24px] w-[10%]">
+                <p className="text-[#101828] text-[14px]">
+                    {order.items.reduce((sum, item) => sum + item.quantity, 0)}
+                </p>
+            </div>
+            <div className="flex items-center justify-center w-[2%]">
+                <ProductActionsDropdown
+                    orderNumber={order.orderNumber}
+                    orderStatus={order.status}
+                    items={order.items}
+                    onProcessOrder={onProcessOrder}
+                    onDeclineOrder={onDeclineOrder}
+                    onShipOrder={onShipOrder}
+                    onViewOrder={onViewOrder}
+                >
+                    <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                    </div>
+                </ProductActionsDropdown>
+            </div>
+        </div>
+    );
+};
 
 interface PendingOrdersProps {
     orders: OrderResponse[];
@@ -533,62 +704,185 @@ interface PendingOrdersProps {
 
 const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) => {
     const [orders, setOrders] = useState<OrderResponse[]>(initialOrders);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [filter, setFilter] = useState<'all' | 'today' | '1day' | '7days' | '30days'>('all');
     const router = useRouter();
 
-    const handleMarkDelivered = async (orderNumber: string) => {
+    const handleProcessOrder = async (orderNumber: string, itemIds: number[]) => {
         try {
             const response = await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/orders/process-order',
-                { orderNumber },
-                {
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                }
+                'https://digitalmarket.benuestate.gov.ng/api/orders/process-item',
+                { orderNumber, itemIds },
+                { headers: { 'Content-Type': 'application/json' } }
             );
-            if (response.status !== 200) {
-                throw new Error('Failed to mark order as delivered');
+
+            if (response.status === 200) {
+                toast.success('Order processed successfully');
+                updateOrderStatus(orderNumber, OrderStatus.PROCESSING);
+            } else {
+                throw new Error('Failed to process order');
             }
-            // Optimistically update the UI
-            setOrders(prevOrders =>
-                prevOrders.map(order =>
-                    order.orderNumber === orderNumber
-                        ? { ...order, status: OrderStatus.DELIVERED }
-                        : order
-                )
-            );
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error processing order:', error);
+            toast.error('Failed to process order');
         }
+    };
+
+    const handleDeclineOrder = async (orderNumber: string, itemIds: number[]) => {
+        try {
+            const response = await axios.put(
+                'https://digitalmarket.benuestate.gov.ng/api/orders/decline-order',
+                { orderNumber, itemIds },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (response.status === 200) {
+                toast.success('Order declined successfully');
+                updateOrderStatus(orderNumber, OrderStatus.CANCELLED);
+            } else {
+                throw new Error('Failed to decline order');
+            }
+        } catch (error) {
+            console.error('Error declining order:', error);
+            toast.error('Failed to decline order');
+        }
+    };
+
+    const handleShipOrder = async (orderNumber: string, itemIds: number[]) => {
+        try {
+            const response = await axios.post(
+                'https://digitalmarket.benuestate.gov.ng/api/orders/ship-item',
+                { orderNumber, itemIds },
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+
+            if (response.status === 200) {
+                toast.success('Order shipped successfully');
+                updateOrderStatus(orderNumber, OrderStatus.SHIPPED);
+            } else {
+                throw new Error('Failed to ship order');
+            }
+        } catch (error) {
+            console.error('Error shipping order:', error);
+            toast.error('Failed to ship order');
+        }
+    };
+
+    const updateOrderStatus = (orderNumber: string, newStatus: OrderStatus) => {
+        setOrders(prevOrders =>
+            prevOrders.map(order =>
+                order.orderNumber === orderNumber
+                    ? { ...order, status: newStatus }
+                    : order
+            )
+        );
     };
 
     const handleViewOrder = (orderNumber: string) => {
         router.push(`/vendor/dashboard/order/${orderNumber}`);
     };
-    // Update orders if initialOrders changes
+
     useEffect(() => {
         setOrders(initialOrders);
     }, [initialOrders]);
+
+    const getFilteredOrders = () => {
+        const now = new Date();
+        const today = new Date(now.setHours(0, 0, 0, 0));
+
+        switch (filter) {
+            case 'today':
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= today;
+                });
+            case '1day':
+                const oneDayAgo = new Date(today);
+                oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= oneDayAgo && orderDate < today;
+                });
+            case '7days':
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= sevenDaysAgo;
+                });
+            case '30days':
+                const thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                return orders.filter(order => {
+                    const orderDate = new Date(order.createdAt);
+                    return orderDate >= thirtyDaysAgo;
+                });
+            default:
+                return orders;
+        }
+    };
+
+    const PRODUCTS_PER_PAGE = 5;
+    const filteredOrders = getFilteredOrders();
+    const totalPages = Math.ceil(filteredOrders.length / PRODUCTS_PER_PAGE);
+    const currentOrders = filteredOrders.slice(
+        (currentPage - 1) * PRODUCTS_PER_PAGE,
+        currentPage * PRODUCTS_PER_PAGE
+    );
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
 
     if (loading) {
         return <div className="p-4 text-center">Loading orders...</div>;
     }
 
     if (!orders || orders.length === 0) {
-        return <div className="p-4 text-center">No pending orders found.</div>;
+        return <div className="p-4 text-center">No orders found.</div>;
     }
-    // Filter only pending orders if needed (your API might already do this)
-    const pendingOrders = orders.filter(order =>
-        order.status === OrderStatus.PAID ||
-        order.status === OrderStatus.PENDING_DELIVERY ||
-        order.status === OrderStatus.DELIVERED
-    );
+
+    if (filteredOrders.length === 0) {
+        return (
+            <div className="p-4 text-center">
+                No orders found for the selected filter.
+                <button
+                    onClick={() => setFilter('all')}
+                    className="mt-2 text-[#022B23] hover:underline"
+                >
+                    Clear filters
+                </button>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col gap-[50px]">
             <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
                 <div className="my-[20px] mx-[25px] flex flex-col">
-                    <p className="text-[#101828] font-medium">Orders ({pendingOrders.length})</p>
-                    <p className="text-[#667085] text-[14px]">View your product orders</p>
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <p className="text-[#101828] font-medium">Orders ({filteredOrders.length})</p>
+                            <p className="text-[#667085] text-[14px]">View your product orders</p>
+                        </div>
+                        <FilterDropdown
+                            filter={filter}
+                            setFilter={setFilter}
+                            setCurrentPage={setCurrentPage}
+                        />
+                    </div>
                 </div>
 
                 <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
@@ -615,80 +909,74 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
                 </div>
 
                 <div className="flex flex-col">
-                    {pendingOrders.map((order) => (
-                        <div
-                            key={order.id}
-                            className="flex flex-col border-b-[1px] border-[#EAECF0] hover:bg-[#F9FAFB]"
+                    {filteredOrders.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-10">
+                            <p className="text-[#667085] text-[14px] mb-4">No orders</p>
+                            <button
+                                onClick={() => setFilter('all')}
+                                className="text-[#022B23] text-[14px] font-medium hover:underline"
+                            >
+                                Clear filters
+                            </button>
+                        </div>
+                    ) : (
+                        currentOrders.map((order, index) => (
+                            <ProductTableRow
+                                key={order.id}
+                                order={order}
+                                isLast={index === currentOrders.length - 1}
+                                onProcessOrder={handleProcessOrder}
+                                onDeclineOrder={handleDeclineOrder}
+                                onShipOrder={handleShipOrder}
+                                onViewOrder={handleViewOrder}
+                            />
+                        ))
+                    )}
+                </div>
+
+                {filteredOrders.length > 0 && (
+                    <div className="flex justify-between items-center mt-4 px-6 pb-6">
+                        <button
+                            onClick={handlePrevPage}
+                            disabled={currentPage === 1}
+                            className={`px-4 py-2 rounded-md ${
+                                currentPage === 1
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-[#022B23] hover:bg-gray-100'
+                            }`}
                         >
-                            {/* Order items */}
-                            {order.items.map((item) => (
-                                <div
-                                    key={`${order.id}-${item.id}`}
-                                    className="flex items-center h-[72px] "
+                            Previous
+                        </button>
+
+                        <div className="flex gap-2">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => handlePageChange(page)}
+                                    className={`w-8 h-8 rounded-md flex items-center justify-center ${
+                                        currentPage === page
+                                            ? 'bg-[#022B23] text-white'
+                                            : 'text-[#022B23] hover:bg-gray-100'
+                                    }`}
                                 >
-                                    <div className="flex items-center w-[30%] px-[24px] gap-3">
-                                        <Image
-                                            src={item.productImage}
-                                            alt={item.productName}
-                                            width={70}
-                                            height={72}
-                                            className="h-full object-cover"
-                                        />
-                                        <div>
-                                            <p className="text-[#101828] text-[14px]">{item.productName}</p>
-                                            <p className="text-[#667085] text-[12px]">ID: {item.productId}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-center items-center w-[10%]">
-                                        <span className={`px-2 py-1 text-xs rounded-full ${
-                                            order.status === OrderStatus.PAID ? 'bg-green-100 text-green-800' :
-                                                order.status === OrderStatus.DELIVERED ? 'bg-green-100 text-green-800' :
-                                                order.status === OrderStatus.PENDING_DELIVERY ? 'bg-yellow-100 text-yellow-800' :
-                                                    order.status === OrderStatus.CANCELLED ? 'bg-red-100 text-red-800' :
-                                                        'bg-gray-100 text-gray-800'
-                                        }`}>
-                                            {order.status}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center w-[13%]">
-                                        <p className="text-[#101828] text-[10px]">
-                                            {order.orderNumber}
-                                        </p>
-                                    </div>
-                                    <div className="flex pl-[24px] items-center w-[20%]">
-                                        <p className="text-[#101828] text-[14px] capitalize">
-                                            {order.deliveryInfo?.method || ''}
-                                        </p>
-                                    </div>
-                                    <div className="flex pl-[24px] items-center w-[15%]">
-                                        <p className="text-[#101828] text-[14px]">
-                                            ₦{item.totalPrice.toLocaleString()}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center pl-[24px] w-[10%]">
-                                        <p className="text-[#101828] text-[14px]">
-                                            {item.quantity}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center justify-center w-[2%]">
-                                        <ProductActionsDropdown
-                                            orderNumber={order.orderNumber}  // Pass orderNumber instead of orderId
-                                            orderStatus={order.status}
-                                            onMarkDelivered={handleMarkDelivered}
-                                            onViewOrder={handleViewOrder}
-                                        >
-                                            <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
-                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                            </div>
-                                        </ProductActionsDropdown>
-                                    </div>
-                                </div>
+                                    {page}
+                                </button>
                             ))}
                         </div>
-                    ))}
-                </div>
+
+                        <button
+                            onClick={handleNextPage}
+                            disabled={currentPage === totalPages}
+                            className={`px-4 py-2 rounded-md ${
+                                currentPage === totalPages
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-[#022B23] hover:bg-gray-100'
+                            }`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -820,7 +1108,7 @@ import axios from "axios";
 
 const OrderClient = () => {
     const searchParams = useSearchParams();
-    const initialTab = searchParams.get('tab') as 'pending' | 'disputes' || 'pending';
+    const initialTab = (searchParams.get('tab') as 'pending' | 'disputes') || 'pending';
     const [activeTab, setActiveTab] = useState<'pending' | 'disputes'>(initialTab);
     const [pendingOrders, setPendingOrders] = useState<OrderResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -837,10 +1125,10 @@ const OrderClient = () => {
                         throw new Error('Failed to fetch orders');
                     }
                     const data = await response.json();
-                    const orderResponse =  await fetch(`https://digitalmarket.benuestate.gov.ng/api/orders/get-shop-orders?shopId=${data.id}`)
+                    const orderResponse = await fetch(`https://digitalmarket.benuestate.gov.ng/api/orders/get-shop-orders?shopId=${data.id}`);
                     const orderData = await orderResponse.json();
                     setPendingOrders(orderData);
-                    console.log("Orders: ",orderData)
+                    console.log("Orders: ", orderData);
                 } catch (error) {
                     console.error('Error fetching orders:', error);
                 } finally {
@@ -861,12 +1149,11 @@ const OrderClient = () => {
         <>
             <DashboardHeader />
             <DashboardOptions />
-
             <div className="flex flex-col">
                 <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
                     <div className="w-[359px] h-[52px] gap-[24px] flex items-end">
                         <p
-                            className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'pending' ? 'font-medium  border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
+                            className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'pending' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
                             onClick={() => handleTabChange('pending')}
                         >
                             Pending
@@ -879,7 +1166,6 @@ const OrderClient = () => {
                         </p>
                     </div>
                 </div>
-
                 <div className="bg-white rounded-lg mx-[100px] mb-8">
                     {activeTab === 'pending' && (
                         <PendingOrders

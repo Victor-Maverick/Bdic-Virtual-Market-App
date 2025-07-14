@@ -30,7 +30,6 @@ const DashboardHeader = () => {
             try {
                 const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
                     headers: {
-
                         Authorization: `Bearer ${session.accessToken}`,
                     },
                 });
@@ -41,9 +40,8 @@ const DashboardHeader = () => {
                         roles: response.data.roles || []
                     });
                 }
-                // eslint-disable-next-line @typescript-eslint/no-unused-vars
             } catch (error) {
-                console.log('Profile fetch failed or user not authenticated');
+                console.log('Profile fetch failed:', error);
             } finally {
                 setIsLoading(false);
             }
@@ -56,25 +54,9 @@ const DashboardHeader = () => {
         setIsProfileDropdownOpen(!isProfileDropdownOpen);
     };
 
-    const navigateToDashboard = () => {
-        if (!userProfile?.roles) {
-            return;
-        }
-        const roles = session?.user.roles || []
-        console.log("rolesss: ",roles);
-        if (roles.includes('VENDOR') && roles.includes('BUYER')) {
-            router.push('/vendor/dashboard');
-        } else if (roles.includes('LOGISTICS')) {
-            router.push('/logistics/dashboard');
-        } else {
-            router.push('/buyer/orders');
-        }
-        setIsProfileDropdownOpen(false);
-    };
-
     const handleLogout = async () => {
         try {
-            // Call the backend logout endpoint
+            // First call the backend logout endpoint
             await axios.post(
                 'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
                 {},
@@ -82,33 +64,31 @@ const DashboardHeader = () => {
                     headers: {
                         Authorization: `Bearer ${session?.accessToken}`,
                     },
+                    withCredentials: true // Ensure cookies are included if needed
                 }
             );
-
-            // Clear the NextAuth session
-            await signOut({
-                redirect: false,
-                callbackUrl: '/'
-            });
-            localStorage.removeItem("userEmail");
         } catch (error) {
-            console.error('Logout failed:', error);
-            // Even if backend logout fails, we should still clear the client session
-            await signOut({
-                redirect: false,
-                callbackUrl: '/'
-            });
+            console.error('Backend logout failed:', error);
+            // Continue with client-side logout even if backend fails
+        }
+
+        try {
+            // Clear client-side authentication
+            await signOut({ redirect: false });
+            localStorage.removeItem("userEmail");
+
+            // Force a hard redirect to ensure complete logout
+            window.location.href = "/";
+        } catch (error) {
+            console.error('Client logout failed:', error);
+            // Fallback to router if window.location fails
+            router.push("/");
+            router.refresh(); // Ensure page state is cleared
         }
     };
 
-    // Safe navigation handlers
     const handleLogoClick = () => {
-        try {
-            router.push("/");
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (error) {
-            console.log('Navigation to home failed');
-        }
+        router.push("/");
     };
 
     return (
@@ -120,7 +100,6 @@ const DashboardHeader = () => {
                     width={50}
                     height={50}
                     className="md:w-[50px] md:h-[50px]"
-                    onError={() => console.log('Header image failed to load')}
                 />
                 <p className="text-[14px] sm:text-[16px] md:text-[18px] font-semibold text-black leading-tight">
                     Farm<span style={{ color: "#c6eb5f" }}>Go</span> <br />
@@ -140,7 +119,6 @@ const DashboardHeader = () => {
                             width={28}
                             height={28}
                             className="rounded-full"
-                            onError={() => console.log('Profile image failed to load')}
                         />
                         <p className="text-[14px] text-[#171719] font-medium">
                             Hey, <span className="font-semibold">{userProfile.firstName}</span>
@@ -149,21 +127,6 @@ const DashboardHeader = () => {
 
                     {isProfileDropdownOpen && (
                         <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                            <button
-                                onClick={() => {
-                                    router.push('/profile');
-                                    setIsProfileDropdownOpen(false);
-                                }}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                                Profile
-                            </button>
-                            <button
-                                onClick={navigateToDashboard}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            >
-                                Dashboard
-                            </button>
                             <button
                                 onClick={handleLogout}
                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
