@@ -1,7 +1,7 @@
-'use client'
-import React, { useState, useRef, useEffect } from "react";
+'use client';
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import {
     OverviewIcon,
@@ -16,6 +16,9 @@ import {
     NotificationsIcon,
     SettingsIcon,
 } from "./../icons";
+import { useSession } from "next-auth/react";
+import axios from "axios";
+import { signOut } from "next-auth/react";
 
 interface SidebarProps {
     className?: string;
@@ -27,13 +30,15 @@ interface NavItemProps {
     badge?: string;
     href: string;
     isActive: boolean;
+    onClick?: () => void;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ icon, label, badge, href, isActive }) => {
+const NavItem: React.FC<NavItemProps> = ({ icon, label, badge, href, isActive, onClick }) => {
     return (
         <Link
             href={href}
             className={`flex items-center text-[#171719] text-sm cursor-pointer px-2 py-2.5 relative ${isActive ? 'text-[#00AA5B] font-medium' : ''}`}
+            onClick={onClick}
         >
             {isActive && (
                 <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-5 bg-[#00AA5B] rounded-r"></div>
@@ -51,8 +56,55 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, badge, href, isActive })
 
 export function Sidebar({ className }: SidebarProps) {
     const pathname = usePathname();
+    const router = useRouter();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [name, setName] = useState('');
+    const { data: session } = useSession();
+    const [notificationCount, setNotificationCount] = useState(0);
+
+    const fetchNotifications = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                const response = await axios.get(
+                    `https://digitalmarket.benuestate.gov.ng/api/notification/getUserAllUnRead?email=${session.user.email}`
+                );
+                if (Array.isArray(response.data)) {
+                    setNotificationCount(response.data.length);
+                }
+                if (session.user.firstName) {
+                    setName(session.user.firstName);
+                }
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            }
+        }
+    }, [session?.user?.email, session?.user?.firstName]);
+
+    const markNotificationsAsRead = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                await axios.put(
+                    `https://digitalmarket.benuestate.gov.ng/api/notification/readAllNotification?email=${session.user.email}`
+                );
+                fetchNotifications();
+            } catch (error) {
+                console.error('Error marking notifications as read:', error);
+            }
+        }
+    }, [session?.user?.email, fetchNotifications]);
+
+    // Fetch notifications periodically
+    useEffect(() => {
+        fetchNotifications();
+        const interval = setInterval(fetchNotifications, 5000);
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
+
+    const handleNotificationClick = useCallback(() => {
+        markNotificationsAsRead();
+        router.push('/admin/dashboard/notifications');
+    }, [markNotificationsAsRead, router]);
 
     const isActive = (path: string) => {
         if (path === '/' && pathname === '/admin/dashboard') {
@@ -74,14 +126,41 @@ export function Sidebar({ className }: SidebarProps) {
         };
     }, []);
 
-    const handleLogout = () => {
-        // Replace with actual logout logic
-        console.log("Logging out...");
+    const handleLogout = async () => {
+        try {
+            // First call the backend logout endpoint
+            await axios.post(
+                'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${session?.accessToken}`,
+                    },
+                    withCredentials: true
+                }
+            );
+        } catch (error) {
+            console.error('Backend logout failed:', error);
+        }
+
+        try {
+            // Clear client-side authentication
+            await signOut({ redirect: false });
+            localStorage.removeItem("userEmail");
+
+            // Force a hard redirect to ensure complete logout
+            window.location.href = "/login";
+        } catch (error) {
+            console.error('Client logout failed:', error);
+            // Fallback to router if window.location fails
+            router.push("/");
+            router.refresh();
+        }
     };
 
     return (
         <div
-            className={`w-[298px] max-h-screen flex flex-col justify-between  bg-[#FFFFFF] py-[6px] border-r-[#E5E5E5] border-r-[0.5px] ${className}`}
+            className={`w-[298px] max-h-screen flex flex-col justify-between bg-[#FFFFFF] py-[6px] border-r-[#E5E5E5] border-r-[0.5px] ${className}`}
         >
             <div className="flex flex-col gap-[10px] px-10 py-0 overflow-y-auto scrollbar-hide">
                 <div>
@@ -152,9 +231,10 @@ export function Sidebar({ className }: SidebarProps) {
                     <NavItem
                         icon={<NotificationsIcon />}
                         label="Notifications"
-                        badge="30+"
+                        badge={notificationCount > 0 ? (notificationCount > 9 ? '9+' : notificationCount.toString()) : undefined}
                         href="/admin/dashboard/notifications"
                         isActive={isActive('/notifications')}
+                        onClick={handleNotificationClick}
                     />
                     <NavItem
                         icon={<SettingsIcon />}
@@ -173,7 +253,7 @@ export function Sidebar({ className }: SidebarProps) {
                     <div className="flex items-center gap-[8px]">
                         <div className="w-[28px] h-[28px] rounded-full bg-[#F2F2F2]"></div>
                         <div className="flex flex-col">
-                            <p className="text-[#1E1E1E] text-[14px] font-medium">Joseph Tersoo</p>
+                            <p className="text-[#1E1E1E] text-[14px] font-medium">{name}</p>
                             <div className="w-fit px-[6px] h-[18px] text-[8px] text-[#52A43E] bg-[#D5FFE8] rounded-[100px] flex items-center justify-center">
                                 Super admin
                             </div>

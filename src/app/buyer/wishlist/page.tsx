@@ -43,7 +43,7 @@ const Wishlist = () => {
             try {
                 setLoading(true);
                 const response = await fetch(
-                    `https://digitalmarket.benuestate.gov.ng/api/orders/get-wishlist?buyerEmail=${session.user.email}`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/get-wishlist?buyerEmail=${session.user.email}`,
                     {
                         method: 'GET',
                         headers: {
@@ -98,7 +98,7 @@ const Wishlist = () => {
     const handleRemoveFromWishlist = async (productId: number) => {
         try {
             const response = await fetch(
-                'https://digitalmarket.benuestate.gov.ng/api/orders/remove-from-wishlist',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/remove-from-wishlist`,
                 {
                     method: 'POST',
                     headers: {

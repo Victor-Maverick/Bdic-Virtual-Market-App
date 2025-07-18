@@ -1,6 +1,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 const FALLBACK_URL = process.env.NEXT_PUBLIC_API_FALLBACK_URL;
 
+
 export async function fetchWithFallback(endpoint, options = {}) {
     try {
         // Try primary URL first

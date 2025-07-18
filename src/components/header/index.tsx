@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
@@ -8,70 +8,37 @@ import headerImg from '../../../public/assets/images/headerImg.png';
 import profileImage from '../../../public/assets/images/profile-circle.png';
 import axios from 'axios';
 
-interface UserProfile {
-    firstName: string;
-    roles: string[];
-}
+// interface UserProfile {
+//     firstName: string;
+//     roles: string[];
+// }
 
 const Header = () => {
     const [isOpen, setIsOpen] = useState(false);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const { data: session, status } = useSession();
 
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            if (status !== 'authenticated' || !session?.accessToken) {
-                setIsLoading(false);
-                return;
-            }
-            try {
-                console.log('Fetching profile with token:', session.accessToken); // Debug log
-                const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
-                    headers: {
-                        Authorization: `Bearer ${session.accessToken}`,
-                    },
-                    withCredentials: true,
-                });
-
-                if (response.status === 200) {
-                    setUserProfile({
-                        firstName: response.data.firstName,
-                        roles: session.user.roles || [],
-                    });
-                }
-            } catch (error) {
-                console.error('Error fetching profile:', error);
-                if (axios.isAxiosError(error) && error.response?.status === 401) {
-                    console.error('Unauthorized: Logging out');
-                    await signOut({ redirect: false });
-                    localStorage.removeItem('BDICAuthToken');
-                    localStorage.removeItem('userEmail');
-                    router.push('/login');
-                }
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchUserProfile();
-    }, [session, status, router]);
+    const userProfile = session?.user ? {
+        firstName: session.user.firstName,
+        roles: session.user.roles || []
+    } : null;
 
     const handleProfileClick = () => {
         setIsProfileDropdownOpen(!isProfileDropdownOpen);
     };
 
     const navigateToDashboard = () => {
-        if (!userProfile?.roles) {
-            return;
-        }
+        if (!userProfile?.roles) return;
 
         const roles = userProfile.roles;
         if (roles.includes('VENDOR') && roles.includes('BUYER')) {
             router.push('/vendor/dashboard');
-        } else if (roles.includes('LOGISTICS')) {
+        }
+        else if (roles.includes('ADMIN')) {
+        router.push('/admin/dashboard/main');
+        }
+        else if (roles.includes('LOGISTICS')) {
             router.push('/logistics/dashboard');
         } else {
             router.push('/buyer/orders');
@@ -82,7 +49,7 @@ const Header = () => {
     const handleLogout = async () => {
         try {
             await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
                 {},
                 {
                     headers: {
@@ -90,12 +57,9 @@ const Header = () => {
                     },
                 }
             );
-            await signOut({ redirect: false });
-            localStorage.removeItem('BDICAuthToken');
-            localStorage.removeItem('userEmail');
-            router.push('/login');
         } catch (error) {
-            console.error('Logout failed:', error);
+            console.error('Logout API call failed:', error);
+        } finally {
             await signOut({ redirect: false });
             localStorage.removeItem('BDICAuthToken');
             localStorage.removeItem('userEmail');
@@ -125,53 +89,51 @@ const Header = () => {
                 </p>
             </div>
 
-            {!isLoading && (
-                <>
-                    {status === 'authenticated' && userProfile ? (
-                        <div className="hidden md:flex items-center gap-3 relative">
-                            <div
-                                className="flex items-center gap-2 cursor-pointer"
-                                onClick={handleProfileClick}
-                            >
-                                <Image src={profileImage} alt="Profile" width={28} height={28} className="rounded-full" />
-                                <p className="text-sm font-medium text-black">
-                                    Hey, <span className="font-semibold">{userProfile.firstName}</span>
-                                </p>
-                            </div>
+            {status === 'authenticated' && userProfile ? (
+                <div className="hidden md:flex items-center gap-3 relative">
+                    <div
+                        className="flex items-center gap-2 cursor-pointer"
+                        onClick={handleProfileClick}
+                    >
+                        <Image src={profileImage} alt="Profile" width={28} height={28} className="rounded-full" />
+                        <p className="text-sm font-medium text-black">
+                            Hey, <span className="font-semibold">{userProfile.firstName}</span>
+                        </p>
+                    </div>
 
-                            {isProfileDropdownOpen && (
-                                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                                    <button
-                                        onClick={navigateToDashboard}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    >
-                                        Dashboard
-                                    </button>
-                                    <button
-                                        onClick={handleLogout}
-                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                    >
-                                        Logout
-                                    </button>
-                                </div>
-                            )}
+                    {isProfileDropdownOpen && (
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                            <button
+                                onClick={navigateToDashboard}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                                Dashboard
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                                Logout
+                            </button>
                         </div>
-                    ) : (
-                        <button
-                            onClick={() => router.push('/login')}
-                            className="hidden md:block w-[90px] md:w-[100px] lg:w-[110px] h-[35px] md:h-[40px] border border-black rounded-lg cursor-pointer hover:bg-gray-200"
-                        >
-                            Login
-                        </button>
                     )}
-                </>
+                </div>
+            ) : (
+                <button
+                    onClick={() => router.push('/login')}
+                    className="hidden md:block w-[90px] md:w-[100px] lg:w-[110px] h-[35px] md:h-[40px] border border-black rounded-lg cursor-pointer hover:bg-gray-200"
+                >
+                    Login
+                </button>
             )}
+
             <button
                 className="md:hidden text-black flex items-center justify-center p-3"
                 onClick={() => setIsOpen(!isOpen)}
             >
                 {isOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
+
             {isOpen && (
                 <div className="absolute top-[70px] md:top-[80px] lg:top-[90px] left-0 w-full bg-white shadow-md flex flex-col items-center gap-4 py-6 sm:py-8 md:hidden">
                     <p
@@ -196,68 +158,55 @@ const Header = () => {
                         className="cursor-pointer hover:text-[#c6eb5f]"
                         onClick={() => {
                             setIsOpen(false);
-                            router.push('/logistics');
-                        }}
-                    >
-                        Logistics
-                    </p>
-                    <p
-                        className="cursor-pointer hover:text-[#c6eb5f]"
-                        onClick={() => {
-                            setIsOpen(false);
-                            router.push('/about');
+                            router.push('/aboutUs');
                         }}
                     >
                         About us
                     </p>
-                    {!isLoading && (
-                        <>
-                            {status === 'authenticated' && userProfile ? (
-                                <div className="flex flex-col items-center gap-2 relative">
-                                    <div
-                                        className="flex items-center gap-2 cursor-pointer"
-                                        onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                    {status === 'authenticated' && userProfile ? (
+                        <div className="flex flex-col items-center gap-2 relative">
+                            <div
+                                className="flex items-center gap-2 cursor-pointer"
+                                onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
+                            >
+                                <Image src={profileImage} alt="Profile" width={28} height={28} className="rounded-full" />
+                                <p className="text-sm font-medium text-black">
+                                    <span className="font-semibold">{userProfile.firstName}</span>
+                                </p>
+                            </div>
+                            {isProfileDropdownOpen && (
+                                <div className="mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                                    <button
+                                        onClick={() => {
+                                            navigateToDashboard();
+                                            setIsOpen(false);
+                                        }}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                     >
-                                        <Image src={profileImage} alt="Profile" width={28} height={28} className="rounded-full" />
-                                        <p className="text-sm font-medium text-black">
-                                            <span className="font-semibold">{userProfile.firstName}</span>
-                                        </p>
-                                    </div>
-                                    {isProfileDropdownOpen && (
-                                        <div className="mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-                                            <button
-                                                onClick={() => {
-                                                    navigateToDashboard();
-                                                    setIsOpen(false);
-                                                }}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Dashboard
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    handleLogout();
-                                                    setIsOpen(false);
-                                                }}
-                                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                            >
-                                                Logout
-                                            </button>
-                                        </div>
-                                    )}
+                                        Dashboard
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            handleLogout();
+                                            setIsOpen(false);
+                                        }}
+                                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    >
+                                        Logout
+                                    </button>
                                 </div>
-                            ) : (
-                                <button
-                                    onClick={() => {
-                                        setIsOpen(false);
-                                        router.push('/login');
-                                    }}
-                                    className="w-[90px] h-[35px] border border-black rounded-lg cursor-pointer hover:bg-gray-200"
-                                >
-                                    Login
-                                </button>
                             )}
-                        </>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                setIsOpen(false);
+                                router.push('/login');
+                            }}
+                            className="w-[90px] h-[35px] border border-black rounded-lg cursor-pointer hover:bg-gray-200"
+                        >
+                            Login
+                        </button>
                     )}
                 </div>
             )}

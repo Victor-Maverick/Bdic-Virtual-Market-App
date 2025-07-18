@@ -28,7 +28,7 @@ const Notifications = () => {
         if (session?.user?.email) {
             try {
                 const response = await axios.get(
-                    `https://digitalmarket.benuestate.gov.ng/api/notification/getUserAll?email=${session.user.email}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/getUserAll?email=${session.user.email}`
                 );
                 if (Array.isArray(response.data)) {
                     // Sort notifications by createdAt in descending order (newest first)
@@ -55,7 +55,7 @@ const Notifications = () => {
         if (session?.user?.email && notifications.length > 0) {
             try {
                 await axios.delete(
-                    `https://digitalmarket.benuestate.gov.ng/api/notification/deleteAllUser?email=${session.user.email}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/deleteAllUser?email=${session.user.email}`
                 );
                 fetchNotifications();
             } catch (error) {

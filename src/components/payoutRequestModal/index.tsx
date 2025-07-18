@@ -1,7 +1,11 @@
 'use client'
-import {useState} from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import limeArrow from "../../../public/assets/images/green arrow.png";
+import axios from "axios";
+import 'react-toastify/dist/ReactToastify.css';
+import {toast, ToastContainer} from "react-toastify";
+
 
 interface ShopAccountDetails {
     bankName: string;
@@ -12,8 +16,8 @@ interface PayoutRequestModalProps {
     isPayoutRequestModalOpen: boolean;
     onClosePayoutRequestModal: () => void;
     onRequestSuccess: () => void;
-    shopId: number;  // Required
-    amount: number;  // Required
+    shopId: number;
+    amount: number;
     accountDetails: ShopAccountDetails | null;
     onUpdateAccount: (details: ShopAccountDetails) => Promise<boolean>;
 }
@@ -69,34 +73,128 @@ const InputField = ({
 
 const PayoutRequestModal = ({
                                 isPayoutRequestModalOpen,
+                                onClosePayoutRequestModal,
                                 onRequestSuccess,
+                                shopId,
+                                amount,
                                 accountDetails,
+                                onUpdateAccount,
                             }: PayoutRequestModalProps) => {
     const [formData, setFormData] = useState({
         amount: "",
+        bankName: accountDetails?.bankName || "",
+        accountNumber: accountDetails?.accountNumber || ""
     });
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        if (accountDetails) {
+            setFormData({
+                amount: "",
+                bankName: accountDetails.bankName,
+                accountNumber: accountDetails.accountNumber
+            });
+        }
+    }, [accountDetails]);
 
     const handleChange = (field: keyof typeof formData) => (value: string) => {
-        console.log(accountDetails)
-        setFormData(prev => ({...prev, [field]: value}));
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const handleContinue = () => {
+    const handleEditDetails = () => {
+        setIsEditing(true);
+    };
 
-        onRequestSuccess(); // Call parent's success handler
+    const handleSaveDetails = async () => {
+        if (!formData.bankName || !formData.accountNumber) {
+            setError("Bank name and account number are required");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const success = await onUpdateAccount({
+                bankName: formData.bankName,
+                accountNumber: formData.accountNumber
+            });
+
+            if (success) {
+                setIsEditing(false);
+                setError("");
+                toast.success("Account details updated successfully");
+            } else {
+                setError("Failed to update account details");
+                toast.error("Failed to update account details");
+            }
+        } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            setError(err.message || "An error occurred while updating account details");
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            toast.error(err.message || "An error occurred while updating account details");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleContinue = async () => {
+        if (!formData.amount || isNaN(Number(formData.amount))) {
+            setError("Please enter a valid amount");
+            return;
+        }
+
+        if (Number(formData.amount) > amount) {
+            setError("Amount cannot exceed available balance");
+            return;
+        }
+
+        if (!formData.bankName || !formData.accountNumber) {
+            setError("Bank details are required");
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payout/request`, {
+                shopId,
+                amount: Number(formData.amount),
+                bankName: formData.bankName,
+                accountNumber: formData.accountNumber
+            });
+
+            if (response.data) {
+                toast.success(response.data); // This will display "Payout requested successfully"
+                onRequestSuccess();
+            } else {
+                setError("Failed to request payout");
+                toast.error("Failed to request payout");
+            }
+        } catch (err) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            const errorMessage = err.response?.data || "An error occurred while requesting payout";
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setIsSubmitting(false);
+            onClosePayoutRequestModal()
+        }
     };
 
     if (!isPayoutRequestModalOpen) return null;
 
     return (
+        <>
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-            <div
-                className="bg-white px-10 py-20 w-[950px] max-h-[90vh] flex flex-col items-center gap-6 overflow-hidden">
+            <div className="bg-white px-10 py-20 w-[950px] max-h-[90vh] flex flex-col items-center gap-6 overflow-hidden">
                 <div className="w-[530px] h-[447px] gap-[28px] flex flex-col flex-shrink-0 mx-auto">
                     <div>
                         <h2 className="text-[16px] font-medium text-[#022B23]">Payout request</h2>
                         <p className="text-[14px] font-medium leading-tight text-[#707070]">
-                            Request for pay-out from your available <br/>balance
+                            Request for pay-out from your available <br />balance
                         </p>
                     </div>
                     <InputField
@@ -104,30 +202,80 @@ const PayoutRequestModal = ({
                         label="Amount to request"
                         value={formData.amount}
                         onChange={handleChange('amount')}
-                        placeholder="Amount to request"
+                        placeholder={`Available: N ${amount.toLocaleString()}.00`}
                     />
-                    <div
-                        className="w-full h-[178px] flex flex-col gap-[10px] border border-[#ededed] rounded-[24px] px-[24px] py-[16px]">
+                    <div className="w-full h-[178px] flex flex-col gap-[10px] border border-[#ededed] rounded-[24px] px-[24px] py-[16px]">
                         <div className="flex flex-col gap-[14px]">
                             <p className="text-[16px] font-medium text-[#000000]">Bank details</p>
-                            <p className="text-[14px] text-[#707070]">BANK NAME: ACCESS BANK</p>
-                            <p className="text-[14px] text-[#707070]">ACCOUNT NUMBER: 00112233445</p>
+                            {isEditing ? (
+                                <>
+                                    <InputField
+                                        id="bankName"
+                                        label="Bank Name"
+                                        value={formData.bankName}
+                                        onChange={handleChange('bankName')}
+                                        placeholder="Enter bank name"
+                                    />
+                                    <InputField
+                                        id="accountNumber"
+                                        label="Account Number"
+                                        value={formData.accountNumber}
+                                        onChange={handleChange('accountNumber')}
+                                        placeholder="Enter account number"
+                                    />
+                                </>
+                            ) : (
+                                <>
+                                    <p className="text-[14px] text-[#707070]">BANK NAME: {formData.bankName}</p>
+                                    <p className="text-[14px] text-[#707070]">ACCOUNT NUMBER: {formData.accountNumber}</p>
+                                </>
+                            )}
                         </div>
-                        <button
-                            className="w-[80px] hover:shadow-sm cursor-pointer rounded-[8px] px-[8px] py-[6px] text-[#022B23] font-medium text-[12px] h-[32px] border border-[#E4E4E4]">
-                            Edit details
-                        </button>
+                        {isEditing ? (
+                            <button
+                                onClick={handleSaveDetails}
+                                disabled={isSubmitting}
+                                className="w-[80px] hover:shadow-sm cursor-pointer rounded-[8px] px-[8px] py-[6px] text-[#022B23] font-medium text-[12px] h-[32px] border border-[#E4E4E4] flex items-center justify-center"
+                            >
+                                {isSubmitting ? "Saving..." : "Save"}
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleEditDetails}
+                                className="w-[80px] hover:shadow-sm cursor-pointer rounded-[8px] px-[8px] py-[6px] text-[#022B23] font-medium text-[12px] h-[32px] border border-[#E4E4E4]"
+                            >
+                                Edit details
+                            </button>
+                        )}
                     </div>
+                    {error && (
+                        <p className="text-red-500 text-sm">{error}</p>
+                    )}
                     <div
                         className="flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
                         onClick={handleContinue}
                     >
-                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Request pay-out</p>
-                        <Image src={limeArrow} alt="Continue arrow" width={18} height={18}/>
+                        <p className="text-[#C6EB5F] font-semibold text-[14px]">
+                            {isSubmitting ? "Processing..." : "Request pay-out"}
+                        </p>
+                        {!isSubmitting && <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />}
                     </div>
                 </div>
             </div>
         </div>
+            <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
+            </>
     );
 };
 

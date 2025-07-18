@@ -11,6 +11,7 @@ import emailIcon from '../../../../public/assets/images/sms.svg';
 import eyeOpen from '../../../../public/assets/images/eye.svg';
 import eyeClosed from '../../../../public/assets/images/eye.svg';
 import Toast from "@/components/Toast";
+import ReCAPTCHA from "react-google-recaptcha";
 
 type FormField = {
     id: keyof FormData;
@@ -80,6 +81,7 @@ const GetStarted = () => {
         message: string;
         subMessage: string;
     } | null>(null);
+    const [captchaToken, setCaptchaToken] = useState('');
 
     useEffect(() => {
         const handleResize = () => {
@@ -177,11 +179,21 @@ const GetStarted = () => {
             return false;
         }
 
+        if (!captchaToken) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Captcha Required",
+                subMessage: "Please complete the captcha challenge"
+            });
+            return false;
+        }
+
         return true;
     };
 
     const registerUser = async () => {
-        const API_URL = 'https://digitalmarket.benuestate.gov.ng';
+        const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}`;
         try {
             const formData = new FormData();
             formData.append('email', form.email);
@@ -189,26 +201,23 @@ const GetStarted = () => {
             formData.append('firstName', form.firstName);
             formData.append('password', form.password);
 
-            const response = await axios.post(`${API_URL}/api/users/register`, formData, {
+            const response = await axios.post(`${API_URL}/users/register`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
             });
 
-            localStorage.setItem('userEmail',form.email);
-            localStorage.setItem('password',form.password);
+            localStorage.setItem('userEmail', form.email);
+            localStorage.setItem('password', form.password);
             return { success: true, data: response.data };
         } catch (error) {
-            console.log("Error: ",error)
-
-
+            console.log("Error: ", error);
 
             let errorMessage = "Registration failed. Please try again.";
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             const subMessage = error.response?.data;
             const mainError = "Registration failed. Please try again.";
-
 
             if (axios.isAxiosError(error)) {
                 errorMessage = error.response?.data?.message || error.message;
@@ -252,6 +261,10 @@ const GetStarted = () => {
 
     const closeToast = () => {
         setToast(null);
+    };
+
+    const handleCaptchaChange = (token: string | null) => {
+        setCaptchaToken(token || '');
     };
 
     return (
@@ -357,6 +370,15 @@ const GetStarted = () => {
                                     </span>
                                 ))}
                             </div>
+
+                            {/* Add ReCAPTCHA component */}
+                            {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+                                <ReCAPTCHA
+                                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                                    onChange={handleCaptchaChange}
+                                    className="mt-4"
+                                />
+                            )}
 
                             <button
                                 onClick={handleSubmit}

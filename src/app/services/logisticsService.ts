@@ -1,4 +1,3 @@
-const API_BASE_URL = 'https://api.digitalmarke.bdic.ng/api/logistics';
 
 interface AddVehicleRequest {
     companyId: number;
@@ -21,7 +20,7 @@ interface UpdateFleetNumberRequest {
 }
 
 export const onboardVehicle = async (vehicle: AddVehicleRequest): Promise<AddVehicleResponse> => {
-    const response = await fetch(`${API_BASE_URL}/onboardVehicle`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/onboardVehicle`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -38,7 +37,7 @@ export const onboardVehicle = async (vehicle: AddVehicleRequest): Promise<AddVeh
 };
 
 export const updateFleetNumber = async (data: UpdateFleetNumberRequest): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/updateFleetNumber`, {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/updateFleetNumber`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

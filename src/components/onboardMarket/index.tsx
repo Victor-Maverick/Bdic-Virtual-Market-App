@@ -44,7 +44,7 @@ const OnboardMarketModal = ({ isOpen, onClose, onSuccess, marketData }: OnboardM
                 shopNumber: Number(shops),
             };
 
-            const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/markets/add', payload);
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/add`, payload);
 
             if (response.status === 200) {
                 onSuccess();
@@ -57,11 +57,10 @@ const OnboardMarketModal = ({ isOpen, onClose, onSuccess, marketData }: OnboardM
             setIsSubmitting(false);
         }
     };
-
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
             <div className="bg-white rounded-[14px] p-6 w-[400px]">
                 <h2 className="text-[#022B23] text-[18px] font-semibold mb-6">Market Details</h2>
 
@@ -139,5 +138,4 @@ const OnboardMarketModal = ({ isOpen, onClose, onSuccess, marketData }: OnboardM
         </div>
     );
 };
-
 export default OnboardMarketModal;

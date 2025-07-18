@@ -1,7 +1,7 @@
 'use client'
-import { Suspense, useState } from "react";
+import {Suspense, useCallback, useEffect, useState} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Image, {StaticImageData} from "next/image";
+import Image from "next/image";
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardOptions from "@/components/dashboardOptions";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
@@ -9,86 +9,200 @@ import arrowBack from "../../../../../public/assets/images/arrowBack.svg";
 import arrowFoward from "../../../../../public/assets/images/arrowFoward.svg";
 import promoteIcon from '@/../public/assets/images/promoteIcon.svg'
 import iPhone from "../../../../../public/assets/images/blue14.png";
-import profileIcon from '@/../public/assets/images/dashuserimg.svg'
-import arrowUp from '@/../public/assets/images/arrow-up.svg'
-import dropBox from '@/../public/assets/images/dropbox.svg'
 import flag from '@/../public/assets/images/flag-2.svg'
+import {useSession} from "next-auth/react";
+import axios from "axios";
+import Toast from "@/components/Toast";
 
 interface Product {
     id: number;
-    productId: string;
-    productImage: StaticImageData;
-    orderId: string;
-    productName: string;
-    status: "Good" | "Normal" | "Bad";
-    rating: number;
-    comment: string;
+    name: string;
+    price: string;
+    mainImageUrl: string;
+    status?: string;
+    rating?: number;
+    comment?: string;
+    quantity: number;
+    quantitySold: number;
 }
 
-const products: Product[] = [
-    { id: 1, productId: "1234567887654", productImage: iPhone, orderId: "21367", productName: "iPhone 14 pro max",  status: "Good", rating: 4.2, comment: "Delivery was fast, great service" },
-    { id: 2, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max",  status: "Normal", rating: 4.2, comment: "fair" },
-    { id: 3, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Bad",  rating: 4.2, comment: "Not well handled, carton had dents" },
-    { id: 4, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Good", rating: 4.2, comment: "Fast delivery" },
-    { id: 5, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Normal", rating: 4.2, comment: "Fast delivery, and polite dispatch rider" },
-    { id: 6, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Good", rating: 4.2, comment: "Fast delivery, and polite dispatch rider" },
-    { id: 7, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Bad", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
-    { id: 8, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Good", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
-    { id: 9, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Normal", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
-    { id: 10, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max", status: "Bad", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
-    { id: 11, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max",status: "Good", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
-    { id: 12, productId: "1234567887654", productImage: iPhone, orderId: "21367",productName: "iPhone 14 pro max",  status: "Normal", rating: 4.2, comment: "Fast delivery, and polite dispatch rider"},
-];
+interface ShopData {
+    id: number;
+    promotedStatus: string;
+    promotedTierId?: number;
+    featuredNumber: number;
+    promotedNumber: number;
+    floatedNumber: number;
+}
 
-const ProductTableRow = ({ product, isLast }: { product: Product; isLast: boolean }) => {
+interface TierResponse {
+    id: number;
+    tier: string;
+    price: number;
+    shopsPromoted: number;
+    featuredNumber: number;
+    promotedNumber: number;
+    floatedNumber: number;
+}
+
+const ProductTableRow = ({
+    product,
+        isLast,
+        shopData,
+        tierData,
+        onPromoteAction
+}: {
+    product: Product;
+    isLast: boolean;
+    shopData: ShopData | null;
+    tierData: TierResponse | null;
+    onPromoteAction: (action: string, productId: number) => void;
+}) => {
+    const [showDropdown, setShowDropdown] = useState(false);
+    const toggleDropdown = () => {
+        setShowDropdown(!showDropdown);
+    };
+
+    const handleAction = (action: string) => {
+        onPromoteAction(action, product.id);
+        setShowDropdown(false);
+    };
+
+    // Calculate remaining promotions available
+    const canFeature = tierData && shopData && (tierData.featuredNumber - shopData.featuredNumber) > 0;
+    const canPromote = tierData && shopData && (tierData.promotedNumber - shopData.promotedNumber) > 0;
+    const canFloat = tierData && shopData && (tierData.floatedNumber - shopData.floatedNumber) > 0;
+
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex items-center w-[40%] pr-[24px] gap-3">
+            <div className="flex items-center w-[35%] pr-[24px] gap-3">
                 <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
                     <Image
-                        src={product.productImage}
-                        alt={product.productName}
+                        src={product.mainImageUrl || iPhone}
+                        alt={product.name}
                         width={70}
                         height={70}
                         className="object-cover"
                     />
                 </div>
                 <div className="flex flex-col">
-                    <p className="text-[14px] font-medium text-[#101828]">{product.productName}</p>
-                    <p className="text-[12px] text-[#667085]">Review: {product.rating}</p>
+                    <p className="text-[14px] font-medium text-[#101828]">{product.name}</p>
+                    <p className="text-[12px] text-[#667085]">Price: {product.price}</p>
                 </div>
             </div>
 
-            <div className="flex items-center w-[15%]  px-[10px]">
-                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    product.status === 'Good'
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : product.status === 'Normal'
-                            ? 'bg-[#FFFAEB] text-[#FFB320]'
-                            : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium">{product.status}</p>
-                </div>
+            <div className="flex items-center w-[15%] px-[20px]">
+                <p className="text-[12px] font-medium">{product.quantity}</p>
             </div>
 
-            <div className="flex items-center w-[35%] px-[16px]">
-                <p className="text-[12px] w-[176px] leading-tight text-[#667085]">
-                    {product.comment}
-                </p>
+            <div className="flex items-center w-[30%] px-[10px]">
+                <p className="text-[12px] text-[#667085]">{product.quantitySold}</p>
             </div>
 
-            <div className="flex items-center w-[10%] px-[28px]">
-                <p className="text-[14px] font-medium  text-[#344054]">{product.rating}</p>
+            <div className="flex items-center w-[15%] px-[14px]">
+                <p className="text-[12px] text-[#667085]">{product.rating || 'No rating'}</p>
+            </div>
+
+            <div className="flex items-center w-[5%] relative">
+                {shopData?.promotedStatus === 'PROMOTED' && (
+                    <>
+                        <div onClick={toggleDropdown} className="flex cursor-pointer flex-col gap-[2px]">
+                            <span className={`rounded-full w-[3px] h-[3px] bg-black`}></span>
+                            <span className={`rounded-full w-[3px] h-[3px] bg-black`}></span>
+                            <span className={`rounded-full w-[3px] h-[3px] bg-black`}></span>
+                        </div>
+                        {showDropdown && (
+                            <div className="absolute right-0 top-6 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+                                {canFeature && (
+                                    <button
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                        onClick={() => handleAction('feature')}
+                                    >
+                                        Feature Product
+                                    </button>
+                                )}
+                                {canPromote && (
+                                    <button
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                        onClick={() => handleAction('sponsor')}
+                                    >
+                                        Sponsor Product
+                                    </button>
+                                )}
+                                {canFloat && (
+                                    <button
+                                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                                        onClick={() => handleAction('float')}
+                                    >
+                                        Float Product
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
-    )
+    );
 }
 
 const ReviewTab = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
-    const totalPages = Math.ceil(products.length / itemsPerPage);
     const router = useRouter();
+    const { data: session } = useSession();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [shopData, setShopData] = useState<ShopData | null>(null);
+    const [tierData, setTierData] = useState<TierResponse | null>(null);
+    const [toast, setToast] = useState<{
+        show: boolean;
+        type: "success" | "error";
+        message: string;
+        subMessage: string;
+    } | null>(null);
+
+    const fetchShopData = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`);
+                const data = await response.json();
+                setShopData(data);
+
+                if (data.promotedStatus === 'PROMOTED' && data.promotedTierId) {
+                    const tierResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/tier/id?tierId=${data.promotedTierId}`);
+                    const tier = await tierResponse.json();
+                    setTierData(tier);
+                }
+            } catch (error) {
+                console.error('Error fetching shop data:', error);
+            }
+        }
+    }, [session]);
+
+    const fetchProducts = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                setLoading(true);
+                const response = await axios.get(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getByUser?email=${session.user.email}`
+                );
+                setProducts(response.data);
+                console.log("Products fetch", response.data);
+            } catch (err) {
+                setError("Failed to fetch products");
+                console.error("Error fetching products:", err);
+            } finally {
+                setLoading(false);
+            }
+        }
+    }, [session]);
+
+    useEffect(() => {
+        fetchShopData();
+        fetchProducts();
+    }, [fetchShopData, fetchProducts]);
 
     const handlePrevious = () => {
         if (currentPage > 1) {
@@ -108,10 +222,93 @@ const ReviewTab = () => {
 
     const handlePromoteShop = () => {
         router.push("/vendor/dashboard/reviews/promote-shop");
-    }
+    };
 
+    const handlePromoteAction = async (action: string, productId: number) => {
+        try {
+            let endpoint = '';
+            let actionName = '';
+
+            switch (action) {
+                case 'feature':
+                    endpoint = 'feature';
+                    actionName = 'Featured';
+                    break;
+                case 'sponsor':
+                    endpoint = 'promote';
+                    actionName = 'Promoted';
+                    break;
+                case 'float':
+                    endpoint = 'float';
+                    actionName = 'Floated';
+                    break;
+                default:
+                    return;
+            }
+
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${endpoint}?productId=${productId}`,
+                {},
+                {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }
+            );
+
+            setToast({
+                show: true,
+                type: "success",
+                message: `${actionName} successfully`,
+                subMessage: response.data
+            });
+
+            await fetchShopData();
+            await fetchProducts();
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (err) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Action failed",
+                subMessage: 'failed to fetch data'
+            });
+            console.error(`Error ${action} product:`, error);
+        }
+    };
+
+    const closeToast = () => {
+        setToast(null);
+    };
+
+
+    const totalPages = Math.ceil(products.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentItems = products.slice(startIndex, startIndex + itemsPerPage);
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+            minimumFractionDigits: 2
+        }).format(price);
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-[200px]">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#C6EB5F]"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex justify-center items-center h-[200px] text-red-500">
+                <p>{error}</p>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -119,80 +316,69 @@ const ReviewTab = () => {
                 <div className="h-full gap-[12px] w-full flex flex-col">
                     <p className="text-[#022B23] text-[16px] font-medium">Campaign performance</p>
                     <div className="gap-[15px] w-[85%] flex">
-                        <div className="flex flex-col pt-[18px] px-[10px] pb-[10px]  gap-[14px] w-[25%] h-[100px] rounded-[14px] border-[0.5px] border-[#E4E4E7]">
-                            <div className="flex items-center gap-[8px]">
-                                <Image src={profileIcon} alt={'image'}/>
-                                <p className="text-[12px] text-[#71717A] font-medium">Total visits from campaign</p>
-                            </div>
-                            <div className="flex justify-between items-center ">
-                                <p className="text-[#18181B] text-[16px] font-medium">1203</p>
-                                <div className="flex items-center gap-[4px]">
-                                    <Image src={arrowUp} alt={'image'}/>
-                                    <p className="text-[12px] text-[#22C55E] font-medium">6%</p>
+                        {shopData?.promotedStatus === 'PROMOTED' && tierData ? (
+                            <div className="flex items-center gap-[15px] w-full">
+                                <div className="flex flex-col pt-[18px] px-[10px] pb-[10px] gap-[14px] w-[25%] h-[100px] rounded-[14px] border-[0.5px] border-[#E4E4E7]">
+                                    <div className="flex items-center gap-[8px]">
+                                        <Image src={flag} alt={'image'}/>
+                                        <p className="text-[12px] text-[#71717A] font-medium">Campaign tier</p>
+                                    </div>
+                                    <div className="flex justify-between items-center ">
+                <span className="rounded-[100px] cursor-pointer text-[#022B23] text-[14px] font-medium flex items-center justify-center bg-[#C6EB5F] w-[68px] h-[32px]">
+                    {tierData.tier}
+                </span>
+                                        <p className="text-[12px] text-[#022B23] font-medium">
+                                            {formatPrice(tierData.price)}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col pt-[18px] px-[10px] pb-[10px] gap-[14px] w-[25%] h-[100px] rounded-[14px] border-[0.5px] border-[#E4E4E7]">
+                                    <div className="flex justify-between mt-[20px] text-[10px] text-[#71717A]">
+                                        <p>Featured: {shopData.featuredNumber}/{tierData.featuredNumber}</p>
+                                        <p>Promoted: {shopData.promotedNumber}/{tierData.promotedNumber}</p>
+                                        <p>Floated: {shopData.floatedNumber}/{tierData.floatedNumber}</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="flex flex-col pt-[18px] px-[10px] pb-[10px]  gap-[14px] w-[25%] h-[100px] rounded-[14px] border-[0.5px] border-[#E4E4E7]">
-                            <div className="flex items-center gap-[8px]">
-                                <Image src={dropBox} alt={'image'}/>
-                                <p className="text-[12px] text-[#71717A] font-medium">Bestseller</p>
+                        ) : (
+                            <div className="flex items-center justify-center w-full h-[100px]">
+                                <p className="text-[#667085]">No active promotion</p>
                             </div>
-                            <div className="flex justify-between items-center ">
-                                <p className="text-[#18181B] text-[16px] font-medium">Iphone 14 pro (82)</p>
-                                <div className="flex items-center gap-[4px]">
-                                    <Image src={arrowUp} alt={'image'}/>
-                                    <p className="text-[12px] text-[#22C55E] font-medium">6%</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex flex-col pt-[18px] px-[10px] pb-[10px]  gap-[14px] w-[25%] h-[100px] rounded-[14px] border-[0.5px] border-[#E4E4E7]">
-                            <div className="flex items-center gap-[8px]">
-                                <Image src={flag} alt={'image'}/>
-                                <p className="text-[12px] text-[#71717A] font-medium">Shop discovery</p>
-                            </div>
-                            <div className="flex justify-between items-center ">
-                                <p className="text-[#18181B] text-[16px] font-medium">1203</p>
-                                <div className="flex items-center gap-[4px]">
-                                    <Image src={arrowUp} alt={'image'}/>
-                                    <p className="text-[12px] text-[#22C55E] font-medium">2%</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex flex-col pt-[18px] px-[10px] pb-[10px]  gap-[14px] w-[25%] h-[100px] rounded-[14px] border-[0.5px] border-[#E4E4E7]">
-                            <div className="flex items-center gap-[8px]">
-                                <Image src={flag} alt={'image'}/>
-                                <p className="text-[12px] text-[#71717A] font-medium">Campaign tier</p>
-                            </div>
-                            <div className="flex justify-between items-center ">
-                                <span className="rounded-[100px] cursor-pointer text-[#022B23] text-[14px] font-medium flex items-center justify-center bg-[#C6EB5F] w-[68px] h-[32px]">Basic</span>
-                                <p className="text-[12px] text-[#022B23] font-medium">NGN 7,000.00</p>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
-                <div onClick={handlePromoteShop} className="w-[15%] cursor-pointer flex items-center gap-[9px] text-[14px] text-[#C6EB5F] font-medium justify-center rounded-[12px] h-[52px] border bg-[#033228]">
-                    <p>Promote shop</p>
-                    <Image src={promoteIcon} alt={'image'}/>
-                </div>
+                {shopData?.promotedStatus !== 'PROMOTED' && (
+                    <div
+                        onClick={handlePromoteShop}
+                        className="w-[15%] cursor-pointer flex items-center gap-[9px] text-[14px] text-[#C6EB5F] font-medium justify-center rounded-[12px] h-[52px] border bg-[#033228]"
+                    >
+                        <p>Promote shop</p>
+                        <Image src={promoteIcon} alt={'image'}/>
+                    </div>
+                )}
             </div>
+
             <div className="flex flex-col w-full mt-[10px] rounded-[24px] border-[1px] border-[#EAECF0]">
                 <div className="flex flex-col py-[20px] px-[24px]">
-                    <p className="text-[#101828] text-[18px] font-medium">Reviews (34)</p>
-                    <p className="text-[#667085] text-[14px]">View reviews on products in your store</p>
+                    <p className="text-[#101828] text-[18px] font-medium">Products ({products.length})</p>
+                    <p className="text-[#667085] text-[14px]">Manage your products and promotions</p>
                 </div>
                 <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                    <div className="flex items-center px-[24px] w-[40%] py-[12px] gap-[4px]">
+                    <div className="flex items-center px-[12px] w-[35%] py-[12px] gap-[4px]">
                         <p className="text-[#667085] font-medium text-[12px]">Products</p>
                         <Image src={arrowDown} alt="Sort" width={12} height={12} />
                     </div>
-                    <div className="flex items-center px-[24px] w-[15%] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                    <div className="flex items-center px-[12px] w-[15%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Quantity</p>
                     </div>
-                    <div className="flex items-center px-[24px] w-[35%] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Comment</p>
+                    <div className="flex items-center px-[12px] w-[30%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Quantity Sold</p>
                     </div>
-                    <div className="flex items-center px-[24px] w-[10%] py-[12px]">
+                    <div className="flex items-center px-[12px] w-[15%] py-[12px]">
                         <p className="text-[#667085] font-medium text-[12px]">Rating</p>
+                    </div>
+                    <div className="flex items-center pr-[12px] w-[5%] py-[12px]">
+                        <p className="text-[#667085] font-medium text-[12px]">Actions</p>
                     </div>
                 </div>
                 <div className="flex flex-col">
@@ -201,6 +387,9 @@ const ReviewTab = () => {
                             key={product.id}
                             product={product}
                             isLast={index === currentItems.length - 1}
+                            shopData={shopData}
+                            tierData={tierData}
+                            onPromoteAction={handlePromoteAction}
                         />
                     ))}
                 </div>
@@ -236,9 +425,18 @@ const ReviewTab = () => {
                     </div>
                 </div>
             </div>
+            {toast && (
+                <Toast
+                    type={toast.type}
+                    message={toast.message}
+                    subMessage={toast.subMessage}
+                    onClose={closeToast}
+                />
+            )}
         </>
-    )
+    );
 }
+
 
 const Coupons = () => {
     return <></>;

@@ -45,12 +45,12 @@ export default function DashboardOverview() {
                     vendorRes,
                     usersRes
                 ] = await Promise.all([
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/all'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/orders/getTotalTransactionAmount'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/users/logisticsAll'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/payments/allTransactionAmount'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/users/getAllVendorsCount'),
-                    axios.get('https://digitalmarket.benuestate.gov.ng/api/users/allCount')
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/all`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getTotalTransactionAmount`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/logisticsAll`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/allTransactionAmount`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/getAllVendorsCount`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/allCount`)
 
                 ]);
 

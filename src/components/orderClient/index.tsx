@@ -222,7 +222,7 @@ const DisputeDetailsModal = ({
     const handleProcessDispute = async () => {
         try {
             const response = await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/dispute/process?disputeId=${dispute.id}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/process?disputeId=${dispute.id}`
             );
             console.log("Response:", response);
             if (response.status === 200) {
@@ -254,7 +254,7 @@ const DisputeDetailsModal = ({
     const handleResolveDispute = async () => {
         try {
             const response = await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/dispute/send-resolve?disputeId=${dispute.id}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/send-resolve?disputeId=${dispute.id}`
             );
             console.log("Resolve Response:", response);
             if (response.status === 200) {
@@ -286,7 +286,7 @@ const DisputeDetailsModal = ({
     const handleRejectDispute = async () => {
         try {
             const response = await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/dispute/reject?disputeId=${dispute.id}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/reject?disputeId=${dispute.id}`
             );
             if (response.status === 200) {
                 toast.success('Dispute rejected successfully', {
@@ -711,7 +711,7 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
     const handleProcessOrder = async (orderNumber: string, itemIds: number[]) => {
         try {
             const response = await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/orders/process-item',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/process-item`,
                 { orderNumber, itemIds },
                 { headers: { 'Content-Type': 'application/json' } }
             );
@@ -731,7 +731,7 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
     const handleDeclineOrder = async (orderNumber: string, itemIds: number[]) => {
         try {
             const response = await axios.put(
-                'https://digitalmarket.benuestate.gov.ng/api/orders/decline-order',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/decline-order`,
                 { orderNumber, itemIds },
                 { headers: { 'Content-Type': 'application/json' } }
             );
@@ -751,7 +751,7 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
     const handleShipOrder = async (orderNumber: string, itemIds: number[]) => {
         try {
             const response = await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/orders/ship-item',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/ship-item`,
                 { orderNumber, itemIds },
                 { headers: { 'Content-Type': 'application/json' } }
             );
@@ -995,7 +995,7 @@ const Disputes = () => {
                     setLoading(true);
                     // First get the shop ID
                     const shopResponse = await fetch(
-                        `https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`
                     );
                     if (!shopResponse.ok) {
                         throw new Error('Failed to fetch shop details');
@@ -1005,7 +1005,7 @@ const Disputes = () => {
 
                     // Then get the disputes for this shop
                     const disputesResponse = await fetch(
-                        `https://digitalmarket.benuestate.gov.ng/api/dispute/get-shop-disputes?id=${shopData.id}`
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/get-shop-disputes?id=${shopData.id}`
                     );
                     if (!disputesResponse.ok) {
                         throw new Error('Failed to fetch disputes');

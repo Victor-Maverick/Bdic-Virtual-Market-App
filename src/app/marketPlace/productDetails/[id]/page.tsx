@@ -123,7 +123,7 @@ const ProductDetails = ({ params }: PageProps) => {
                 return;
             }
             const response = await axios.get<Product[]>(
-                `https://digitalmarket.benuestate.gov.ng/api/products/by-subcategoryName?subCategoryName=${encodeURIComponent(subCategoryName)}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/by-subcategoryName?subCategoryName=${encodeURIComponent(subCategoryName)}`,
                 { headers: { 'Content-Type': 'application/json' } }
             );
             if (response.data && Array.isArray(response.data)) {
@@ -199,7 +199,7 @@ const ProductDetails = ({ params }: PageProps) => {
             return;
         }
         try {
-            const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/orders/add-to-wishlist', {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/add-to-wishlist`, {
                 buyerEmail: session.user.email,
                 productId: product.id,
             });
@@ -223,7 +223,7 @@ const ProductDetails = ({ params }: PageProps) => {
         const fetchProduct = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/${productId}`);
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${productId}`);
                 if (response.data) {
                     setProduct(response.data);
                     setProductReviews(response.data.reviews);
@@ -258,6 +258,7 @@ const ProductDetails = ({ params }: PageProps) => {
                 amount: totalAmount * 100,
                 currency: 'NGN',
                 callbackUrl: `${window.location.origin}/productsuccess`,
+                paymentType: 'ORDER',
                 metadata: {
                     productId: product.id,
                     productName: product.name,
@@ -270,7 +271,7 @@ const ProductDetails = ({ params }: PageProps) => {
             localStorage.setItem("productName", String(product.name))
 
             const response = await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/payments/initialize',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
                 requestData
             );
 

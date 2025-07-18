@@ -1,70 +1,58 @@
-//utils/api.ts
 import axios, { AxiosError } from 'axios';
 
-const API_BASE_URL = 'https://digitalmarket.benuestate.gov.ng/api';
-
+// Initialize axios with proper base URL
 const api = axios.create({
-    baseURL: API_BASE_URL,
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
 });
 
+// Utility function for handling errors
+const handleApiError = (error: unknown, context: string) => {
+    if (error instanceof AxiosError) {
+        console.error(`Error ${context}:`, error.message, error.response?.data);
+        throw new Error(error.response?.data?.message || `Failed to ${context}`);
+    } else {
+        console.error(`Unexpected error ${context}:`, error);
+        throw new Error(`Failed to ${context} due to an unexpected error`);
+    }
+};
+
+// API functions
 export const fetchMarkets = async () => {
     try {
-        const response = await api.get('/markets/all');
+        const response = await api.get('markets/all');
         return response.data;
-    } catch (error: unknown) {
-        if (error instanceof AxiosError) {
-            console.error('Error fetching markets:', error.message);
-        } else {
-            console.error('Unexpected error fetching markets:', error);
-        }
-        throw new Error('Failed to fetch markets');
+    } catch (error) {
+        handleApiError(error, 'fetching markets');
     }
 };
 
 export const fetchStates = async () => {
     try {
-        const response = await api.get('/states/all');
+        const response = await api.get('states/all');
         return response.data;
-    } catch (error: unknown) {
-        if (error instanceof AxiosError) {
-            console.error('Error fetching states:', error.message);
-        } else {
-            console.error('Unexpected error fetching states:', error);
-        }
-        throw new Error('Failed to fetch states');
+    } catch (error) {
+        handleApiError(error, 'fetching states');
     }
 };
 
 export const fetchMarketSections = async () => {
     try {
-        const response = await api.get('/market-sections/all');
+        const response = await api.get('market-sections/all');
         return response.data;
-    } catch (error: unknown) {
-        if (error instanceof AxiosError) {
-            console.error('Error fetching market sections:', error.message);
-        } else {
-            console.error('Unexpected error fetching market sections:', error);
-        }
-        throw new Error('Failed to fetch market sections');
+    } catch (error) {
+        handleApiError(error, 'fetching market sections');
     }
 };
 
 export const fetchLocalGovernments = async () => {
     try {
-        const response = await api.get('/local-governments/all');
-        console.log("lgas: ",response.data)
+        const response = await api.get('local-governments/all');
         return response.data;
-    } catch (error: unknown) {
-        if (error instanceof AxiosError) {
-            console.error('Error fetching local governments:', error.message);
-        } else {
-            console.error('Unexpected error fetching local governments:', error);
-        }
-        throw new Error('Failed to fetch local governments');
+    } catch (error) {
+        handleApiError(error, 'fetching local governments');
     }
 };
 
-// add Shop
 export const addShop = async (shopData: {
     shopInfo: {
         shopName: string;
@@ -90,59 +78,46 @@ export const addShop = async (shopData: {
     email: string;
 }) => {
     try {
-        // Create FormData object to match the API expectations
         const formData = new FormData();
 
-        // Add shop details
+        // Shop details
         formData.append('name', shopData.shopInfo.shopName);
         formData.append('address', shopData.shopInfo.shopAddress);
         formData.append('shopNumber', shopData.shopInfo.shopNumber);
         formData.append('cacNumber', shopData.shopInfo.cacNumber);
         formData.append('taxIdNumber', shopData.shopInfo.taxIdNumber);
 
-        // Add personal details
+        // Personal details
         formData.append('homeAddress', shopData.personalInfo.homeAddress);
         formData.append('streetName', shopData.personalInfo.street);
         formData.append('nin', shopData.personalInfo.NIN);
         formData.append('phone', shopData.personalInfo.phone);
 
-        // Add bank details
+        // Bank details
         formData.append('bankName', shopData.bankInfo.bankName);
         formData.append('accountNumber', shopData.bankInfo.accountNumber);
 
-        // Add IDs
+        // IDs
         formData.append('marketId', shopData.shopInfo.marketId.toString());
         formData.append('marketSectionId', shopData.shopInfo.marketSectionId.toString());
         formData.append('email', shopData.email);
 
-        // Add logo image if available
+        // Handle logo image
         if (shopData.shopInfo.logoImage) {
-            // Handle logo image conversion from base64 to file
-            try {
-                // If it's a base64 string (from previous localStorage)
-                if (shopData.shopInfo.logoImage.startsWith('data:image')) {
-                    const response = await fetch(shopData.shopInfo.logoImage);
-                    const blob = await response.blob();
-                    formData.append('logoImage', blob, 'shop_logo.jpg');
-                } else {
-                    formData.append('logoImage', shopData.shopInfo.logoImage);
-                }
-            } catch (err) {
-                console.error('Error processing logo image:', err);
+            if (shopData.shopInfo.logoImage.startsWith('data:image')) {
+                const response = await fetch(shopData.shopInfo.logoImage);
+                const blob = await response.blob();
+                formData.append('logoImage', blob, 'shop_logo.jpg');
+            } else {
+                formData.append('logoImage', shopData.shopInfo.logoImage);
             }
         }
 
-        // Use native axios for FormData to avoid custom headers
-        const response = await axios.post(`${API_BASE_URL}/shops/add`, formData);
+        const response = await api.post('shops/add', formData);
         return response.data;
-    } catch (error: unknown) {
-        if (error instanceof AxiosError) {
-            console.error('Error adding shop:', error.message, error.response?.data);
-            throw new Error(error.response?.data?.message || 'Failed to add shop');
-        } else {
-            console.error('Unexpected error adding shop:', error);
-            throw new Error('Failed to add shop due to an unexpected error');
-        }
+    } catch (error) {
+        handleApiError(error, 'add shop');
     }
 };
 
+// Add more API functions as needed

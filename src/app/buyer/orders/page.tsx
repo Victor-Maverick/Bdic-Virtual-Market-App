@@ -473,7 +473,7 @@ const Orders = () => {
 
             await toast.promise(
                 axios.post(
-                    'https://digitalmarket.benuestate.gov.ng/api/review/review-product',
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/review/review-product`,
                     {
                         email: userEmail,
                         productId: reviewItem.productId,
@@ -541,7 +541,7 @@ const Orders = () => {
 
             await toast.promise(
                 axios.post(
-                    'https://digitalmarket.benuestate.gov.ng/api/dispute/add',
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/add`,
                     formData,
                     {
                         headers: {
@@ -578,7 +578,7 @@ const Orders = () => {
             }
             try {
                 const response = await axios.get<BuyerOrderResponse[]>(
-                    'https://digitalmarket.benuestate.gov.ng/api/orders/user',
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/user`,
                     { params: { buyerEmail: userEmail } }
                 );
 
@@ -604,7 +604,7 @@ const Orders = () => {
         });
         try {
             await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/orders/validate-pickUp',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/validate-pickUp`,
                 { orderNumber },
                 { headers: { 'Content-Type': 'application/json' } }
             );

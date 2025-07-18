@@ -8,7 +8,7 @@ import {use, useEffect, useRef, useState} from "react";
 import EditMarketLineModal from "@/components/editMarketLineModal";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 import AddNewLineModal from "@/components/addNewLineModal";
-import axios from "axios"; // Import the new modal
+import axios from "axios";
 interface Market {
     id: number;
     name: string;
@@ -46,12 +46,12 @@ interface MarketSection {
     id: number;
     marketId: number;
     name: string;
+    shops: number;
     createdAt: string;
     updatedAt: string;
 }
 
 const MarketSectionTableRow = ({ section, isLast }: { section: MarketSection; isLast: boolean }) => {
-    const router = useRouter();
 
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0] ' : 'border-b border-[#EAECF0]'}`}>
@@ -67,17 +67,11 @@ const MarketSectionTableRow = ({ section, isLast }: { section: MarketSection; is
             </div>
 
             <div className="flex flex-col justify-center w-[30%] pl-[24px]">
-                <p className="text-[#101828] text-[14px]">0</p> {/* Number of shops - you can update this */}
-                <p
-                    onClick={() => router.push(`/admin/dashboard/markets/view-shops?marketId=${section.marketId}&sectionId=${section.id}`)}
-                    className="cursor-pointer underline text-[12px] font-medium text-[#667085]"
-                >
-                    View shops
-                </p>
+                <p className="text-[#101828] text-[14px]">{section.shops}</p>
             </div>
 
             <div className="flex items-center justify-center w-[3%]">
-                <MarketActionsDropdown marketId={section.id}>
+                <MarketActionsDropdown section={section.name} marketId={section.id}>
                     <div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -89,17 +83,18 @@ const MarketSectionTableRow = ({ section, isLast }: { section: MarketSection; is
     );
 };
 
-const MarketActionsDropdown = ({ children, marketId }: { marketId: number; children: React.ReactNode }) => {
-    const [isOpen, setIsOpen] = useState(false)
-    const dropdownRef = useRef<HTMLDivElement>(null)
-    const triggerRef = useRef<HTMLDivElement>(null)
-
-    const handleToggle = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        setIsOpen(!isOpen)
-    }
+const MarketActionsDropdown = ({ children, section, marketId }: {section: string, marketId: number; children: React.ReactNode }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
     const [isMarketModalOpen, setIsMarketModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [currentSectionName, setCurrentSectionName] = useState(section);
+
+    const handleToggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+    };
 
     const handleOpenMarketModal = () => {
         setIsOpen(false);
@@ -110,7 +105,21 @@ const MarketActionsDropdown = ({ children, marketId }: { marketId: number; child
         setIsMarketModalOpen(false);
     };
 
-    const handleMarketModalContinue = () => {
+    const handleMarketModalContinue = async (newName: string) => {
+        try {
+            const response = await axios.put(
+                `https://digitalmarket.benuestate.gov.ng/api/market-sections/update/${marketId}`,
+                { name: newName }
+            );
+
+            if (response.status === 200) {
+                setCurrentSectionName(newName);
+                // You might want to refresh the sections list here or update the parent state
+            }
+        } catch (error) {
+            console.error("Error updating section:", error);
+            // Handle error (show toast, etc.)
+        }
         setIsMarketModalOpen(false);
     };
 
@@ -123,22 +132,33 @@ const MarketActionsDropdown = ({ children, marketId }: { marketId: number; child
         setIsDeleteModalOpen(false);
     };
 
-    const handleDelete = () => {
-        // Implement delete logic here
-        console.log(`Deleting market line with ID: ${marketId}`);
+    const handleDelete = async () => {
+        try {
+            const response = await axios.delete(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/delete/${marketId}`
+            );
+
+            if (response.status === 204) {
+                // Section deleted successfully
+                // You might want to refresh the sections list here or update the parent state
+            }
+        } catch (error) {
+            console.error("Error deleting section:", error);
+            // Handle error (show toast, etc.)
+        }
         setIsDeleteModalOpen(false);
     };
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsOpen(false)
+                setIsOpen(false);
             }
-        }
+        };
 
-        document.addEventListener('click', handleClickOutside)
-        return () => document.removeEventListener('click', handleClickOutside)
-    }, [])
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
 
     return (
         <>
@@ -154,30 +174,42 @@ const MarketActionsDropdown = ({ children, marketId }: { marketId: number; child
                 {isOpen && (
                     <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
                         <ul className="">
-                            <li onClick={handleOpenMarketModal} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">edit line</li>
-                            <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px]  cursor-pointer">Deactivate line</li>
+                            <li
+                                onClick={handleOpenMarketModal}
+                                className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer"
+                            >
+                                edit line
+                            </li>
+                            <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer">
+                                Deactivate line
+                            </li>
                             <li
                                 onClick={handleOpenDeleteModal}
-                                className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
+                                className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]"
+                            >
                                 Delete
                             </li>
                         </ul>
                     </div>
                 )}
             </div>
+
             <EditMarketLineModal
+                id={marketId}
+                name={currentSectionName}
                 isOpen={isMarketModalOpen}
                 onClose={handleCloseMarketModal}
                 onContinue={handleMarketModalContinue}
             />
+
             <DeleteConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={handleCloseDeleteModal}
                 onDelete={handleDelete}
             />
         </>
-    )
-}
+    );
+};
 
 const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
     const router = useRouter();
@@ -186,21 +218,15 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [marketSections, setMarketSections] = useState<MarketSection[]>([]);
-
     const { id } = use<PageParams>(params);
-
-    // Add these states to your ViewMarket component
     const [currentSectionPage, setCurrentSectionPage] = useState(1);
     const SECTIONS_PER_PAGE = 5;
-
-// Calculate pagination values for sections
     const totalSectionPages = Math.ceil(marketSections.length / SECTIONS_PER_PAGE);
     const currentSections = marketSections.slice(
         (currentSectionPage - 1) * SECTIONS_PER_PAGE,
         currentSectionPage * SECTIONS_PER_PAGE
     );
 
-// Add pagination handlers
     const handleSectionPrevPage = () => {
         if (currentSectionPage > 1) {
             setCurrentSectionPage(currentSectionPage - 1);
@@ -217,17 +243,17 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
         setCurrentSectionPage(page);
     };
 
-
     useEffect(() => {
         const fetchMarketData = async () => {
             try {
                 setLoading(true);
                 // Fetch market details
-                const marketResponse = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/markets/${id}`);
+                const marketResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/${id}`);
                 setMarket(marketResponse.data);
                 // Fetch market sections
-                const sectionsResponse = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/market-sections/allByMarket?marketId=${id}`);
+                const sectionsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/allByMarket?marketId=${id}`);
                 setMarketSections(sectionsResponse.data);
+                console.log("Sections:: ", sectionsResponse.data);
                 setLoading(false);
             } catch (err) {
                 setError("Failed to fetch market data");
@@ -248,8 +274,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
     };
 
     const handleAddNewLineContinue = () => {
-        setIsAddNewLineModalOpen(false);
-        // Optionally refresh the market data here
+        setIsAddNewLineModalOpen(false)
     };
 
     if (loading) return <div className="h-screen flex items-center justify-center">Loading market data...</div>;
@@ -280,7 +305,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                     <div className="flex flex-col gap-[4px]">
                         <div className="flex gap-[8px] items-center">
                             <h2 className="text-[18px] font-semibold text-[#022B23]">{market.name}</h2>
-                            <span className="text-[12px] font-medium w-[87px] rounded-[8px] h-[25px] bg-[#F9FAFB] flex items-center justify-center text-[#667085]">ID: {market.marketId}</span>
+                            <span className="text-[12px] font-medium w-[50px] rounded-[8px] h-[25px] bg-[#F9FAFB] flex items-center justify-center text-[#667085]">ID: #{market.id}</span>
                         </div>
                         <p className="text-[14px] text-[#707070] font-medium">{market.address}, {market.city}</p>
                     </div>
@@ -289,7 +314,6 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                     </span>
                 </div>
 
-                {/* Summary Cards */}
                 <div className="flex w-full gap-[20px] mb-[20px] mt-[20px] h-[110px] justify-between">
                     <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
                         <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
@@ -324,7 +348,6 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                         </div>
                     </div>
                 </div>
-
                 {/* Action Buttons */}
                 <div className="flex gap-[6px] h-[48px]">
                     <div
@@ -368,7 +391,6 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                             </div>
                             <div className="w-[3%]"></div>
                         </div>
-
                         <div className="flex flex-col">
                             {loading ? (
                                 <div className="flex justify-center items-center h-[200px]">

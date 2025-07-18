@@ -779,8 +779,8 @@ const NewProductView = ({shopId}) => {
         const fetchCategories = async () => {
             setLoadingCategories(true);
             try {
-                //https://api.digitalmarke.bdic.ng
-                const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/categories/all');
+
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/categories/all`);
                 if (response.data && Array.isArray(response.data)) {
                     setCategories(response.data);
                 }
@@ -814,10 +814,10 @@ const NewProductView = ({shopId}) => {
     const handleConfirmDelete = async () => {
         if (!productToDelete) return;
         try {
-            await axios.delete(`https://digitalmarket.benuestate.gov.ng/api/products/delete/${productToDelete}`);
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/delete/${productToDelete}`);
             // Refresh products
             const response = await axios.get(
-                `https://digitalmarket.benuestate.gov.ng/api/products/getByUser?email=${userEmail}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getByUser?email=${userEmail}`
             );
             setProducts(response.data);
             setIsDeleteModalOpen(false);
@@ -830,17 +830,17 @@ const NewProductView = ({shopId}) => {
     const handleSaveProduct = async (productId: number, price: number, quantity: number) => {
         try {
             await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/products/${productId}/totalStock`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/${productId}/totalStock`,
                 { quantity }
             );
 
             await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/products/update-price?productId=${productId}&price=${price}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/update-price?productId=${productId}&price=${price}`
             );
 
             // Refresh products list
             const response = await axios.get(
-                `https://digitalmarket.benuestate.gov.ng/api/products/getByUser?email=${userEmail}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getByUser?email=${userEmail}`
             );
             setProducts(response.data);
         } catch (error) {
@@ -854,7 +854,7 @@ const NewProductView = ({shopId}) => {
         setLoadingSubcategories(true);
         try {
             const response = await axios.get(
-                'https://digitalmarket.benuestate.gov.ng/api/categories/getAllCategorySub',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/categories/getAllCategorySub`,
                 {
                     params: {
                         categoryName: categoryName
@@ -882,10 +882,9 @@ const NewProductView = ({shopId}) => {
             try {
                 setLoading(true);
                 const response = await axios.get(
-                    `https://digitalmarket.benuestate.gov.ng/api/products/getByUser?email=${userEmail}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getByUser?email=${userEmail}`
                 );
                 setProducts(response.data);
-                console.log("PRoducts: ",response.data)
             } catch (err) {
                 console.error("Error fetching mockProducts:", err);
             } finally {
@@ -925,24 +924,23 @@ const NewProductView = ({shopId}) => {
     const fetchShopData = useCallback(async () => {
         if (session?.user?.email) {
             try {
-                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`);
                 console.log("Shop: ", response.data);
                 const data = response.data;
 
                 // Fetch transaction count and total sales after shop data is loaded
                 if (data.id) {
                     const [countResponse, amountResponse, stockResponse, productResponse] = await Promise.all([
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionCount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionAmount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getShopStockCount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getBestSelling?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getShopTransactionCount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getShopTransactionAmount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getShopStockCount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getBestSelling?shopId=${data.id}`),
                     ]);
 
                     setCompletedTransactions(countResponse.data);
                     setTotalSales(amountResponse.data);
                     setTotalStock(stockResponse.data);
                     setBestSelling(productResponse.data)
-                    console.log("product: ", productResponse.data);
                 }
             } catch (error) {
                 console.error('Error fetching shop data:', error);
@@ -1099,7 +1097,7 @@ const NewProductView = ({shopId}) => {
             });
 
             const response = await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/products/add',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/products/add`,
                 formDataToSend,
                 {
                     headers: {

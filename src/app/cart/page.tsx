@@ -150,7 +150,7 @@ const Cart = () => {
 
         try {
             const response = await axios.get<VerifyPaymentResponse>(
-                `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify/${transRef}`,
                 { timeout: 20000 }
             );
 
@@ -325,6 +325,7 @@ const Cart = () => {
                 amount: totalAmount * 100,
                 currency: 'NGN',
                 callbackUrl: `${window.location.origin}/cart`,
+                paymentType: 'ORDER',
                 metadata: {
                     cartItems: cartItems.map(item => ({
                         id: item.productId,
@@ -337,7 +338,7 @@ const Cart = () => {
             };
 
             const response = await axios.post<InitializePaymentResponse>(
-                'https://digitalmarket.benuestate.gov.ng/api/payments/initialize',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
                 requestData,
                 {
                     headers: {

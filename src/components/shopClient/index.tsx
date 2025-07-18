@@ -61,10 +61,10 @@ const ShopClient = () => {
     const fetchShopData = useCallback(async () => {
         if (session?.user?.email) {
             try {
-                //https://api.digitalmarke.bdic.ng
-                const response = await fetch(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`);
                 const data = await response.json();
                 setShopData(data);
+                console.log("SHOP:: ",data);
             } catch (error) {
                 console.error('Error fetching shop data:', error);
                 showErrorToast('Error', 'Failed to fetch shop data');

@@ -1,7 +1,7 @@
 //cartService.ts
 import axios from 'axios';
 
-const API_BASE_URL = 'https://digitalmarket.benuestate.gov.ng/api';
+const API_BASE_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}`;
 
 export interface CartItem {
     itemId: number;

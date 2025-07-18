@@ -48,7 +48,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
         if (session?.user?.email) {
             try {
                 const response = await axios.get(
-                    `https://digitalmarket.benuestate.gov.ng/api/notification/getUserAllUnRead?email=${session.user.email}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/getUserAllUnRead?email=${session.user.email}`
                 );
                 if (Array.isArray(response.data)) {
                     setNotificationCount(response.data.length);
@@ -63,7 +63,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
         if (session?.user?.email) {
             try {
                 await axios.put(
-                    `https://digitalmarket.benuestate.gov.ng/api/notification/readAllNotification?email=${session.user.email}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/readAllNotification?email=${session.user.email}`
                 );
                 fetchNotifications();
             } catch (error) {

@@ -28,7 +28,7 @@ const DashboardHeader = () => {
             }
 
             try {
-                const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/profile`, {
                     headers: {
                         Authorization: `Bearer ${session.accessToken}`,
                     },
@@ -58,7 +58,7 @@ const DashboardHeader = () => {
         try {
             // First call the backend logout endpoint
             await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
                 {},
                 {
                     headers: {
@@ -69,7 +69,6 @@ const DashboardHeader = () => {
             );
         } catch (error) {
             console.error('Backend logout failed:', error);
-            // Continue with client-side logout even if backend fails
         }
 
         try {

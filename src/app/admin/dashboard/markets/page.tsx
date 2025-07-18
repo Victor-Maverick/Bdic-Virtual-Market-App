@@ -126,17 +126,16 @@ const Markets = () => {
     const fetchMarketData = async () => {
         try {
             setLoading(true);
-            // Fetch all data in parallel
             const [
                 marketsRes,
                 shopsRes,
                 activeMarketsRes,
                 marketSectionsRes
             ] = await Promise.all([
-                axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/all'),
-                axios.get('https://digitalmarket.benuestate.gov.ng/api/shops/allCount'),
-                axios.get('https://digitalmarket.benuestate.gov.ng/api/markets/getActiveMarketsCount'),
-                axios.get('https://digitalmarket.benuestate.gov.ng/api/market-sections/all')
+                axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/all`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/allCount`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/getActiveMarketsCount`),
+                axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/all`)
             ]);
 
             const markets = marketsRes.data;
@@ -145,10 +144,8 @@ const Markets = () => {
             const marketSections = marketSectionsRes.data;
             console.log("markets", markets);
 
-            // Calculate total lines (assuming each market has lines)
             const marketLines = marketSections.length || 0;
 
-            // Format the data
             const data: MarketData = {
                 totalMarkets: markets.length || 0,
                 activeMarkets: activeMarkets,
@@ -161,7 +158,7 @@ const Markets = () => {
                     state: market.state || "Benue State",
                     marketId: market.marketId || "21367",
                     lines: market.lines || 0,
-                    numberOfShops: 7,
+                    numberOfShops: market.numberOfShops,
                     status: market.status === "ACTIVE" ? "ACTIVE" : "INACTIVE"
                 })),
                 marketsChangePercent: 6.41,
@@ -182,7 +179,7 @@ const Markets = () => {
 
     const handleDeleteMarket = async (marketId: number) => {
         try {
-            await axios.delete(`https://digitalmarket.benuestate.gov.ng/api/markets/delete/${marketId}`);
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/delete/${marketId}`);
             // Refresh the market data after successful deletion
             await fetchMarketData();
         } catch (err) {

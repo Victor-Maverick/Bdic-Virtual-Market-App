@@ -19,7 +19,6 @@ const CartIndicator = () => {
     if (!totalItems) {
         return null;
     }
-
     return (
         <div
             className="fixed bottom-22 right-7 z-50 flex items-center justify-center cursor-pointer"

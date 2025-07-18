@@ -5,7 +5,7 @@ import biArrows from "../../../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../../../public/assets/images/arrow-up.svg";
 import exportImg from "../../../../../public/assets/images/exportImg.svg";
 import archiveImg from "../../../../../public/assets/images/archive.svg";
-import Stats from "../../../../../public/assets/images/Stats.svg";
+// import Stats from "../../../../../public/assets/images/Stats.svg";
 import { useCallback, useEffect, useState } from "react";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
@@ -13,6 +13,8 @@ import DashboardOptions from "@/components/dashboardOptions";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import FilterDropdown from "@/components/filterDropdown";
+import PayoutRequestModal from "@/components/payoutRequestModal";
+import {toast} from "react-toastify";
 
 interface OrderResponse {
     id: number;
@@ -30,10 +32,19 @@ interface OrderResponse {
     shopOrdersCount: number;
 }
 
-// interface ShopAccountDetails {
-//     bankName: string;
-//     accountNumber: string;
-// }
+interface PayoutResponse {
+    id: number;
+    paidAmount: number;
+    paidAt: string;
+    requestedAt: string;
+    vendorName: string;
+    isPaid: boolean;
+}
+
+interface ShopAccountDetails {
+    bankName: string;
+    accountNumber: string;
+}
 
 interface OrderItemDto {
     id: number;
@@ -114,7 +125,51 @@ const ProductTableRow = ({ order, isLast }: { order: OrderResponse; isLast: bool
                     {order.deliveryInfo.method}
                 </p>
             </div>
+        </div>
+    );
+};
 
+const PayoutTableRow = ({ payout, isLast }: { payout: PayoutResponse; isLast: boolean }) => {
+    const formattedRequestDate = new Date(payout.requestedAt).toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+    });
+
+    const formattedRequestTime = new Date(payout.requestedAt).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    return (
+        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : 'border-b border-[#EAECF0]'}`}>
+            <div className="flex items-center w-[35%] px-[24px] gap-3">
+                <div className="flex flex-col">
+                    <p className="text-[14px] font-medium text-[#101828]">Payout #{payout.id}</p>
+                </div>
+            </div>
+
+            <div className="flex items-center w-[30%] px-[20px]">
+                <div className={`w-[50%] h-[22px] rounded-[8px] flex items-center justify-center ${
+                    payout.isPaid
+                        ? 'bg-[#ECFDF3] text-[#027A48]'
+                        : 'bg-[#FFFAEB] text-[#B54708]'
+                }`}>
+                    <p className="text-[12px] font-medium capitalize">{payout.isPaid ? 'paid' : 'pending'}</p>
+                </div>
+            </div>
+
+            <div className="flex flex-col w-[15%] px-[16px] justify-center">
+                <p className="text-[14px] text-[#101828]">{formattedRequestDate}</p>
+                <p className="text-[14px] text-[#667085]">{formattedRequestTime}</p>
+            </div>
+
+            <div className="flex flex-col gap-[4px] justify-center w-[20%] px-[16px]">
+                <p className="text-[14px] font-medium text-[#101828]">
+                    N {payout.paidAmount.toLocaleString()}.00
+                </p>
+            </div>
         </div>
     );
 };
@@ -122,37 +177,43 @@ const ProductTableRow = ({ order, isLast }: { order: OrderResponse; isLast: bool
 const Transactions = () => {
     const [activeView, setActiveView] = useState<'product-transactions' | 'pay-outs'>('product-transactions');
     const [currentPage, setCurrentPage] = useState(1);
-    // const [isPayoutRequestModalOpen, setIsPayoutRequestModalOpen] = useState(false);
+    const [isPayoutRequestModalOpen, setIsPayoutRequestModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
     const { data: session } = useSession();
     const [loading, setLoading] = useState(false);
     const [orders, setOrders] = useState<OrderResponse[]>([]);
+    const [payouts, setPayouts] = useState<PayoutResponse[]>([]);
     const [completedTransactions, setCompletedTransactions] = useState(0);
     const [totalSales, setTotalSales] = useState(0);
     const [payoutAmount, setPayoutAmount] = useState(0);
     const [filter, setFilter] = useState<'all' | 'today' | '1day' | '7days' | '30days'>('all');
-
+    const [shopId, setShopId] = useState<number | null>(null);
+    const [accountDetails, setAccountDetails] = useState<ShopAccountDetails | null>(null);
 
     const fetchShopData = useCallback(async () => {
         if (session?.user?.email) {
             try {
                 setLoading(true);
-                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`);
                 const data = response.data;
-                console.log("data for shop: ",data);
+                console.log("data for shop: ", data);
 
                 if (data.id) {
-                    const [countResponse, amountResponse, orderResponse,payoutAmountResponse] = await Promise.all([
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionCount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionAmount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/get-shop-orders?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getPayoutAmount?shopId=${data.id}`)
+                    setShopId(data.id);
+                    const [countResponse, amountResponse, orderResponse, payoutAmountResponse, payoutsResponse, accountResponse] = await Promise.all([
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getShopTransactionCount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getShopTransactionAmount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/get-shop-orders?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getPayoutAmount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payout/allShop?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/get-account?shopId=${data.id}`)
                     ]);
                     setCompletedTransactions(countResponse.data);
                     setTotalSales(amountResponse.data);
                     setOrders(orderResponse.data);
-                    setPayoutAmount(payoutAmountResponse.data)
-                    console.log("Payout amount: ", payoutAmountResponse.data);
+                    setPayoutAmount(payoutAmountResponse.data);
+                    setPayouts(payoutsResponse.data);
+                    setAccountDetails(accountResponse.data);
                 }
             } catch (error) {
                 console.error('Error fetching shop data:', error);
@@ -167,9 +228,28 @@ const Transactions = () => {
     }, [fetchShopData]);
 
     const handleOpenPayoutRequest = () => {
-        return;
+        setIsPayoutRequestModalOpen(true);
     };
 
+    const handlePayoutRequestSuccess = () => {
+        setIsPayoutRequestModalOpen(false);
+        setIsSuccessModalOpen(true);
+        fetchShopData(); // Refresh data after successful payout request
+    };
+
+    const handleUpdateAccount = async (details: ShopAccountDetails) => {
+        if (!shopId) return false;
+        try {
+            await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/update-account?shopId=${shopId}`, details);
+            setAccountDetails(details);
+            return true;
+        } catch (error) {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            toast.error(error.response?.data || 'Error updating account details');
+            return false;
+        }
+    };
     const getFilteredOrders = () => {
         const now = new Date();
         const today = new Date(now.setHours(0, 0, 0, 0));
@@ -178,8 +258,6 @@ const Transactions = () => {
             case 'today':
                 return orders.filter(order => {
                     const orderDate = new Date(order.createdAt);
-                    console.log("Order today: ",orderDate);
-                    console.log("Order date: ",order.createdAt);
                     return orderDate >= today;
                 });
             case '1day':
@@ -210,17 +288,21 @@ const Transactions = () => {
 
     const PRODUCTS_PER_PAGE = 5;
     const filteredOrders = getFilteredOrders();
-    const totalPages = Math.ceil(filteredOrders.length / PRODUCTS_PER_PAGE);
-    const currentOrders = filteredOrders.slice(
-        (currentPage - 1) * PRODUCTS_PER_PAGE,
-        currentPage * PRODUCTS_PER_PAGE
+    const totalPages = Math.ceil(
+        activeView === 'product-transactions'
+            ? filteredOrders.length / PRODUCTS_PER_PAGE
+            : payouts.length / PRODUCTS_PER_PAGE
     );
 
-
-    // const handlePayoutRequestSuccess = () => {
-    //     // setIsPayoutRequestModalOpen(false);
-    //     setIsSuccessModalOpen(true);
-    // };
+    const currentData = activeView === 'product-transactions'
+        ? filteredOrders.slice(
+            (currentPage - 1) * PRODUCTS_PER_PAGE,
+            currentPage * PRODUCTS_PER_PAGE
+        )
+        : payouts.slice(
+            (currentPage - 1) * PRODUCTS_PER_PAGE,
+            currentPage * PRODUCTS_PER_PAGE
+        );
 
     const handleCloseSuccessModal = () => {
         setIsSuccessModalOpen(false);
@@ -246,7 +328,6 @@ const Transactions = () => {
         <>
             <DashboardHeader />
             <DashboardOptions />
-
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col gap-[12px]">
                     <p className="text-[#022B23] text-[16px] font-medium">Transaction summary</p>
@@ -272,12 +353,14 @@ const Transactions = () => {
                                         <Image src={exportImg} alt="Available for payout" />
                                         <p>Available for payout</p>
                                     </div>
-                                    <span
-                                        onClick={handleOpenPayoutRequest}
-                                        className="text-[#C6EB5F] cursor-pointer flex justify-center items-center text-[12px] font-medium h-[30px] w-[113px] rounded-[100px] px-[8px] py-[6px] bg-[#022B23]"
-                                    >
-                                        Request payout
-                                    </span>
+                                    {payoutAmount >= 500 && (
+                                        <span
+                                            onClick={handleOpenPayoutRequest}
+                                            className="text-[#C6EB5F] cursor-pointer flex justify-center items-center text-[12px] font-medium h-[30px] w-[113px] rounded-[100px] px-[8px] py-[6px] bg-[#022B23]"
+                                        >
+                                            Request payout
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex justify-between">
                                     <p className="text-[#18181B] text-[16px] font-medium">N {payoutAmount.toLocaleString()}.00</p>
@@ -327,7 +410,10 @@ const Transactions = () => {
                                 ? 'border-l-[1px] border-[#ededed] rounded-tr-[8px] rounded-br-[8px] bg-[#F8FAFB] text-[#8C8C8C]'
                                 : ''
                         }`}
-
+                        onClick={() => {
+                            setActiveView('pay-outs');
+                            setCurrentPage(1);
+                        }}
                     >
                         <p>Pay outs</p>
                     </div>
@@ -353,9 +439,7 @@ const Transactions = () => {
                                     setFilter={setFilter}
                                     setCurrentPage={setCurrentPage}
                                 />
-
                             </div>
-
 
                             <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
                                 <div className="flex items-center px-[24px] w-[35%] py-[12px] gap-[4px]">
@@ -378,12 +462,12 @@ const Transactions = () => {
                                     <div className="flex justify-center items-center h-[200px]">
                                         <p>Loading transactions...</p>
                                     </div>
-                                ) : currentOrders.length > 0 ? (
-                                    currentOrders.map((order, index) => (
+                                ) : currentData.length > 0 ? (
+                                    currentData.map((item, index) => (
                                         <ProductTableRow
-                                            key={order.id}
-                                            order={order}
-                                            isLast={index === currentOrders.length - 1}
+                                            key={item.id}
+                                            order={item as OrderResponse}
+                                            isLast={index === currentData.length - 1}
                                         />
                                     ))
                                 ) : (
@@ -392,141 +476,112 @@ const Transactions = () => {
                                     </div>
                                 )}
                             </div>
-
-                            {orders.length > 0 && (
-                                <div className="flex justify-between items-center mt-4 px-6 pb-6">
-                                    <button
-                                        onClick={handlePrevPage}
-                                        disabled={currentPage === 1}
-                                        className={`px-4 py-2 rounded-md ${
-                                            currentPage === 1
-                                                ? 'text-gray-400 cursor-not-allowed'
-                                                : 'text-[#022B23] hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        Previous
-                                    </button>
-
-                                    <div className="flex gap-2">
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                            <button
-                                                key={page}
-                                                onClick={() => handlePageChange(page)}
-                                                className={`w-8 h-8 rounded-md flex items-center justify-center ${
-                                                    currentPage === page
-                                                        ? 'bg-[#022B23] text-white'
-                                                        : 'text-[#022B23] hover:bg-gray-100'
-                                                }`}
-                                            >
-                                                {page}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    <button
-                                        onClick={handleNextPage}
-                                        disabled={currentPage === totalPages}
-                                        className={`px-4 py-2 rounded-md ${
-                                            currentPage === totalPages
-                                                ? 'text-gray-400 cursor-not-allowed'
-                                                : 'text-[#022B23] hover:bg-gray-100'
-                                        }`}
-                                    >
-                                        Next
-                                    </button>
-                                </div>
-                            )}
                         </div>
                     </>
                 ) : (
                     <>
-                        <div className="flex text-[#7A7A7A] text-[14px] mt-[30px] font-semibold justify-between items-center">
-                            <p>ORDERS</p>
-                            <select className="text-[#707070] text-[12px] border-[1px] p-[10px] border-[#F2F2F2] shadow-xs w-[123px] h-[38px] rounded-[8px] bg-white">
-                                <option>Last 7 days</option>
-                                <option>Last 30 days</option>
-                                <option>Last 90 days</option>
-                            </select>
-                        </div>
-                        <div className="flex justify-between items-center my-5">
-                            <div className="flex items-center gap-[5px]">
-                                <h3 className="text-[#18181B] font-medium text-[44px]">{orders.length}</h3>
-                                <div className="flex items-center w-[45px] h-[20px] text-[12px] font-medium rounded-[4px] text-[#377E36] bg-[#E0F0E4] justify-center">
-                                    <p>+3.4%</p>
+                        <div className="flex flex-col">
+                            <div className="flex item-center justify-between">
+                                <div className="mx-6 mb-6 flex flex-col">
+                                    <p className="text-[#101828] font-medium">All payouts</p>
+                                    <p className="text-[#667085] text-[14px]">View all your payout details</p>
                                 </div>
                             </div>
-                        </div>
-                        <Image src={Stats} alt={'stats'} className="mb-[20px]"/>
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
-                                <div className="flex items-center gap-[9px]">
-                                    <span className="rounded-full w-[6px] h-[6px] bg-[#C6EB5F]"></span>
-                                    <p className="text-[#707070] text-[12px]">DELIVERED</p>
+
+                            <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
+                                <div className="flex items-center px-[24px] w-[35%] py-[12px] gap-[4px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Payout</p>
                                 </div>
-                                <div className="flex w-[108px] h-[28px] items-center gap-[10px]">
-                                    <span className="text-[#18181B] font-medium text-[20px]">
-                                        {orders.filter(o => o.status === OrderStatus.DELIVERED).length}
-                                    </span>
-                                    <div className="flex bg-[#E0F0E4] w-[53px] px-[4px] py-[2px] rounded-[100px] items-center justify-center">
-                                        <span className="text-[#377E36] font-medium text-[12px]">+44.3%</span>
-                                    </div>
+                                <div className="flex items-center px-[24px] w-[30%] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                                </div>
+                                <div className="flex items-center px-[24px] w-[15%] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Request Date</p>
+                                </div>
+                                <div className="flex items-center px-[24px] w-[20%] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Amount</p>
                                 </div>
                             </div>
-                            <div className="w-[326px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-[8px] p-4">
-                                <div className="flex items-center gap-[9px]">
-                                    <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
-                                    <p className="text-[#707070] text-[12px]">EN-ROUTE</p>
-                                </div>
-                                <div className="flex w-[108px] h-[28px] items-center gap-[10px]">
-                                    <span className="text-[#18181B] font-medium text-[20px]">
-                                        {orders.filter(o => o.status === OrderStatus.SHIPPED).length}
-                                    </span>
-                                    <div className="flex bg-[#E0F0E4] w-[53px] px-[4px] py-[2px] rounded-[100px] items-center justify-center">
-                                        <span className="text-[#377E36] font-medium text-[12px]">+11.4%</span>
+
+                            <div className="flex flex-col">
+                                {loading ? (
+                                    <div className="flex justify-center items-center h-[200px]">
+                                        <p>Loading payouts...</p>
                                     </div>
-                                </div>
-                            </div>
-                            <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
-                                <div className="flex items-center gap-[9px]">
-                                    <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
-                                    <p className="text-[#707070] text-[12px]">PENDING</p>
-                                </div>
-                                <div className="flex w-[108px] h-[28px] items-center gap-[10px]">
-                                    <span className="text-[#18181B] font-medium text-[20px]">
-                                        {orders.filter(o => o.status === OrderStatus.PENDING_DELIVERY).length}
-                                    </span>
-                                    <div className="flex bg-[#FEECEB] w-[53px] px-[4px] py-[2px] rounded-[100px] items-center justify-center">
-                                        <span className="text-[#B12F30] font-medium text-[12px]">-1.03%</span>
+                                ) : currentData.length > 0 ? (
+                                    currentData.map((item, index) => (
+                                        <PayoutTableRow
+                                            key={item.id}
+                                            payout={item as PayoutResponse}
+                                            isLast={index === currentData.length - 1}
+                                        />
+                                    ))
+                                ) : (
+                                    <div className="flex justify-center items-center h-[200px]">
+                                        <p>No payouts found</p>
                                     </div>
-                                </div>
-                            </div>
-                            <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
-                                <div className="flex items-center gap-[9px]">
-                                    <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
-                                    <p className="text-[#707070] text-[12px]">FAILED ORDERS</p>
-                                </div>
-                                <div className="flex w-[108px] h-[28px] items-center gap-[10px]">
-                                    <span className="text-[#18181B] font-medium text-[20px]">
-                                        {orders.filter(o => o.status === OrderStatus.CANCELLED).length}
-                                    </span>
-                                    <div className="flex bg-[#FEECEB] w-[53px] px-[4px] py-[2px] rounded-[100px] items-center justify-center">
-                                        <span className="text-[#B12F30] font-medium text-[12px]">-1.03%</span>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </>
                 )}
+
+                {(activeView === 'product-transactions' ? orders.length > 0 : payouts.length > 0) && (
+                    <div className="flex justify-between items-center mt-4 px-6 pb-6">
+                        <button
+                            onClick={handlePrevPage}
+                            disabled={currentPage === 1}
+                            className={`px-4 py-2 rounded-md ${
+                                currentPage === 1
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-[#022B23] hover:bg-gray-100'
+                            }`}
+                        >
+                            Previous
+                        </button>
+
+                        <div className="flex gap-2">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => handlePageChange(page)}
+                                    className={`w-8 h-8 rounded-md flex items-center justify-center ${
+                                        currentPage === page
+                                            ? 'bg-[#022B23] text-white'
+                                            : 'text-[#022B23] hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={handleNextPage}
+                            disabled={currentPage === totalPages}
+                            className={`px-4 py-2 rounded-md ${
+                                currentPage === totalPages
+                                    ? 'text-gray-400 cursor-not-allowed'
+                                    : 'text-[#022B23] hover:bg-gray-100'
+                            }`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                )}
             </div>
 
-            {/*<PayoutRequestModal*/}
-            {/*    isPayoutRequestModalOpen={isPayoutRequestModalOpen}*/}
-            {/*    onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}*/}
-            {/*    onRequestSuccess={handlePayoutRequestSuccess} shopId={0} amount={0} accountDetails={null}*/}
-            {/*    onUpdateAccount={function (details: ShopAccountDetails): Promise<boolean> {*/}
-            {/*        console.log("details: ",details);*/}
-            {/*        throw new Error("Function not implemented.");*/}
-            {/*    }}            />*/}
+            {shopId && (
+                <PayoutRequestModal
+                    isPayoutRequestModalOpen={isPayoutRequestModalOpen}
+                    onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}
+                    onRequestSuccess={handlePayoutRequestSuccess}
+                    shopId={shopId}
+                    amount={payoutAmount}
+                    accountDetails={accountDetails}
+                    onUpdateAccount={handleUpdateAccount}
+                />
+            )}
 
             <PayoutRequestSuccessModal
                 isOpen={isSuccessModalOpen}

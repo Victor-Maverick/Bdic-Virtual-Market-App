@@ -94,7 +94,6 @@ const DashBoard = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const {data: session} = useSession();
-
     // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -127,7 +126,7 @@ const DashBoard = () => {
     const fetchShopData = useCallback(async () => {
         if (session?.user?.email) {
             try {
-                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`);
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`);
                 const data = response.data;
                 setShopData(data);
 
@@ -140,11 +139,11 @@ const DashBoard = () => {
                         productResponse,
                         statsResponse
                     ] = await Promise.all([
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionCount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopTransactionAmount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getShopStockCount?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/products/getBestSelling?shopId=${data.id}`),
-                        axios.get(`https://digitalmarket.benuestate.gov.ng/api/orders/getShopStatistics?shopId=${data.id}`)
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getShopTransactionCount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getShopTransactionAmount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getShopStockCount?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/getBestSelling?shopId=${data.id}`),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getShopStatistics?shopId=${data.id}`)
                     ]);
 
                     setCompletedTransactions(countResponse.data);
@@ -168,7 +167,7 @@ const DashBoard = () => {
     const verifyShopStatus = useCallback(async (email: string) => {
         try {
             const response = await axios.put(
-                'https://digitalmarket.benuestate.gov.ng/api/shops/update-status',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/update-status`,
                 null,
                 {
                     params: {email},
@@ -189,7 +188,7 @@ const DashBoard = () => {
     const verifyPayment = useCallback(async (transRef: string) => {
         try {
             const response = await axios.get<VerifyPaymentResponse>(
-                `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify/${transRef}`,
                 {timeout: 30000}
             );
 
@@ -237,13 +236,13 @@ const DashBoard = () => {
         try {
             const requestData = {
                 email: session.user.email,
-                amount: 500000, // 5000 Naira in kobo
+                amount: 500000,
                 currency: 'NGN',
                 callbackUrl: `/vendor/dashboard`
             };
 
             const response = await axios.post<InitializePaymentResponse>(
-                'https://digitalmarket.benuestate.gov.ng/api/payments/initialize',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
                 requestData,
                 {
                     headers: {'Content-Type': 'application/json'},

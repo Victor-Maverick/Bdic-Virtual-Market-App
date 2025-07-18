@@ -119,7 +119,7 @@ const SuccessPage = () => {
                 }
 
                 const verificationResponse = await axios.get(
-                    `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify/${transRef}`,
                     { timeout: 20000 }
                 );
 
@@ -129,7 +129,7 @@ const SuccessPage = () => {
                 }
 
                 const orderResponse = await axios.post(
-                    `https://digitalmarket.benuestate.gov.ng/api/orders/buy-product?productId=${transactionData.productId}`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/buy-product?productId=${transactionData.productId}`,
                     {
                         buyerEmail: session?.user.email,
                         deliveryMethod: 'pickup',

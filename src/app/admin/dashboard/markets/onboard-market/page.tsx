@@ -12,8 +12,8 @@ import axios from 'axios';
 interface Location {
     id: number;
     name: string;
-    stateId?: number; // For LGAs
-    localGovernmentId?: number; // For wards
+    stateId?: number;
+    localGovernmentId?: number;
 }
 
 const InputField = ({
@@ -148,7 +148,7 @@ const OnboardMarket = () => {
     useEffect(() => {
         const fetchStates = async () => {
             try {
-                const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/states/all');
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/states/all`);
                 setStates(response.data);
             } catch (error) {
                 console.error("Error fetching states:", error);
@@ -165,7 +165,7 @@ const OnboardMarket = () => {
         const fetchAllLGAs = async () => {
             setIsLoading(prev => ({...prev, lgas: true}));
             try {
-                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/local-governments/all`);
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/local-governments/all`);
                 setAllLgas(response.data);
             } catch (error) {
                 console.error("Error fetching all LGAs:", error);
@@ -182,7 +182,7 @@ const OnboardMarket = () => {
         const fetchAllWards = async () => {
             setIsLoading(prev => ({...prev, wards: true}));
             try {
-                const response = await axios.get(`https://digitalmarket.benuestate.gov.ng/api/council-wards/all`);
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/council-wards/all`);
                 setAllWards(response.data);
             } catch (error) {
                 console.error("Error fetching all wards:", error);

@@ -1,15 +1,15 @@
-'use client'
+'use client';
 import Image, { StaticImageData } from "next/image";
 import notificationImg from "../../../public/assets/images/notification-bing.png";
 import routing from "../../../public/assets/images/routing.png";
 import bag from "../../../public/assets/images/bag.png";
-import profileImg from '@/../public/assets/images/profile-circle.png'
-import wishListImg from '@/../public/assets/images/heart.png'
+import profileImg from '@/../public/assets/images/profile-circle.png';
+import wishListImg from '@/../public/assets/images/heart.png';
 import farmGoLogo from "../../../public/assets/images/farmGoLogo.png";
 import { useRouter, usePathname } from "next/navigation";
-import {useEffect, useState, useCallback} from "react";
+import { useState, useCallback } from "react";
 import axios from "axios";
-import {useSession, signOut} from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { FiMenu, FiX } from "react-icons/fi";
 
 interface HeaderItem {
@@ -21,61 +21,24 @@ interface HeaderItem {
     isNotification?: boolean;
 }
 
-interface UserProfile {
-    firstName: string;
-    roles: string[];
-}
-
 const MarketPlaceHeader = () => {
     const pathname = usePathname();
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
     const [notificationCount, setNotificationCount] = useState(0);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const router = useRouter();
     const { data: session, status } = useSession();
 
-    const fetchUserProfile = useCallback(async () => {
-        if (status === 'loading') return;
-        if (status === 'unauthenticated') {
-            return;
-        }
-
-        let token;
-        if(session?.accessToken){
-            token = session?.accessToken
-        }
-
-        try {
-            const response = await axios.get('https://digitalmarket.benuestate.gov.ng/api/auth/profile', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            if (response.status === 200) {
-                setUserProfile({
-                    firstName: response.data.firstName,
-                    roles: session?.user?.roles || [],
-                });
-            }
-        } catch (error) {
-            console.log('Profile fetch failed or user not authenticated');
-            if (axios.isAxiosError(error) && error.response?.status === 401) {
-                console.error('Unauthorized: Logging out');
-                await signOut({ redirect: false });
-                localStorage.removeItem('BDICAuthToken');
-                localStorage.removeItem('userEmail');
-                router.push('/login');
-            }
-        }
-    }, [session?.accessToken, session?.user?.roles, status, router]);
+    const userProfile = session?.user ? {
+        firstName: session.user.firstName,
+        roles: session.user.roles || []
+    } : null;
 
     const fetchNotifications = useCallback(async () => {
         if (session?.user?.email) {
             try {
                 const response = await axios.get(
-                    `https://digitalmarket.benuestate.gov.ng/api/notification/getUserAllUnRead?email=${session.user.email}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/getUserAllUnRead?email=${session.user.email}`
                 );
                 if (Array.isArray(response.data)) {
                     setNotificationCount(response.data.length);
@@ -90,7 +53,7 @@ const MarketPlaceHeader = () => {
         if (session?.user?.email) {
             try {
                 await axios.put(
-                    `https://digitalmarket.benuestate.gov.ng/api/notification/readAllNotification?email=${session.user.email}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/readAllNotification?email=${session.user.email}`
                 );
                 fetchNotifications();
             } catch (error) {
@@ -104,14 +67,16 @@ const MarketPlaceHeader = () => {
     };
 
     const navigateToDashboard = () => {
-        if (!userProfile?.roles) {
-            return;
-        }
+        if (!userProfile?.roles) return;
 
         const roles = userProfile.roles;
         if (roles.includes('VENDOR') && roles.includes('BUYER')) {
             router.push('/vendor/dashboard');
-        } else if (roles.includes('LOGISTICS')) {
+        }
+        else if (roles.includes('ADMIN')) {
+            router.push('/admin/dashboard/main');
+        }
+        else if (roles.includes('LOGISTICS')) {
             router.push('/logistics/dashboard');
         } else {
             router.push('/buyer/orders');
@@ -123,7 +88,7 @@ const MarketPlaceHeader = () => {
     const handleLogout = async () => {
         try {
             await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
                 {},
                 {
                     headers: {
@@ -131,27 +96,15 @@ const MarketPlaceHeader = () => {
                     },
                 }
             );
-            await signOut({ redirect: false });
-            localStorage.removeItem('BDICAuthToken');
-            localStorage.removeItem('userEmail');
-            router.push('/');
         } catch (error) {
-            console.error('Logout failed:', error);
+            console.error('Logout API call failed:', error);
+        } finally {
             await signOut({ redirect: false });
             localStorage.removeItem('BDICAuthToken');
             localStorage.removeItem('userEmail');
             router.push('/');
         }
     };
-
-    useEffect(() => {
-        fetchUserProfile();
-        if (status === 'authenticated') {
-            fetchNotifications();
-            const notificationInterval = setInterval(fetchNotifications, 5000);
-            return () => clearInterval(notificationInterval);
-        }
-    }, [fetchNotifications, fetchUserProfile, status]);
 
     const handleNavigation = useCallback((path: string, isNotification?: boolean) => {
         if (isNotification) {
@@ -212,12 +165,10 @@ const MarketPlaceHeader = () => {
                                             width={20}
                                             className="w-5 h-5"
                                         />
-                                        {showBadge && badgeCount && badgeCount > 0 ? (
+                                        {showBadge && badgeCount && badgeCount > 0 && (
                                             <span className="absolute -top-2 -right-2 bg-[#FF5050] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                                                 {badgeCount > 9 ? '9+' : badgeCount}
                                             </span>
-                                        ):(
-                                            <></>
                                         )}
                                     </div>
                                     <span className="text-sm font-medium text-gray-900 group-hover:text-primary">
@@ -300,12 +251,10 @@ const MarketPlaceHeader = () => {
                                         width={20}
                                         className="w-5 h-5"
                                     />
-                                    {showBadge && badgeCount && badgeCount > 0 ? (
+                                    {showBadge && badgeCount && badgeCount > 0 && (
                                         <span className="absolute -top-2 -right-2 bg-[#FF5050] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                                             {badgeCount > 9 ? '9+' : badgeCount}
                                         </span>
-                                    ):(
-                                        <></>
                                     )}
                                 </div>
                                 {text}

@@ -58,6 +58,8 @@ interface InitializePaymentRequest {
     amount: number;
     currency: string;
     callbackUrl: string;
+    paymentType: string;
+
 }
 
 interface VerifyPaymentResponse {
@@ -146,15 +148,22 @@ const SetupComplete = () => {
     }, [session?.user?.email]);
 
     const verifyPayment = useCallback(async (transRef: string) => {
-        if (!email) {
-            console.error('Email not loaded yet');
-            return;
-        }
-
         setIsVerifying(true);
         setPaymentError(null);
 
         try {
+            // Wait for session to be available
+            let attempts = 0;
+            const maxAttempts = 10; // ~5 seconds with 500ms interval
+            while (!session?.user?.email && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+
+            if (!session?.user?.email) {
+                throw new Error('User authentication timed out');
+            }
+
             const response = await axios.get<VerifyPaymentResponse>(
                 `https://digitalmarket.benuestate.gov.ng/api/payments/verify/${transRef}`,
                 { timeout: 30000 }
@@ -168,7 +177,7 @@ const SetupComplete = () => {
                     throw new Error('Payment amount does not match expected amount');
                 }
 
-                const shopVerified = await verifyShopStatus(email);
+                const shopVerified = await verifyShopStatus(session.user.email);
                 if (!shopVerified) {
                     throw new Error('Shop verification failed');
                 }
@@ -190,7 +199,7 @@ const SetupComplete = () => {
         } finally {
             setIsVerifying(false);
         }
-    }, [email, router]);
+    }, [session, router]);
 
     const showSuccessToast = (message: string, subMessage: string) => {
         setToastType("success");
@@ -219,6 +228,10 @@ const SetupComplete = () => {
     };
 
     const verifyShopStatus = async (email: string) => {
+        if (!email) {
+            throw new Error('Email not available for verification');
+        }
+
         try {
             const response = await axios.put(
                 'https://digitalmarket.benuestate.gov.ng/api/shops/update-status',
@@ -231,10 +244,7 @@ const SetupComplete = () => {
                     timeout: 30000,
                 }
             );
-            if (response.status === 200) {
-                return true;
-            }
-            return false;
+            return response.status === 200;
         } catch (error) {
             console.error('Error verifying shop status:', error);
             return false;
@@ -248,21 +258,27 @@ const SetupComplete = () => {
         const paymentStatus = searchParams.get('status');
 
         if (transRef) {
-            verifyPayment(transRef);
+            // Only verify if we have a session or are in the process of getting one
+            if (session) {
+                verifyPayment(transRef);
+            }
+            // Otherwise, the session provider will trigger this again when session is available
         }
 
         if (paymentStatus && !transRef) {
             router.replace('/vendor/dashboard', undefined);
         }
-    }, [searchParams, verifyPayment, router, isDataLoaded]);
+    }, [searchParams, verifyPayment, router, isDataLoaded, session]);
 
     const initializePayment = async (): Promise<string> => {
         try {
             const requestData: InitializePaymentRequest = {
                 email: email,
-                amount: 500000, // Amount in kobo (NGN 5,000.00)
+                amount: 500000,
                 currency: 'NGN',
-                callbackUrl: `${window.location.origin}/vendor/setup-shop/complete`
+                callbackUrl: `${window.location.origin}/vendor/setup-shop/complete`,
+                paymentType: "SHOP_ACTIVATION"
+
             };
 
             console.log('Initializing payment with data:', requestData);
@@ -357,12 +373,16 @@ const SetupComplete = () => {
                 throw new Error('Missing required information. Please complete all setup-shop steps.');
             }
 
+            if (!session?.user?.email) {
+                throw new Error('User session not available. Please try again.');
+            }
+
             // First, add the shop
             await addShop({
                 shopInfo: summaryData.shopInfo,
                 personalInfo: summaryData.personalInfo,
                 bankInfo: summaryData.bankInfo,
-                email
+                email: session.user.email
             });
 
             console.log('Shop added successfully');
@@ -409,13 +429,18 @@ const SetupComplete = () => {
                 />
             )}
 
-            {/* Loading overlay for payment verification */}
             {isVerifying && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
                     <div className="bg-white p-6 shadow-lg max-w-md w-full mx-4 text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">Verifying Payment</h3>
-                        <p className="text-gray-600">Please wait while we verify your payment...</p>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">
+                            {session ? 'Verifying Payment' : 'Loading ...'}
+                        </h3>
+                        <p className="text-gray-600">
+                            {session
+                                ? 'Please wait while we verify your payment...'
+                                : 'Completing authentication, please wait...'}
+                        </p>
                     </div>
                 </div>
             )}

@@ -314,7 +314,7 @@ const Disputes = () => {
             try {
                 setLoading(true);
                 const response = await axios.get(
-                    `https://digitalmarket.benuestate.gov.ng/api/dispute/get-user?email=${session.user.email}`
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/get-user?email=${session.user.email}`
                 );
                 setDisputes(response.data);
             } catch (error) {
@@ -346,7 +346,7 @@ const Disputes = () => {
     const handleAcceptResolution = async (disputeId: number) => {
         try {
             const response = await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/dispute/resolve?disputeId=${disputeId}`
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/resolve?disputeId=${disputeId}`
             );
 
             if (response.status === 200) {

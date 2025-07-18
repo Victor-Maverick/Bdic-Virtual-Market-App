@@ -17,7 +17,7 @@ const authOptions: NextAuthOptions = {
                 }
 
                 try {
-                    const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/auth/login', {
+                    const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`, {
                         email: credentials.email,
                         password: credentials.password,
                     });

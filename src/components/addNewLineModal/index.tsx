@@ -129,13 +129,13 @@ const AddNewLineModal = ({ isOpen, onClose, onContinue, marketId }: AddNewLineMo
         setIsLoading(true);
 
         try {
-            const response = await fetch('https://api.digitalmarke.bdic.ng/api/market-sections/add', {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/add`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    marketId: marketId, // You might want to pass this as a prop
+                    marketId: marketId,
                     name: formData.name.trim(),
                     description: formData.description.trim()
                 }),

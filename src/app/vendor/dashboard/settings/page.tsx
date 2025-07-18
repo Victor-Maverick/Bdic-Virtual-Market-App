@@ -286,7 +286,7 @@ const Settings = () => {
 
             // Fetch shop data
             const shopResponse = await axios.get<ShopData>(
-                `https://digitalmarket.benuestate.gov.ng/api/shops/getbyEmail?email=${session.user.email}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${session.accessToken}`,
@@ -299,7 +299,7 @@ const Settings = () => {
 
             // Check if address exists
             const existsResponse = await axios.get(
-                `https://digitalmarket.benuestate.gov.ng/api/users/address-exists?email=${session.user.email}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/address-exists?email=${session.user.email}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${session.accessToken}`,
@@ -310,7 +310,7 @@ const Settings = () => {
 
             // Fetch user profile
             const profileResponse = await axios.get<UserProfile>(
-                `https://digitalmarket.benuestate.gov.ng/api/users/get-profile?email=${session.user.email}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-profile?email=${session.user.email}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${session.accessToken}`,
@@ -321,7 +321,7 @@ const Settings = () => {
             setUserProfile(profileResponse.data);
             if (existsResponse.data) {
                 const addressResponse = await axios.get<AddressResponse>(
-                    `https://digitalmarket.benuestate.gov.ng/api/users/get-userAddress?email=${session.user.email}`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${session.accessToken}`,
@@ -360,7 +360,7 @@ const Settings = () => {
             setPasswordUpdateSuccess(false);
 
             const response = await axios.put(
-                'https://digitalmarket.benuestate.gov.ng/api/auth/change-password',
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/change-password`,
                 {
                     email: session.user.email,
                     oldPassword: form.oldPassword,
@@ -400,7 +400,7 @@ const Settings = () => {
         try {
             setIsUpdatingPhone(true);
             const response = await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/shops/update-phone`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/update-phone`,
                 {
                     id: `${shopData.id}`,
                     phone: phone
@@ -431,8 +431,8 @@ const Settings = () => {
 
         try {
             const endpoint = userAddress
-                ? 'https://digitalmarket.benuestate.gov.ng/api/users/update-address'
-                : 'https://digitalmarket.benuestate.gov.ng/api/users/add-address';
+                ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/update-address`
+                : `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/add-address`;
 
             const response = await axios({
                 method: userAddress ? 'POST' : 'POST',
@@ -448,9 +448,8 @@ const Settings = () => {
             });
 
             if (response.status >= 200 && response.status < 300) {
-                // Fetch updated address
                 const addressResponse = await axios.get<AddressResponse>(
-                    `https://digitalmarket.benuestate.gov.ng/api/users/get-userAddress?email=${session.user.email}`,
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`,
                     {
                         headers: {
                             'Authorization': `Bearer ${session.accessToken}`,
@@ -573,8 +572,6 @@ const Settings = () => {
             if (notificationsNode) observer.unobserve(notificationsNode);
         };
     }, []);
-
-
 
     // Split password criteria into two rows
     const firstRowCriteria = passwordCriteria.slice(0, 2);

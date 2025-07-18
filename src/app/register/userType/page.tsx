@@ -56,7 +56,7 @@ const UserType = () => {
             const roleName = selectedUserType === 'BUYER' ? 'BUYER' : selectedUserType.toUpperCase();
             console.log("email: ",email)
 
-            const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/users/add-role', {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/add-role`, {
                 email: email,
                 roleName: roleName
             });
@@ -104,7 +104,7 @@ const UserType = () => {
                 subMessage: errorMessage
             });
         } finally {
-            const response = await axios.post('https://digitalmarket.benuestate.gov.ng/api/auth/login', {
+            const response = await axios.post(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`, {
                 email: email,
                 password: password
             });
