@@ -280,7 +280,6 @@ const SetupComplete = () => {
                 paymentType: "SHOP_ACTIVATION"
 
             };
-
             console.log('Initializing payment with data:', requestData);
             // Store the expected amount before payment
             storeTotalAmount(5000); // 5000 Naira

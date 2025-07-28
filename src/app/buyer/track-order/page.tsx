@@ -2,10 +2,10 @@
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
 import marketIcon from "../../../../public/assets/images/market element.png";
-import arrowBack from "../../../../public/assets/images/arrow-right.svg";
 import React, {useState} from "react";
 import searchImg from "../../../../public/assets/images/search-normal.png";
 import limeArrow from '@/../public/assets/images/green arrow.png'
+import BackButton from "@/components/BackButton";
 
 const SearchBar = () => (
     <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
@@ -119,7 +119,7 @@ const TrackOrder = () => {
                     </div>
                 </div>
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
-                    <Image src={arrowBack} alt={'image'}/>
+                    <BackButton variant="default" text="Go back" />
                     <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Track order</span></p>
                 </div>
             </div>

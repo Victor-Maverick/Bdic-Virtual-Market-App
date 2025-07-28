@@ -203,11 +203,8 @@ const Markets = () => {
                     <p className="text-[#101828] text-[14px] font-medium">{market.name}</p>
                     <p className="text-[#667085] text-[14px]">{market.state}</p>
                 </div>
-                <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
-                    <p className="text-[#101828] text-[14px]">{market.marketId}</p>
-                </div>
 
-                <div className="flex items-center w-[13%]  px-[10px]">
+                <div className="flex items-center w-[20%]  px-[10px]">
                     <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
                         market.status === 'ACTIVE'
                             ? 'bg-[#ECFDF3] text-[#027A48]'
@@ -216,10 +213,10 @@ const Markets = () => {
                         <p className="text-[12px] font-medium">{market.status}</p>
                     </div>
                 </div>
-                <div className="flex flex-col justify-center w-[10%] pl-[24px] ">
+                <div className="flex flex-col justify-center w-[15%] pl-[24px] ">
                     <p className="text-[#101828] text-[14px]">{market.lines}</p>
                 </div>
-                <div className="flex flex-col justify-center w-[17%] pl-[24px] ">
+                <div className="flex flex-col justify-center w-[22%] pl-[24px] ">
                     <p className="text-[#101828] text-[14px]">{market.numberOfShops}</p>
                     <p className="underline text-[12px] font-medium text-[#667085]">View shop</p>
                 </div>
@@ -396,16 +393,13 @@ const Markets = () => {
                             <p>Markets</p>
                             <Image src={arrowDown} alt={'image'}/>
                         </div>
-                        <div className="flex w-[17%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
-                            Market ID
-                        </div>
-                        <div className="flex w-[13%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
+                        <div className="flex w-[20%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
                             Status
                         </div>
-                        <div className="flex w-[10%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
+                        <div className="flex w-[15%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
                             Lines
                         </div>
-                        <div className="flex w-[17%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
+                        <div className="flex w-[22%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
                             Shops
                         </div>
                         <div className="w-[3%]"></div>

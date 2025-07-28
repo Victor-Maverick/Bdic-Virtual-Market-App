@@ -16,6 +16,7 @@ import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
 import axios from "axios";
 import {useSearchParams} from "next/navigation";
 import Toast from "@/components/Toast";
+import VendorVideoCallWrapper from "@/components/VendorVideoCallWrapper";
 
 interface ShopData {
     id: number;
@@ -238,7 +239,8 @@ const DashBoard = () => {
                 email: session.user.email,
                 amount: 500000,
                 currency: 'NGN',
-                callbackUrl: `/vendor/dashboard`
+                callbackUrl: `${window.location.origin}/vendor/dashboard`,
+                paymentType: 'SHOP_ACTIVATION'
             };
 
             const response = await axios.post<InitializePaymentResponse>(
@@ -352,7 +354,7 @@ const DashBoard = () => {
     };
 
     return (
-        <>
+        <VendorVideoCallWrapper>
             <DashboardHeader/>
             <DashboardOptions/>
             <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Explore your shop, products, sales and orders"}
@@ -547,7 +549,7 @@ const DashBoard = () => {
                     onClose={handleCloseToast}
                 />
             )}
-        </>
+        </VendorVideoCallWrapper>
     );
 };
 

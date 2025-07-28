@@ -256,24 +256,30 @@ const ReviewTab = () => {
                 }
             );
 
+            // Use actual backend response for success message
             setToast({
                 show: true,
                 type: "success",
-                message: `${actionName} successfully`,
-                subMessage: response.data
+                message: response.data.message || `${actionName} successfully`,
+                subMessage: response.data.subMessage || response.data || `Product has been ${actionName.toLowerCase()}`
             });
 
             await fetchShopData();
             await fetchProducts();
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (err) {
+            // Use actual backend error response
+            const errorMessage = "Action failed";
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-expect-error
+            const errorSubMessage = err.response?.data;
+            
             setToast({
                 show: true,
                 type: "error",
-                message: "Action failed",
-                subMessage: 'failed to fetch data'
+                message: errorMessage,
+                subMessage: errorSubMessage
             });
-            console.error(`Error ${action} product:`, error);
+            console.error(`Error ${action} product:`, err);
         }
     };
 

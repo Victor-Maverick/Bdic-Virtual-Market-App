@@ -5,6 +5,7 @@ import arrowUp from '@/../public/assets/images/green arrow up.png'
 import redArrow from '@/../public/assets/images/red arrow.svg'
 import MarketPerformanceChart from "@/components/marketPerformanceChart";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 
 interface DashboardData {
@@ -30,6 +31,7 @@ export default function DashboardOverview() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -41,16 +43,20 @@ export default function DashboardOverview() {
                     marketsRes,
                     shopSalesRes,
                     logisticsRes,
-                    transactionsRes,
+                    totalTransactionsRes,
+                    adsRevenueRes,
                     vendorRes,
-                    usersRes
+                    usersRes,
+                    disputesRes
                 ] = await Promise.all([
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/all`),
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getTotalTransactionAmount`),
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/logisticsAll`),
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/allTransactionAmount`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/allPromotion`),
                     axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/getAllVendorsCount`),
-                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/allCount`)
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/allCount`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/allPendingCount`)
 
                 ]);
 
@@ -58,25 +64,32 @@ export default function DashboardOverview() {
                 const markets = marketsRes.data;
                 const shopSalesAmount = shopSalesRes.data;
                 const logistics = logisticsRes.data;
-                const transactions = transactionsRes.data;
+                const totalTransactions = totalTransactionsRes.data;
+                const adsPromotions = adsRevenueRes.data;
                 const vendors = vendorRes.data;
+                const disputeNumber = disputesRes.data;
                 const users = usersRes.data;
 
-                // // Calculate vendors count (assuming each section has vendors)
-                // const vendorsCount = sections.reduce((acc: number, section: any) => {
-                //     return acc + (section.vendors?.length || 0);
-                // }, 0);
+                // Calculate ads revenue from promotions data
+                const adsRevenue = Array.isArray(adsPromotions) 
+                    ? adsPromotions.reduce((total: number, transaction) => total + (transaction.amount /100 || 0), 0)
+                    : 0;
+
+                console.log("Logistics number: ", logistics);
+                console.log("Total transactions: ", totalTransactions);
+                console.log("Ads promotions: ", adsPromotions);
+                console.log("Calculated ads revenue: ", adsRevenue);
 
                 // Format the dashboard data
                 const dashboardData: DashboardData = {
                     marketsCount: markets.length || 0,
                     vendorsCount: vendors,
                     logisticsCount: logistics,
-                    usersCount: users, // Placeholder - you'll need an endpoint for this
-                    totalTransactions: transactions || 0,
-                    adsRevenue: 0, // Placeholder - you'll need an endpoint for this
-                    shopSales: shopSalesAmount, // Placeholder - you'll need an endpoint for this
-                    disputesCount: 0, // Placeholder - you'll need an endpoint for this
+                    usersCount: users,
+                    totalTransactions: totalTransactions || 0,
+                    adsRevenue: adsRevenue,
+                    shopSales: shopSalesAmount || 0,
+                    disputesCount: disputeNumber,
                     marketsChangePercent: 6.41,
                     vendorsChangePercent: 6.41,
                     logisticsChangePercent: 1.41,
@@ -136,7 +149,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View markets</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/markets')}
+                            >
+                                View markets
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -157,7 +175,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View vendors</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/vendors')}
+                            >
+                                View vendors
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -178,7 +201,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View logistics</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/logistics')}
+                            >
+                                View logistics
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -199,7 +227,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View customers</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/users')}
+                            >
+                                View customers
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -223,7 +256,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View transactions</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/transactions')}
+                            >
+                                View transactions
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -244,7 +282,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View details</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/ads')}
+                            >
+                                View details
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -265,7 +308,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View details</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/transactions')}
+                            >
+                                View details
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -286,7 +334,12 @@ export default function DashboardOverview() {
                   </span> from yesterday
                                 </p>
                             </div>
-                            <p className="text-[10px] text-[#022B23] underline font-medium">View disputes</p>
+                            <p 
+                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                onClick={() => router.push('/admin/dashboard/disputes')}
+                            >
+                                View disputes
+                            </p>
                         </div>
                     </div>
                 </div>

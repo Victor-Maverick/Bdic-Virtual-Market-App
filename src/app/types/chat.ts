@@ -23,9 +23,7 @@ export interface ChatRequest {
     toEmail: string;
 }
 
-export interface PusherAuthResponse {
-    auth: string;
-}
+
 
 export interface ChatPageProps {
     searchParams: {

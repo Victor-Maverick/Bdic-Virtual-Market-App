@@ -1,10 +1,10 @@
 'use client'
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
-import arrowBack from "../../../../public/assets/images/arrow-right.svg";
 import arrowRight from "../../../../public/assets/images/greyforwardarrow.svg";
 import React, {useEffect, useRef, useState} from "react";
 import { useRouter } from "next/navigation";
+import BackButton from "@/components/BackButton";
 import axios from "axios";
 import {ToastContainer} from "react-toastify";
 import { toast } from 'react-toastify';
@@ -731,8 +731,8 @@ const Orders = () => {
             <MarketPlaceHeader />
             <div className="h-[48px] w-full border-y-[0.5px] border-[#EDEDED]">
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
-                    <Image src={arrowBack} alt={'imagw'}/>
-                    <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Wishlist</span></p>
+                    <BackButton variant="default" text="Go back" />
+                    <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Orders</span></p>
                 </div>
             </div>
             <div className="px-25 pt-[62px] h-auto w-full">

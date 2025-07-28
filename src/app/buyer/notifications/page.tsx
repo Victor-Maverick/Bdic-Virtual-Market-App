@@ -5,6 +5,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
+import BackButton from "@/components/BackButton";
 
 interface Notification {
     id: number;
@@ -101,6 +102,12 @@ const Notifications = () => {
     return (
         <>
             <MarketPlaceHeader />
+            <div className="h-[48px] w-full border-b-[0.5px] border-[#EDEDED]">
+                <div className="h-[48px] px-25 gap-[8px] items-center flex">
+                    <BackButton variant="default" text="Go back" />
+                    <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Notifications</span></p>
+                </div>
+            </div>
             <div className="flex px-25 mt-[30px] gap-[40px]">
                 <div className="flex flex-col gap-[14px]">
                     <div className="flex flex-col">

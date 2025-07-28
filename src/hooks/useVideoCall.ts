@@ -1,0 +1,192 @@
+import { useState, useEffect, useRef } from 'react';
+import { connect, Room, LocalVideoTrack, LocalAudioTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack, RemoteAudioTrack } from 'twilio-video';
+import { videoCallService, TwilioTokenResponse } from '@/services/videoCallService';
+
+export interface UseVideoCallProps {
+  userEmail: string;
+  onCallEnd?: () => void;
+  onError?: (error: string) => void;
+}
+
+export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProps) => {
+  const [room, setRoom] = useState<Room | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [participants, setParticipants] = useState<RemoteParticipant[]>([]);
+  const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+
+  const localVideoRef = useRef<HTMLDivElement>(null);
+  const remoteVideoRef = useRef<HTMLDivElement>(null);
+
+  const joinRoom = async (roomName: string) => {
+    try {
+      setIsConnecting(true);
+
+      // Get Twilio access token
+      const tokenResponse: TwilioTokenResponse = await videoCallService.joinCall(roomName, userEmail);
+
+      // Connect to Twilio Video room
+      const connectedRoom = await connect(tokenResponse.token, {
+        name: roomName,
+        audio: true,
+        video: { width: 640, height: 480 }
+      });
+
+      setRoom(connectedRoom);
+      setIsConnected(true);
+
+      // Handle local tracks
+      connectedRoom.localParticipant.videoTracks.forEach(publication => {
+        if (publication.track && localVideoRef.current) {
+          // Clear existing video elements
+          localVideoRef.current.innerHTML = '';
+          const videoElement = publication.track.attach();
+          videoElement.style.width = '100%';
+          videoElement.style.height = '100%';
+          videoElement.style.objectFit = 'cover';
+          localVideoRef.current.appendChild(videoElement);
+          setLocalVideoTrack(publication.track as LocalVideoTrack);
+          console.log('📹 Local video attached');
+        }
+      });
+
+      connectedRoom.localParticipant.audioTracks.forEach(publication => {
+        if (publication.track) {
+          setLocalAudioTrack(publication.track as LocalAudioTrack);
+        }
+      });
+
+      // Handle existing remote participants
+      connectedRoom.participants.forEach(participant => {
+        handleParticipantConnected(participant);
+      });
+
+      // Handle new remote participants
+      connectedRoom.on('participantConnected', handleParticipantConnected);
+      connectedRoom.on('participantDisconnected', handleParticipantDisconnected);
+
+      // Handle room disconnection
+      connectedRoom.on('disconnected', (room, error) => {
+        console.log('📞 Room disconnected:', room.name, error ? `Error: ${error.message}` : 'Normal disconnect');
+        setIsConnected(false);
+        setRoom(null);
+        setParticipants([]);
+        onCallEnd?.();
+      });
+
+    } catch (error) {
+      console.error('Error joining room:', error);
+      onError?.('Failed to join video call');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleParticipantConnected = (participant: RemoteParticipant) => {
+    setParticipants(prev => [...prev, participant]);
+
+    // Handle existing tracks
+    participant.tracks.forEach(publication => {
+      if (publication.isSubscribed && publication.track) {
+        handleTrackSubscribed(publication.track);
+      }
+    });
+
+    // Handle new tracks
+    participant.on('trackSubscribed', handleTrackSubscribed);
+    participant.on('trackUnsubscribed', handleTrackUnsubscribed);
+  };
+
+  const handleParticipantDisconnected = (participant: RemoteParticipant) => {
+    setParticipants(prev => prev.filter(p => p.sid !== participant.sid));
+  };
+
+  const handleTrackSubscribed = (track: RemoteTrack) => {
+    console.log('📹 Track subscribed:', track.kind);
+    if (track.kind === 'video' && remoteVideoRef.current) {
+      // Clear existing video elements
+      remoteVideoRef.current.innerHTML = '';
+      const videoElement = track.attach() as HTMLVideoElement;
+      videoElement.style.width = '100%';
+      videoElement.style.height = '100%';
+      videoElement.style.objectFit = 'cover';
+      remoteVideoRef.current.appendChild(videoElement);
+      console.log('📹 Remote video attached');
+    }
+    if (track.kind === 'audio') {
+      console.log('🔊 Remote audio attached');
+    }
+  };
+
+  const handleTrackUnsubscribed = (track: RemoteTrack) => {
+    if (track.kind === 'video' || track.kind === 'audio') {
+      // Narrow track to RemoteVideoTrack or RemoteAudioTrack
+      const mediaTrack = track as RemoteVideoTrack | RemoteAudioTrack;
+      mediaTrack.detach().forEach((element: HTMLMediaElement) => {
+        element.remove();
+      });
+    }
+  };
+
+  const leaveRoom = async () => {
+    if (room) {
+      try {
+        console.log('📞 Ending call for room:', room.name);
+        await videoCallService.endCall(room.name, userEmail);
+        room.disconnect();
+        console.log('📞 Call ended and room disconnected');
+      } catch (error) {
+        console.error('Error ending call:', error);
+        room.disconnect();
+      }
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localVideoTrack) {
+      if (isVideoEnabled) {
+        localVideoTrack.disable();
+      } else {
+        localVideoTrack.enable();
+      }
+      setIsVideoEnabled(!isVideoEnabled);
+    }
+  };
+
+  const toggleAudio = () => {
+    if (localAudioTrack) {
+      if (isAudioEnabled) {
+        localAudioTrack.disable();
+      } else {
+        localAudioTrack.enable();
+      }
+      setIsAudioEnabled(!isAudioEnabled);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (room) {
+        room.disconnect();
+      }
+    };
+  }, [room]);
+
+  return {
+    room,
+    isConnected,
+    isConnecting,
+    participants,
+    localVideoRef,
+    remoteVideoRef,
+    isVideoEnabled,
+    isAudioEnabled,
+    joinRoom,
+    leaveRoom,
+    toggleVideo,
+    toggleAudio
+  };
+};

@@ -1,16 +1,13 @@
 import  Image from 'next/image'
-import arrowBack from '@/../public/assets/images/arrow-right.svg'
 import gradientImg from '@/../public/assets/images/orangeCirlce.png'
 import shadow from "../../../../public/assets/images/shadow.png";
+import BackButton from "@/components/BackButton";
 const Chat =()=>{
     return(
         <>
             <div className="flex justify-between items-center h-[78px] w-full pl-[88px] pr-[120px] ">
                 <div className={`flex gap-[278px] items-center`}>
-                    <div className={`flex text-[#1E1E1E] text-[14px] font-medium gap-[8px]`}>
-                        <Image src={arrowBack} alt="arrowBack" />
-                        <p>Go back</p>
-                    </div>
+                    <BackButton variant="default" text="Go back" />
                     <div className="flex gap-[8px] w-[125px] h-[56px]">
                         <Image src={gradientImg} alt={'image'} className="h-[50px] w-[50px]"/>
                         <div className="flex text-[#515151] leading-tight flex-col ">

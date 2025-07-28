@@ -8,6 +8,7 @@ import basketImg from '../../../../public/assets/images/marketPlaceBasket.svg'
 import limeArrow from '../../../../public/assets/images/green arrow.png'
 import {useRouter}  from "next/navigation";
 import shadow from "../../../../public/assets/images/shadow.png";
+import BackButton from "@/components/BackButton";
 
 const Market =()=>{
     const router = useRouter();
@@ -20,7 +21,7 @@ const Market =()=>{
             <div className="flex flex-col relative max-h-[982px] h-[982px]">
                 <Image src={leftObjects} alt={'image'} className="absolute pt-[180px] h-[600px] ml-[-37px]"/>
                 <Image src={bottomObjects} alt={'image'} className="absolute w-[300px] overflow-hidden mt-[400px] h-[600px]  right-0"/>
-                <div className="flex w-full h-[127px] items-center px-25 ">
+                <div className="flex w-full h-[127px] items-center justify-between px-25 ">
                     <div className="flex items-center gap-[4px] w-[85px] h-[42px]">
                         <Image src={headerIcon} alt={'icon'} className="w-[50%] h-full"/>
                         <div className="flex flex-col">
@@ -29,6 +30,7 @@ const Market =()=>{
                             </p>
                         </div>
                     </div>
+                    <BackButton variant="default" text="Go back" />
                 </div>
                 <div className="h-[45px] border-none px- w-full  "
                      style={{

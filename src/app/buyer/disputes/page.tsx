@@ -1,10 +1,10 @@
 'use client'
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
-import arrowBack from "../../../../public/assets/images/arrow-right.svg";
 import arrowRight from "../../../../public/assets/images/greyforwardarrow.svg";
 import React, {useCallback, useEffect, useState} from "react";
 import { useRouter } from "next/navigation";
+import BackButton from "@/components/BackButton";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { Toaster, toast } from 'react-hot-toast';
@@ -407,7 +407,7 @@ const Disputes = () => {
             <MarketPlaceHeader />
             <div className="h-[48px] w-full border-b-[0.5px] border-[#EDEDED]">
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
-                    <Image src={arrowBack} alt={'arrow back'} onClick={() => router.back()} className="cursor-pointer"/>
+                    <BackButton variant="default" text="Go back" />
                     <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Disputes</span></p>
                 </div>
             </div>

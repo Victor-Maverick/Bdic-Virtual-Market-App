@@ -1,14 +1,15 @@
 'use client'
 import Image from "next/image";
-import arrowBack from "../../../../../../../public/assets/images/arrow-right.svg";
 import { useRouter } from "next/navigation";
 import searchImg from "../../../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../../../public/assets/images/arrow-down.svg";
-import {use, useEffect, useRef, useState} from "react";
+import { use, useCallback, useEffect, useRef, useState } from "react";
 import EditMarketLineModal from "@/components/editMarketLineModal";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 import AddNewLineModal from "@/components/addNewLineModal";
+import { toast } from "react-hot-toast";
 import axios from "axios";
+import BackButton from "@/components/BackButton";
 interface Market {
     id: number;
     name: string;
@@ -51,7 +52,7 @@ interface MarketSection {
     updatedAt: string;
 }
 
-const MarketSectionTableRow = ({ section, isLast }: { section: MarketSection; isLast: boolean }) => {
+const MarketSectionTableRow = ({ section, isLast, onRefresh }: { section: MarketSection; isLast: boolean; onRefresh: () => void }) => {
 
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0] ' : 'border-b border-[#EAECF0]'}`}>
@@ -71,7 +72,7 @@ const MarketSectionTableRow = ({ section, isLast }: { section: MarketSection; is
             </div>
 
             <div className="flex items-center justify-center w-[3%]">
-                <MarketActionsDropdown section={section.name} marketId={section.id}>
+                <MarketActionsDropdown section={section.name} marketId={section.id} onRefresh={onRefresh}>
                     <div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -83,7 +84,7 @@ const MarketSectionTableRow = ({ section, isLast }: { section: MarketSection; is
     );
 };
 
-const MarketActionsDropdown = ({ children, section, marketId }: {section: string, marketId: number; children: React.ReactNode }) => {
+const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { section: string, marketId: number; children: React.ReactNode; onRefresh: () => void }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLDivElement>(null);
@@ -108,17 +109,19 @@ const MarketActionsDropdown = ({ children, section, marketId }: {section: string
     const handleMarketModalContinue = async (newName: string) => {
         try {
             const response = await axios.put(
-                `https://digitalmarket.benuestate.gov.ng/api/market-sections/update/${marketId}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/update/${marketId}`,
                 { name: newName }
             );
 
             if (response.status === 200) {
                 setCurrentSectionName(newName);
-                // You might want to refresh the sections list here or update the parent state
+                toast.success("Section updated successfully");
+                // Refresh the sections list to show updated data
+                onRefresh();
             }
         } catch (error) {
             console.error("Error updating section:", error);
-            // Handle error (show toast, etc.)
+            alert("Failed to update section. Please try again.");
         }
         setIsMarketModalOpen(false);
     };
@@ -139,12 +142,13 @@ const MarketActionsDropdown = ({ children, section, marketId }: {section: string
             );
 
             if (response.status === 204) {
-                // Section deleted successfully
-                // You might want to refresh the sections list here or update the parent state
+                toast.success("Section deleted successfully");
+                // Refresh the sections list to show updated data
+                onRefresh();
             }
         } catch (error) {
             console.error("Error deleting section:", error);
-            // Handle error (show toast, etc.)
+            toast.error("Failed to delete section. Please try again.");
         }
         setIsDeleteModalOpen(false);
     };
@@ -218,6 +222,10 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [marketSections, setMarketSections] = useState<MarketSection[]>([]);
+    const [isUpdateMarketModalOpen, setIsUpdateMarketModalOpen] = useState(false);
+    const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
+    const [transactionCount, setTransactionCount] = useState<number>(0);
+    const [transactionLoading, setTransactionLoading] = useState(false);
     const { id } = use<PageParams>(params);
     const [currentSectionPage, setCurrentSectionPage] = useState(1);
     const SECTIONS_PER_PAGE = 5;
@@ -243,6 +251,33 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
         setCurrentSectionPage(page);
     };
 
+    const fetchMarketSections = useCallback(async () => {
+        try {
+            const sectionsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/allByMarket?marketId=${id}`);
+            setMarketSections(sectionsResponse.data);
+            console.log("Sections:: ", sectionsResponse.data);
+        } catch (err) {
+            console.error("Error fetching market sections:", err);
+            toast.error("Failed to fetch market sections");
+        }
+    }, [id]);
+
+    const fetchTransactionCount = useCallback(async () => {
+        try {
+            setTransactionLoading(true);
+            const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getMarketTransactionCount?marketId=${id}`
+            );
+            setTransactionCount(response.data);
+            console.log("Transaction count: ", response.data)
+        } catch (err) {
+            console.error("Error fetching market transaction count:", err);
+            toast.error("Failed to fetch transaction count");
+        } finally {
+            setTransactionLoading(false);
+        }
+    }, [id]);
+
     useEffect(() => {
         const fetchMarketData = async () => {
             try {
@@ -250,10 +285,11 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                 // Fetch market details
                 const marketResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/${id}`);
                 setMarket(marketResponse.data);
-                // Fetch market sections
-                const sectionsResponse = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/allByMarket?marketId=${id}`);
-                setMarketSections(sectionsResponse.data);
-                console.log("Sections:: ", sectionsResponse.data);
+                // Fetch market sections and transaction count
+                await Promise.all([
+                    fetchMarketSections(),
+                    fetchTransactionCount()
+                ]);
                 setLoading(false);
             } catch (err) {
                 setError("Failed to fetch market data");
@@ -263,7 +299,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
         };
 
         fetchMarketData();
-    }, [id]);
+    }, [id, fetchMarketSections, fetchTransactionCount]);
 
     const handleOpenAddNewLineModal = () => {
         setIsAddNewLineModalOpen(true);
@@ -275,6 +311,60 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
 
     const handleAddNewLineContinue = () => {
         setIsAddNewLineModalOpen(false)
+    };
+
+    const handleOpenUpdateMarketModal = () => {
+        setIsUpdateMarketModalOpen(true);
+    };
+
+    const handleCloseUpdateMarketModal = () => {
+        setIsUpdateMarketModalOpen(false);
+    };
+
+    const handleUpdateMarket = async (newName: string) => {
+        try {
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/update/${id}`,
+                { name: newName }
+            );
+
+            if (response.status === 200) {
+                toast.success("Market updated successfully");
+                // Update the market state with new data
+                setMarket(prev => prev ? { ...prev, name: newName } : null);
+            }
+        } catch (error) {
+            console.error("Error updating market:", error);
+            toast.error("Failed to update market. Please try again.");
+        }
+        setIsUpdateMarketModalOpen(false);
+    };
+
+    const handleOpenDeactivateModal = () => {
+        setIsDeactivateModalOpen(true);
+    };
+
+    const handleCloseDeactivateModal = () => {
+        setIsDeactivateModalOpen(false);
+    };
+
+    const handleDeactivateMarket = async () => {
+        try {
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/deActivateMarket?id=${id}`
+            );
+
+            if (response.status === 200) {
+                const newStatus = market?.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+                toast.success(`Market ${newStatus.toLowerCase()} successfully`);
+                // Update the market state with new status
+                setMarket(prev => prev ? { ...prev, status: newStatus as "ACTIVE" | "INACTIVE" } : null);
+            }
+        } catch (error) {
+            console.error("Error deactivating market:", error);
+            toast.error("Failed to update market status. Please try again.");
+        }
+        setIsDeactivateModalOpen(false);
     };
 
     if (loading) return <div className="h-screen flex items-center justify-center">Loading market data...</div>;
@@ -290,8 +380,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
         <div className="w-full">
             {/* Header Navigation */}
             <div className="text-[#707070] text-[14px] px-5 font-medium gap-2 flex items-center h-[56px] w-full border-b border-[#ededed]">
-                <Image src={arrowBack} alt="Back" width={24} height={24} className="cursor-pointer" onClick={() => router.push("/admin/dashboard/markets")} />
-                <p className="cursor-pointer" onClick={() => router.push("/admin/dashboard/markets")}>Back to market management</p>
+                <BackButton variant="default" text="Back to market management" onClick={() => router.push("/admin/dashboard/markets")} />
             </div>
 
             {/* Page Title */}
@@ -344,7 +433,11 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                             <p className="text-white text-[12px]">Transactions</p>
                         </div>
                         <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">0</p>
+                            {transactionLoading ? (
+                                <p className="text-[14px] text-[#707070]">Loading...</p>
+                            ) : (
+                                <p className="text-[20px] text-[#022B23] font-medium">{transactionCount}</p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -356,8 +449,16 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                     >
                         Add new line
                     </div>
-                    <div className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#022B23] text-[#022B23] px-4 py-2 rounded-[12px]">Update</div>
-                    <div className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#FF5050] text-[#FF5050] px-4 py-2 rounded-[12px]">
+                    <div
+                        onClick={handleOpenUpdateMarketModal}
+                        className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#022B23] text-[#022B23] px-4 py-2 rounded-[12px] cursor-pointer hover:bg-[#022B23] hover:text-white transition-colors"
+                    >
+                        Update
+                    </div>
+                    <div
+                        onClick={handleOpenDeactivateModal}
+                        className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#FF5050] text-[#FF5050] px-4 py-2 rounded-[12px] cursor-pointer hover:bg-[#FF5050] hover:text-white transition-colors"
+                    >
                         {market.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                     </div>
                 </div>
@@ -373,15 +474,15 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                                 </div>
                             </div>
                             <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                                <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-                                <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none"/>
+                                <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
+                                <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none" />
                             </div>
                         </div>
 
                         <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
                             <div className="h-full w-[50%] gap-[4px] flex px-[24px] items-center font-medium text-[#667085] text-[12px]">
                                 <p>Section</p>
-                                <Image src={arrowDown} alt={'image'}/>
+                                <Image src={arrowDown} alt={'image'} />
                             </div>
                             <div className="flex w-[17%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
                                 Status
@@ -402,6 +503,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                                         key={section.id}
                                         section={section}
                                         isLast={index === currentSections.length - 1}
+                                        onRefresh={fetchMarketSections}
                                     />
                                 ))
                             ) : (
@@ -416,11 +518,10 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                                 <button
                                     onClick={handleSectionPrevPage}
                                     disabled={currentSectionPage === 1}
-                                    className={`px-4 py-2 rounded-md ${
-                                        currentSectionPage === 1
-                                            ? 'text-gray-400 cursor-not-allowed'
-                                            : 'text-[#022B23] hover:bg-gray-100'
-                                    }`}
+                                    className={`px-4 py-2 rounded-md ${currentSectionPage === 1
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-[#022B23] hover:bg-gray-100'
+                                        }`}
                                 >
                                     Previous
                                 </button>
@@ -430,11 +531,10 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                                         <button
                                             key={page}
                                             onClick={() => handleSectionPageChange(page)}
-                                            className={`w-8 h-8 rounded-md flex items-center justify-center ${
-                                                currentSectionPage === page
-                                                    ? 'bg-[#022B23] text-white'
-                                                    : 'text-[#022B23] hover:bg-gray-100'
-                                            }`}
+                                            className={`w-8 h-8 rounded-md flex items-center justify-center ${currentSectionPage === page
+                                                ? 'bg-[#022B23] text-white'
+                                                : 'text-[#022B23] hover:bg-gray-100'
+                                                }`}
                                         >
                                             {page}
                                         </button>
@@ -444,11 +544,10 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                                 <button
                                     onClick={handleSectionNextPage}
                                     disabled={currentSectionPage === totalSectionPages}
-                                    className={`px-4 py-2 rounded-md ${
-                                        currentSectionPage === totalSectionPages
-                                            ? 'text-gray-400 cursor-not-allowed'
-                                            : 'text-[#022B23] hover:bg-gray-100'
-                                    }`}
+                                    className={`px-4 py-2 rounded-md ${currentSectionPage === totalSectionPages
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-[#022B23] hover:bg-gray-100'
+                                        }`}
                                 >
                                     Next
                                 </button>
@@ -464,6 +563,24 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                 onClose={handleCloseAddNewLineModal}
                 onContinue={handleAddNewLineContinue}
                 marketId={Number(id)} // Convert to number if needed
+            />
+
+            {/* Update Market Modal */}
+            <EditMarketLineModal
+                id={Number(id)}
+                name={market?.name || ''}
+                isOpen={isUpdateMarketModalOpen}
+                onClose={handleCloseUpdateMarketModal}
+                onContinue={handleUpdateMarket}
+            />
+
+            {/* Deactivate Market Modal */}
+            <DeleteConfirmationModal
+                isOpen={isDeactivateModalOpen}
+                onClose={handleCloseDeactivateModal}
+                onDelete={handleDeactivateMarket}
+                title={`${market?.status === 'ACTIVE' ? 'Deactivate' : 'Activate'} Market`}
+                message={`Are you sure you want to ${market?.status === 'ACTIVE' ? 'deactivate' : 'activate'} this market? This will affect all shops and sections in this market.`}
             />
         </div>
     )

@@ -6,30 +6,32 @@ import { useRouter } from "next/navigation";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-
-interface Market {
+interface Shop {
     id: number;
     name: string;
-    shopName: string;
-    shopLine: string;
-    vendor: string;
-    state: string;
-    shopId: string;
-    lines: number;
-    numberOfShops: number;
-    status: "Active" | "Pending";
+    email: string;
+    shopNumber: string;
+    address: string;
+    phone: string;
+    isActive: boolean;
+    createdAt: string;
+    marketId: number;
+    marketSectionId: string;
 }
 
-const markets: Market[] = [
-    { id: 1, name: "Modern market", shopName: "Abba technologies", shopLine: 'Shop 2C', vendor: "Jude Tersoo", state: "Benue State", shopId: "21367", lines: 80, numberOfShops: 80, status: "Pending" },
-    { id: 2, name: "Modern market", shopName: "Abba technologies", shopLine: 'Shop 2C', vendor: "Jude Tersoo", state: "Benue State", shopId: "21367", lines: 80, numberOfShops: 80, status: "Active" },
-    { id: 3, name: "Modern market", shopName: "Abba technologies", shopLine: 'Shop 2C', vendor: "Jude Tersoo", state: "Benue State", shopId: "21367", lines: 80, numberOfShops: 80, status: "Active" },
-    { id: 4, name: "Modern market", shopName: "Abba technologies", shopLine: 'Shop 2C', vendor: "Jude Tersoo", state: "Benue State", shopId: "21367", lines: 80, numberOfShops: 80, status: "Pending" },
-    { id: 5, name: "Modern market", shopName: "Abba technologies", shopLine: 'Shop 2C', vendor: "Jude Tersoo", state: "Benue State", shopId: "21367", lines: 80, numberOfShops: 80, status: "Pending" },
-    { id: 6, name: "Modern market", shopName: "Abba technologies", shopLine: 'Shop 2C', vendor: "Jude Tersoo", state: "Benue State", shopId: "21367", lines: 80, numberOfShops: 80, status: "Active" }
-];
-
-const VendorActionsDropdown = ({ children, marketId, status }: { marketId: string; children: React.ReactNode; status: Market['status'] }) => {
+const VendorActionsDropdown = ({
+                                   children,
+                                   shopId,
+                                   status,
+                                   onToggleStatus,
+                                   onDelete,
+                               }: {
+    shopId: number;
+    children: React.ReactNode;
+    status: boolean;
+    onToggleStatus: (shopId: number) => void;
+    onDelete: (shopId: number) => void;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
     const router = useRouter();
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -48,10 +50,6 @@ const VendorActionsDropdown = ({ children, marketId, status }: { marketId: strin
         setIsDeleteModalOpen(true);
     };
 
-    const handleOpenRejectModal = () => {
-        setIsOpen(false);
-        setIsRejectModalOpen(true);
-    };
 
     const handleCloseDeleteModal = () => {
         setIsDeleteModalOpen(false);
@@ -62,19 +60,14 @@ const VendorActionsDropdown = ({ children, marketId, status }: { marketId: strin
     };
 
     const handleDelete = () => {
-        console.log(`Deleting vendor with ID: ${marketId}`);
+        onDelete(shopId);
         setIsDeleteModalOpen(false);
     };
 
     const handleReject = () => {
-        console.log(`Rejecting vendor with ID: ${marketId}`);
         setIsRejectModalOpen(false);
     };
 
-    const handleApprove = () => {
-        console.log(`Approving vendor with ID: ${marketId}`);
-        setIsOpen(false);
-    };
 
     const handleViewVendor = () => {
         router.push("/admin/dashboard/vendors/view-vendor");
@@ -82,7 +75,7 @@ const VendorActionsDropdown = ({ children, marketId, status }: { marketId: strin
     };
 
     const handleDeactivate = () => {
-        console.log(`Deactivating vendor with ID: ${marketId}`);
+        onToggleStatus(shopId);
         setIsOpen(false);
     };
 
@@ -93,27 +86,29 @@ const VendorActionsDropdown = ({ children, marketId, status }: { marketId: strin
             }
         };
 
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
+        document.addEventListener("click", handleClickOutside);
+        return () => document.removeEventListener("click", handleClickOutside);
     }, []);
 
     const renderActiveOptions = () => (
         <>
-            <li onClick={handleViewVendor} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View vendor</li>
-            <li onClick={handleDeactivate} className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer">Deactivate vendor</li>
-            <li onClick={handleOpenDeleteModal} className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
-                Delete
+            <li
+                onClick={handleViewVendor}
+                className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer"
+            >
+                View vendor
             </li>
-        </>
-    );
-
-
-    const renderPendingOptions = () => (
-        <>
-            <li onClick={()=>{router.push("/admin/dashboard/vendors/view-pending")}} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View vendor</li>
-            <li onClick={handleApprove} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">Approve vendor</li>
-            <li onClick={handleOpenRejectModal} className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
-                Reject
+            <li
+                onClick={handleDeactivate}
+                className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
+            >
+                Deactivate vendor
+            </li>
+            <li
+                onClick={handleOpenDeleteModal}
+                className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]"
+            >
+                Delete
             </li>
         </>
     );
@@ -131,10 +126,7 @@ const VendorActionsDropdown = ({ children, marketId, status }: { marketId: strin
 
                 {isOpen && (
                     <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
-                        <ul className="">
-                            {status === "Active" && renderActiveOptions()}
-                            {status === "Pending" && renderPendingOptions()}
-                        </ul>
+                        <ul className="">{status ? renderActiveOptions() : renderActiveOptions()}</ul>
                     </div>
                 )}
             </div>
@@ -159,36 +151,39 @@ const VendorActionsDropdown = ({ children, marketId, status }: { marketId: strin
     );
 };
 
-const VendorTableRow = ({ market, isLast }: { market: Market; isLast: boolean }) => {
+const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: { 
+    shop: Shop; 
+    isLast: boolean;
+    onToggleStatus: (shopId: number) => void;
+    onDelete: (shopId: number) => void;
+}) => {
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[40%] pl-[24px]">
-                <p className="text-[#101828] text-[14px] font-medium">{market.vendor}</p>
+                <p className="text-[#101828] text-[14px] font-medium">{shop.email}</p>
             </div>
 
             <div className="flex flex-col justify-center w-[27%] pl-[24px]">
-                <p className="text-[#101828] text-[14px] font-medium">{market.name}</p>
-                <p className="text-[#667085] text-[14px]">{market.state}</p>
+                <p className="text-[#101828] text-[14px] font-medium">{shop.name}</p>
+                <p className="text-[#667085] text-[14px]">{shop.address}</p>
             </div>
 
             <div className="flex items-center w-[15%] pl-[24px]">
-                <p className="text-[#101828] text-[14px]">{market.shopId}</p>
+                <p className="text-[#101828] text-[14px]">{shop.id}</p>
             </div>
 
             <div className="flex items-center w-[15%] px-[10px]">
                 <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    market.status === 'Active'
+                    shop.isActive
                         ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : market.status === 'Pending'
-                            ? 'bg-[#FFFAEB] text-[#B54708]'
-                            : 'bg-[#FEF3F2] text-[#FF5050]'
+                        : 'bg-[#FEF3F2] text-[#FF5050]'
                 }`}>
-                    <p className="text-[12px] font-medium">{market.status}</p>
+                    <p className="text-[12px] font-medium">{shop.isActive ? 'Active' : 'Inactive'}</p>
                 </div>
             </div>
 
             <div className="flex items-center justify-center w-[3%]">
-                <VendorActionsDropdown marketId={market.shopId} status={market.status}>
+                <VendorActionsDropdown shopId={shop.id} status={shop.isActive} onToggleStatus={onToggleStatus} onDelete={onDelete}>
                     <div className="flex flex-col gap-1">
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -218,6 +213,75 @@ const StatsCard = ({ title, value, percentage, isPending=false, isWarning = fals
 };
 
 const Vendors = () => {
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Mock data
+    const mockShops: Shop[] = [
+        {
+            id: 1,
+            name: "Fresh Fruits Store",
+            email: "vendor1@example.com",
+            shopNumber: "A001",
+            address: "Market Section A",
+            phone: "+1234567890",
+            isActive: true,
+            createdAt: "2024-01-15T10:30:00Z",
+            marketId: 1,
+            marketSectionId: "SEC001"
+        },
+        {
+            id: 2,
+            name: "Vegetable Corner",
+            email: "vendor2@example.com",
+            shopNumber: "B002",
+            address: "Market Section B",
+            phone: "+1234567891",
+            isActive: false,
+            createdAt: "2024-01-20T14:20:00Z",
+            marketId: 1,
+            marketSectionId: "SEC002"
+        },
+        {
+            id: 3,
+            name: "Spice World",
+            email: "vendor3@example.com",
+            shopNumber: "C003",
+            address: "Market Section C",
+            phone: "+1234567892",
+            isActive: true,
+            createdAt: "2024-02-01T09:15:00Z",
+            marketId: 2,
+            marketSectionId: "SEC003"
+        }
+    ];
+
+    const mockStats = {
+        totalShops: 156,
+        activeShops: 142,
+        inactiveShops: 14,
+        dailyShops: 8
+    };
+
+    const filteredShops = mockShops.filter(shop => 
+        shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        shop.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        shop.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const handleToggleStatus = (shopId: number) => {
+        // Mock function - in real app this would call API
+        console.log('Toggle status for shop:', shopId);
+    };
+
+    const handleDeleteShop = (shopId: number) => {
+        // Mock function - in real app this would call API
+        console.log('Delete shop:', shopId);
+    };
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+    };
+
     return (
         <>
             <div className="text-[#022B23] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
@@ -226,10 +290,10 @@ const Vendors = () => {
 
             <div className="px-[20px] mt-[20px]">
                 <div className="flex w-full gap-[20px] h-[110px] justify-between">
-                    <StatsCard title="Total vendors" value="82" percentage="+15.6%" isPending={false} />
-                    <StatsCard title="Active vendors" value="62" percentage="+15.6%" isPending={false} />
-                    <StatsCard title="Inactive vendors" value="20" percentage="+15.6%" isWarning isPending={false} />
-                    <StatsCard title="Pending approval" value="16" percentage="+15.6%" isPending/>
+                    <StatsCard title="Total vendors" value={mockStats.totalShops.toString()} percentage="+15.6%" isPending={false} />
+                    <StatsCard title="Active vendors" value={mockStats.activeShops.toString()} percentage="+15.6%" isPending={false} />
+                    <StatsCard title="Inactive vendors" value={mockStats.inactiveShops.toString()} percentage="+15.6%" isWarning isPending={false} />
+                    <StatsCard title="Daily signups" value={mockStats.dailyShops.toString()} percentage="+15.6%" isPending/>
                 </div>
 
                 <div className="mt-[50px]">
@@ -237,7 +301,7 @@ const Vendors = () => {
                         <div className="w-full h-[91px] flex items-center justify-between px-[24px] pt-[20px] pb-[19px]">
                             <div className="flex flex-col gap-[4px]">
                                 <div className="h-[28px] flex items-center">
-                                    <p className="text-[18px] font-medium text-[#101828]">Vendors</p>
+                                    <p className="text-[18px] font-medium text-[#101828]">Vendors ({filteredShops.length})</p>
                                 </div>
                                 <div className="flex h-[20px] items-center">
                                     <p className="text-[14px] text-[#667085]">View and manage vendors here</p>
@@ -245,7 +309,12 @@ const Vendors = () => {
                             </div>
                             <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
                                 <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
-                                <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none" />
+                                <input 
+                                    placeholder="Search vendors..." 
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
+                                    className="w-[175px] text-[#707070] text-[14px] focus:outline-none" 
+                                />
                             </div>
                         </div>
 
@@ -255,7 +324,7 @@ const Vendors = () => {
                                 <Image src={arrowDown} alt={'image'} />
                             </div>
                             <div className="h-full w-[27%] gap-[4px] flex px-[24px] items-center font-medium text-[#667085] text-[12px]">
-                                <p>Markets</p>
+                                <p>Shop Details</p>
                                 <Image src={arrowDown} alt={'image'} />
                             </div>
                             <div className="flex w-[15%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
@@ -268,13 +337,21 @@ const Vendors = () => {
                         </div>
 
                         <div className="flex flex-col">
-                            {markets.map((market, index) => (
-                                <VendorTableRow
-                                    key={market.id}
-                                    market={market}
-                                    isLast={index === markets.length - 1}
-                                />
-                            ))}
+                            {filteredShops.length === 0 ? (
+                                <div className="flex items-center justify-center h-[200px]">
+                                    <p className="text-[#667085]">No vendors found</p>
+                                </div>
+                            ) : (
+                                filteredShops.map((shop, index) => (
+                                    <VendorTableRow
+                                        key={shop.id}
+                                        shop={shop}
+                                        isLast={index === filteredShops.length - 1}
+                                        onToggleStatus={handleToggleStatus}
+                                        onDelete={handleDeleteShop}
+                                    />
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>

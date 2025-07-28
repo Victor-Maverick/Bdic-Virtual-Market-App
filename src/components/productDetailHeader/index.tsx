@@ -5,13 +5,19 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import headerImg from "../../../public/assets/images/headerImg.png";
-import {useSession} from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 
 const DashboardHeader = () => {
     const [userName, setUserName] = useState<string | undefined>(undefined);
     const [isLoading, setIsLoading] = useState(true);
+    const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const router = useRouter();
     const { data: session, status } = useSession();
+
+    const userProfile = session?.user ? {
+        firstName: session.user.firstName,
+        roles: session.user.roles || []
+    } : null;
 
     useEffect(() => {
         const fetchUserProfile = async () => {
@@ -42,6 +48,21 @@ const DashboardHeader = () => {
         fetchUserProfile();
     }, [status, session]);
 
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (isProfileDropdownOpen && !target.closest('.profile-dropdown-container')) {
+                setIsProfileDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isProfileDropdownOpen]);
+
 
     // Safe navigation handlers
     const handleLogoClick = () => {
@@ -54,11 +75,50 @@ const DashboardHeader = () => {
     };
 
     const handleProfileClick = () => {
+        setIsProfileDropdownOpen(!isProfileDropdownOpen);
+    };
+
+    const navigateToDashboard = () => {
+        if (!userProfile?.roles) return;
+
+        const roles = userProfile.roles;
+        if (roles.includes('VENDOR') && roles.includes('BUYER')) {
+            router.push('/vendor/dashboard');
+        }
+        else if (roles.includes('ADMIN')) {
+            router.push('/admin/dashboard/main');
+        }
+        else if (roles.includes('LOGISTICS')) {
+            router.push('/logistics/dashboard');
+        } else {
+            router.push('/buyer/orders');
+        }
+        setIsProfileDropdownOpen(false);
+    };
+
+    const navigateToProfile = () => {
+        router.push('/profile');
+        setIsProfileDropdownOpen(false);
+    };
+
+    const handleLogout = async () => {
         try {
-            router.push("/profile");
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            await axios.post(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${session?.accessToken}`,
+                    },
+                }
+            );
         } catch (error) {
-            console.log('Navigation to profile failed');
+            console.error('Logout API call failed:', error);
+        } finally {
+            await signOut({ redirect: false });
+            localStorage.removeItem('BDICAuthToken');
+            localStorage.removeItem('userEmail');
+            router.push('/');
         }
     };
 
@@ -80,21 +140,47 @@ const DashboardHeader = () => {
             </div>
 
             {!isLoading && userName && (
-                <div
-                    className="flex gap-[6px] items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={handleProfileClick}
-                >
-                    <Image
-                        src={profileImage}
-                        alt="User Profile"
-                        width={28}
-                        height={28}
-                        className="rounded-full"
-                        onError={() => console.log('Profile image failed to load')}
-                    />
-                    <p className="text-[14px] text-[#171719] font-medium">
-                        Hey, <span className="font-semibold">{userName}</span>
-                    </p>
+                <div className="relative profile-dropdown-container">
+                    <div
+                        className="flex gap-[6px] items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={handleProfileClick}
+                    >
+                        <Image
+                            src={profileImage}
+                            alt="User Profile"
+                            width={28}
+                            height={28}
+                            className="rounded-full"
+                            onError={() => console.log('Profile image failed to load')}
+                        />
+                        <p className="text-[14px] text-[#171719] font-medium">
+                            Hey, <span className="font-semibold">{userName}</span>
+                        </p>
+                    </div>
+
+                    {/* Profile Dropdown Menu */}
+                    {isProfileDropdownOpen && (
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                            <button
+                                onClick={navigateToDashboard}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                                Dashboard
+                            </button>
+                            <button
+                                onClick={navigateToProfile}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                                Profile
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

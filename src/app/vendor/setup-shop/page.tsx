@@ -9,6 +9,7 @@ import DashboardOptions from "@/components/dashboardOptions";
 import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
 import {useRouter} from "next/navigation";
 import {useSession} from "next-auth/react";
+import BackButton from "@/components/BackButton";
 
 const DashBoard = () => {
     const { data: session } = useSession();
@@ -26,7 +27,11 @@ const DashBoard = () => {
             <DashboardHeader/>
             <DashboardOptions/>
             <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Get started by setting up your shop"}
-                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'} />            <div className="h-[65px] bg-[#1E1E1E] px-25  flex items-center justify-between py-[12px]">
+                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'} />
+            <div className="px-25 py-4">
+                <BackButton variant="default" text="Back to Dashboard" />
+            </div>
+            <div className="h-[65px] bg-[#1E1E1E] px-25  flex items-center justify-between py-[12px]">
                 <div className="flex-col">
                     <p className="text-[16px] text-[#FFFFFF] font-medium">KYC</p>
                     <p className="text-[14px] font-normal text-[#FFFFFF]">Vendor and shop KYC</p>
@@ -43,7 +48,7 @@ const DashBoard = () => {
                         <p className="mb-[10px] text-[16px] text-[#022B23] font-medium">Setup shop and complete KYC </p>
                         <p className="font-medium text-[#707070] text-[14px]">Provide information about your shop <br/>and yourself to complete setup</p>
                     </div>
-                    <div onClick={handleContinue} className="flex mt-[35px] gap-[9px] w-[268px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px]">
+                    <div  onClick={handleContinue} className="flex cursor-pointer mt-[35px] gap-[9px] w-[268px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px]">
                         <p className="text-[#C6EB5F] font-semibold text-[14px]">Setup shop</p>
                         <Image src={limeArrow} alt={'image'} className="h-[18px] w-[18px]"/>
                     </div>

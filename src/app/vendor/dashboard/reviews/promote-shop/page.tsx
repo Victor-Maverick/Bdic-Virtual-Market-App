@@ -172,54 +172,7 @@ const PromoteShop = () => {
         }
     };
 
-    const verifyPayment = useCallback(async (transRef: string) => {
-        setIsVerifying(true);
-        setPaymentError(null);
-
-        try {
-            // Wait for session to be available
-            let attempts = 0;
-            const maxAttempts = 10; // ~5 seconds with 500ms interval
-            while (!session?.user?.email && attempts < maxAttempts) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                attempts++;
-            }
-
-            if (!session?.user?.email) {
-                throw new Error('User authentication timed out');
-            }
-
-            const response = await axios.get<VerifyPaymentResponse>(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify/${transRef}`,
-                { timeout: 30000 }
-            );
-
-            if (response.data.data) {
-                const paymentData = response.data.data;
-                const expectedAmount = getStoredTotalAmount();
-
-                if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
-                    throw new Error('Payment amount does not match expected amount');
-                }
-
-                await promoteShop();
-                clearStoredTotalAmount();
-                showSuccessToast('Payment Successful', 'Your shop has been promoted successfully');
-                await fetchShopData();
-            } else {
-                throw new Error('Payment verification failed');
-            }
-        } catch (error) {
-            console.error('Payment verification error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
-            setPaymentError(errorMessage);
-            showErrorToast('Payment Error', errorMessage);
-        } finally {
-            setIsVerifying(false);
-        }
-    }, [session, fetchShopData]);
-
-    const promoteShop = async () => {
+    const promoteShop = useCallback(async () => {
         if (!shopData?.id || !selectedTierInModal?.id) {
             throw new Error('Shop ID or tier information missing');
         }
@@ -250,7 +203,7 @@ const PromoteShop = () => {
             console.error('Error promoting shop:', error);
             throw error;
         }
-    };
+    }, [shopData?.id, selectedTierInModal?.id]);
 
     const initializePayment = async (): Promise<string> => {
         if (!session?.user?.email || !selectedTierInModal) {
@@ -312,6 +265,60 @@ const PromoteShop = () => {
             throw error;
         }
     };
+
+
+    const verifyPayment = useCallback(async (transRef: string) => {
+        setIsVerifying(true);
+        setPaymentError(null);
+
+        try {
+            // Wait for session to be available
+            let attempts = 0;
+            const maxAttempts = 10; // ~5 seconds with 500ms interval
+            while (!session?.user?.email && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+
+            if (!session?.user?.email) {
+                throw new Error('User authentication timed out');
+            }
+
+            const response = await axios.get<VerifyPaymentResponse>(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify/${transRef}`,
+                { timeout: 30000 }
+            );
+
+            if (response.data.data) {
+                const paymentData = response.data.data;
+                const expectedAmount = getStoredTotalAmount();
+
+                if (expectedAmount && Math.abs(paymentData.transAmount - expectedAmount) > 0.01) {
+                    throw new Error('Payment amount does not match expected amount');
+                }
+
+                await promoteShop();
+                clearStoredTotalAmount();
+                showSuccessToast('Payment Successful', 'Your shop has been promoted successfully');
+                await fetchShopData();
+
+                // Redirect to reviews page after successful promotion
+                setTimeout(() => {
+                    router.replace('/vendor/dashboard/reviews');
+                }, 2000); // Wait 2 seconds to show the success toast
+            } else {
+                throw new Error('Payment verification failed');
+            }
+        } catch (error) {
+            console.error('Payment verification error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
+            setPaymentError(errorMessage);
+            showErrorToast('Payment Error', errorMessage);
+        } finally {
+            setIsVerifying(false);
+        }
+    }, [session, fetchShopData, promoteShop, router]);
+
 
     const handleMakePayment = async () => {
         setIsProcessingPayment(true);

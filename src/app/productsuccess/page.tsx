@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
+import BackButton from '@/components/BackButton';
 
 interface BuyNowSuccessModalProps {
     isOpen: boolean;
@@ -177,21 +178,34 @@ const SuccessPage = () => {
 
     if (error) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-50">
-                <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full text-center">
-                    <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
+            <div className="min-h-screen bg-gray-50">
+                <div className="p-6">
+                    <BackButton variant="default" text="Go back" />
+                </div>
+                <div className="flex items-center justify-center min-h-screen -mt-20">
+                    <div className="bg-white p-6 rounded-lg shadow-md max-w-md w-full text-center">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <h1 className="text-xl font-bold text-gray-800 mb-2">Purchase Failed</h1>
+                        <p className="text-gray-600 mb-6">{error}</p>
+                        <div className="flex gap-3 justify-center">
+                            <button
+                                onClick={() => router.back()}
+                                className="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+                            >
+                                Go Back
+                            </button>
+                            <button
+                                onClick={() => router.push('/')}
+                                className="px-6 py-2 bg-[#022B23] text-white rounded-md hover:bg-[#033a30] transition-colors"
+                            >
+                                Return Home
+                            </button>
+                        </div>
                     </div>
-                    <h1 className="text-xl font-bold text-gray-800 mb-2">Purchase Failed</h1>
-                    <p className="text-gray-600 mb-6">{error}</p>
-                    <button
-                        onClick={() => router.push('/')}
-                        className="px-6 py-2 bg-[#022B23] text-white rounded-md hover:bg-[#033a30] transition-colors"
-                    >
-                        Return Home
-                    </button>
                 </div>
             </div>
         );

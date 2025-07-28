@@ -15,6 +15,8 @@ import store1 from "@/../public/assets/images/store1.png"
 import store2 from "@/../public/assets/images/store2.png"
 import { fetchMarkets } from "@/utils/api"
 import { ChevronDown, Menu, X } from "lucide-react"
+import FloatingProduct from "@/components/FloatingProduct"
+import { useFloatingProducts } from "@/hooks/useFloatingProducts"
 
 type Market = {
     id: number
@@ -150,6 +152,46 @@ const FlashSale = ({
             <div className="bg-[#FFFAEB] p-[6px] sm:p-[10px] rounded-b-3xl">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[4px] sm:gap-[6px]">
                     {lowQuantityProducts.slice(0, 10).map((product) => (
+                        <MarketProductCard
+                            id={product.id}
+                            height={280}
+                            key={product.id}
+                            name={product.name}
+                            image={product.mainImageUrl}
+                            price={product.price.toString()}
+                            imageHeight={160}
+                        />
+                    ))}
+                </div>
+            </div>
+        </div>
+    )
+}
+
+const PromotedSection = ({ promotedProducts }: { promotedProducts: Product[] }) => {
+    return (
+        <div className="flex-col rounded-3xl mt-[20px] mx-4 sm:mx-6 lg:mx-25">
+            <div className="bg-[#FF6B35] h-[60px] sm:h-[80px] flex justify-between px-2 sm:px-4 pt-2">
+                <div>
+                    <div className="flex gap-[4px] items-center">
+                        <p className="font-medium text-white text-[18px] sm:text-[22px]">Sponsored Products</p>
+                        <div className="bg-white items-center justify-center text-[#FF6B35] w-[40px] sm:w-[50px] h-[20px] sm:h-[26px] rounded-full text-center">
+                            <p className="font-bold text-xs sm:text-sm">{promotedProducts.length}</p>
+                        </div>
+                    </div>
+                    <p className="text-white text-[12px] sm:text-[14px]">
+                        Featured products from top vendors
+                    </p>
+                </div>
+                <div className="flex items-center">
+                    <button className="bg-white text-[#FF6B35] w-[70px] sm:w-[91px] h-[35px] sm:h-[47px] rounded-[2px] text-xs sm:text-sm font-semibold">
+                        View all
+                    </button>
+                </div>
+            </div>
+            <div className="bg-[#FFF5F3] p-[6px] sm:p-[10px] rounded-b-3xl border border-[#FF6B35]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[4px] sm:gap-[6px]">
+                    {promotedProducts.slice(0, 10).map((product) => (
                         <MarketProductCard
                             id={product.id}
                             height={280}
@@ -350,6 +392,16 @@ const MarketPlace = () => {
     const [showSubcategories, setShowSubcategories] = useState<boolean>(false)
     const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState<boolean>(false)
 
+    // Floating products hook
+    const {
+        currentProduct,
+        showFloatingProduct,
+        hideCurrentProduct
+    } = useFloatingProducts()
+
+    // Promoted products state
+    const [promotedProducts, setPromotedProducts] = useState<Product[]>([])
+
     const fetchProductsByCategory = async (categoryId: number) => {
         try {
             setLoading(true)
@@ -509,6 +561,25 @@ const MarketPlace = () => {
         }
     }
 
+    const fetchPromotedProducts = async () => {
+        try {
+
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get-promoted`, {
+                headers: { "Content-Type": "application/json" },
+            })
+
+            if (response.data && Array.isArray(response.data)) {
+                setPromotedProducts(response.data)
+                console.log("Promoted Products: ", response.data)
+            } else {
+                setPromotedProducts([])
+            }
+        } catch (err) {
+            console.error("Error fetching promoted products:", err)
+            setPromotedProducts([])
+        }
+    }
+
     const fetchSearchResults = useCallback(async (query: string) => {
         if (!query.trim()) {
             setIsSearching(false)
@@ -618,6 +689,7 @@ const MarketPlace = () => {
     useEffect(() => {
         fetchData()
         fetchCategories()
+        fetchPromotedProducts()
     }, [])
 
     useEffect(() => {
@@ -866,6 +938,11 @@ const MarketPlace = () => {
 
                 {!loading && !error && !isSearching && (
                     <>
+                        {/* Promoted Products Section - Only show if there are promoted products */}
+                        {promotedProducts.length > 0 && (
+                            <PromotedSection promotedProducts={promotedProducts} />
+                        )}
+                        
                         <ProductGrid apiProducts={apiProducts} />
                         <div className="flex-col px-4 sm:px-6 lg:px-25">
                             <FlashSale countdown={countdown} apiProducts={apiProducts} />
@@ -875,7 +952,7 @@ const MarketPlace = () => {
                 )}
             </div>
 
-            {/* Mobile Category Modal */}
+            {/* Mobile Category odal */}
             <MobileCategoryModal
                 isOpen={isMobileCategoryOpen}
                 onClose={() => setIsMobileCategoryOpen(false)}
@@ -884,6 +961,14 @@ const MarketPlace = () => {
                 onCategorySelect={handleCategoryClick}
                 onAllCategoriesSelect={handleAllCategoriesSelect}
             />
+
+            {/* Floating Product Display */}
+            {showFloatingProduct && currentProduct && (
+                <FloatingProduct
+                    product={currentProduct}
+                    onClose={hideCurrentProduct}
+                />
+            )}
 
             <Footer />
         </>

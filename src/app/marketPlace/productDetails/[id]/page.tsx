@@ -15,12 +15,13 @@ import vendorImg from '../../../../../public/assets/images/vendorImg.svg';
 import verify from '../../../../../public/assets/images/verify.svg';
 import locationImg from '../../../../../public/assets/images/location.png';
 import shopImg from '../../../../../public/assets/images/shop.png';
-import chatIcon from '../../../../../public/assets/images/chatIcon.png';
 import bag from '../../../../../public/assets/images/market-place-bag.png';
 import wishlist from '../../../../../public/assets/images/wishHeart.png';
 import orangeCircle from '../../../../../public/assets/images/orangeCirlce.png';
 import greenVerify from '../../../../../public/assets/images/limeVerify.png';
 import { useSession } from 'next-auth/react';
+import VideoCallButton from '@/components/VideoCallButton';
+import ChatButton from '@/components/ChatButton';
 
 interface Review {
     id: number;
@@ -142,26 +143,28 @@ const ProductDetails = ({ params }: PageProps) => {
         }
     }, [product?.subCategory]);
 
-    const handleTextVendor = () => {
-        if (!session?.user?.email) {
-            toast.error('Please log in to chat with the vendor');
-            router.push('/login');
-            return;
-        }
-        if (session.user.email === product?.vendorEmail) {
-            toast.error('You cannot chat with yourself');
-            return;
-        }
-        if (!product?.vendorEmail) return;
-        const userEmail = session.user.email;
-        const vendorEmail = product?.vendorEmail;
-        const query = new URLSearchParams({
-            user: userEmail,
-            with: vendorEmail,
-        });
+    // const handleTextVendor = () => {
+    //     if (!session?.user?.email) {
+    //         toast.error('Please log in to chat with the vendor');
+    //         router.push('/login');
+    //         return;
+    //     }
+    //     if (session.user.email === product?.vendorEmail) {
+    //         toast.error('You cannot chat with yourself');
+    //         return;
+    //     }
+    //     if (!product?.vendorEmail) return;
+    //     const userEmail = session.user.email;
+    //     const vendorEmail = product?.vendorEmail;
+    //     const query = new URLSearchParams({
+    //         user: userEmail,
+    //         with: vendorEmail,
+    //     });
+    //
+    //     router.push(`/chat?${query.toString()}`);
+    // };
 
-        router.push(`/chat?${query.toString()}`);
-    };
+
 
     const handleAddToCart = async () => {
         if (!product) return;
@@ -422,17 +425,21 @@ const ProductDetails = ({ params }: PageProps) => {
                                 <p className='text-[14px] font-light'>{product.marketSection}</p>
                             </div>
                         </div>
-                        <div className='px-0 lg:px-[20px] w-full lg:w-[300px] gap-3 lg:gap-[14px] mt-6 lg:mt-[50px] flex flex-col sm:flex-row items-center'>
-                            <div
-                                onClick={handleTextVendor}
-                                className='flex items-center gap-[10px] justify-center bg-[#ffeebe] rounded-[14px] w-full sm:w-[165px] h-[48px] cursor-pointer'
-                            >
-                                <p className='text-[#461602] font-semibold text-[14px]'>Text vendor</p>
-                                <Image src={chatIcon || '/placeholder.svg'} alt='chat' />
-                            </div>
-                            <div className='w-full sm:w-[121px] h-[48px] rounded-[12px] flex border-[2px] border-[#461602] justify-center items-center'>
-                                <p className='text-[#461602] font-semibold text-[14px]'>Call vendor</p>
-                            </div>
+                        <div className='px-0 lg:px-[20px] w-auto lg:w-auto gap-3 lg:gap-[14px] mt-6 lg:mt-[50px] flex flex-col sm:flex-row items-center'>
+                            <ChatButton
+                                vendorEmail={product.vendorEmail}
+                                vendorName={product.vendorName}
+                                className="bg-[#ffeebe] text-[#461602] hover:bg-[#ffd700] w-full sm:w-[165px] h-[48px] rounded-[14px]"
+                            />
+                            <VideoCallButton
+                                vendorEmail={product.vendorEmail}
+                                shopId={product.shopId}
+                                shopName={product.shopName}
+                                productId={product.id}
+                                productName={product.name}
+                                variant="secondary"
+                                className="w-full sm:w-[140px] h-[48px] text-[14px] font-medium"
+                            />
                         </div>
                     </div>
                     <div className='flex flex-col sm:flex-row items-center gap-4 lg:gap-[30px] mt-6 lg:mt-[25px]'>

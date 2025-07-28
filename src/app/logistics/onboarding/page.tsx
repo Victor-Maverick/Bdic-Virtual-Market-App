@@ -4,11 +4,11 @@ import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
 import dashImg from '@/../public/assets/images/Logistics-rafiki.svg'
 import Image from "next/image";
-import arrow from "../../../../public/assets/images/arrow-right.svg";
 import {ChangeEvent, useRef, useState} from "react";
 import uploadIcon from "../../../../public/assets/images/uploadIcon.png";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import { useOnboarding } from "@/context/LogisticsOnboardingContext";
+import BackButton from "@/components/BackButton";
 
 type InputFieldProps = {
     id: string;
@@ -112,7 +112,7 @@ const DashBoard = ()=>{
             <DashboardSubHeader welcomeText={"Manage your logistics company"} description={"Get started by setting up your company"} image={dashImg}
                                 textColor={"#DD6A02"} background={"#FFFAEB"}/>
             <div className="h-[44px] gap-[8px] border-b-[0.5px] px-25 border-[#ededed] flex items-center">
-                <Image src={arrow} alt={'arrow image'} className="cursor-pointer" />
+                <BackButton variant="default" text="Go back" />
                 <p className="text-[14px] font-normal text-[#707070]">
                     <span className="cursor-pointer text-[#022B23]">Logistics company //</span> <span className="cursor-pointer" > License //</span> <span  className="cursor-pointer"> Fleet onboarding // </span><span className="cursor-pointer" >Bank Details //</span><span className="cursor-pointer" > Completed</span>
                 </p>

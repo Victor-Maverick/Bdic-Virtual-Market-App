@@ -1,12 +1,29 @@
+'use client';
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import buyIcon from "../../../public/assets/images/bag-2.png";
 import locationImg from "../../../public/assets/images/location.png";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-const ProductCard = ({ image, title, price, location }) => {
+interface ProductCardProps {
+    id: number;
+    image: string;
+    title: string;
+    price: number;
+    location: string;
+}
+
+const ProductCard = ({ id, image, title, price, location }: ProductCardProps) => {
+    const router = useRouter();
+
+    const handleProductClick = () => {
+        router.push(`/marketPlace/productDetails/${id}`);
+    };
+
     return (
-        <div className="w-full cursor-pointer h-[400px] rounded-[14px] bg-[#FFFFFF] border border-transparent group transition-all duration-300 hover:border-lime-300 relative">
+        <div 
+            onClick={handleProductClick}
+            className="w-full cursor-pointer h-[400px] rounded-[14px] bg-[#FFFFFF] border border-transparent group transition-all duration-300 hover:border-lime-300 relative"
+        >
 
             <Image className="h-[278px] w-full object-cover rounded-t-2xl" src={image} alt="image" width={240} height={281} />
 

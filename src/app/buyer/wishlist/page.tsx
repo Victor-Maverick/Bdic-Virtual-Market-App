@@ -2,12 +2,12 @@
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
 import marketIcon from "../../../../public/assets/images/market element.png";
-import arrowBack from "../../../../public/assets/images/arrow-right.svg";
 import React, {useState, useEffect, useCallback} from "react";
 import searchImg from "../../../../public/assets/images/search-normal.png";
 import arrowRight from '@/../public/assets/images/greyforwardarrow.svg'
 import trashImg from "../../../../public/assets/images/trash.png";
 import {useRouter} from "next/navigation";
+import BackButton from "@/components/BackButton";
 import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
@@ -179,7 +179,7 @@ const Wishlist = () => {
                     </div>
                 </div>
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
-                    <Image src={arrowBack} alt={'arrow back'}/>
+                    <BackButton variant="default" text="Go back" />
                     <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Wishlist</span></p>
                 </div>
             </div>

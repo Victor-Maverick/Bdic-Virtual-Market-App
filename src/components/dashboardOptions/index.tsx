@@ -12,6 +12,7 @@ import transactionImg from '../../../public/assets/images/transactionImg.png';
 import chatImg from '../../../public/assets/images/chatImg.png';
 import notificationImg from '../../../public/assets/images/notification-bing.png';
 import settingImg from '../../../public/assets/images/settingImg.png';
+import star from '../../../public/assets/images/campaign star.svg'
 
 type MenuOption =
     | 'dashboard'
@@ -133,7 +134,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
             { id: 'order', icon: orderImg, label: 'Order', widthClass: 'w-[88px]' },
             { id: 'transactions', icon: transactionImg, label: 'Transactions', widthClass: 'w-[127px]' },
             { id: 'chats', icon: chatImg, label: 'Chats', widthClass: 'w-[81px]' },
-            { id: 'reviews', icon: chatImg, label: 'Reviews and Campaigns', widthClass: 'w-[188px]' },
+            { id: 'reviews', icon: star, label: 'Reviews and Campaigns', widthClass: 'w-[188px]' },
             {
                 id: 'notifications',
                 icon: notificationImg,
