@@ -11,12 +11,14 @@ interface VideoCallContextType {
   isConnected: boolean;
   hasIncomingCall: boolean;
   acceptPendingCall: (call: VideoCallResponse) => void;
+  forceCloseModals?: () => void;
 }
 
 const VideoCallContext = createContext<VideoCallContextType>({
   isConnected: false,
   hasIncomingCall: false,
-  acceptPendingCall: () => {}
+  acceptPendingCall: () => { },
+  forceCloseModals: () => { }
 });
 
 export const useVideoCallContext = () => {
@@ -53,12 +55,21 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
   };
 
   const handleDeclineCall = () => {
+    console.log('📞 VideoCallProvider: handleDeclineCall called - clearing incoming call');
     clearIncomingCall();
   };
 
   const handleCloseVideoCall = () => {
+    console.log('📞 VideoCallProvider: handleCloseVideoCall called');
     setIsVideoCallOpen(false);
     setCurrentCall(null);
+  };
+
+  const forceCloseAllModals = () => {
+    console.log('📞 VideoCallProvider: Force closing all modals');
+    setIsVideoCallOpen(false);
+    setCurrentCall(null);
+    clearIncomingCall();
   };
 
   const acceptPendingCall = (call: VideoCallResponse) => {
@@ -71,47 +82,55 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
   // Handle call status updates
   React.useEffect(() => {
     if (callStatus) {
-      switch (callStatus.type) {
+      console.log('📞 VideoCallProvider: Received call status:', callStatus);
+      console.log('📞 VideoCallProvider: Current state - isVideoCallOpen:', isVideoCallOpen, 'currentCall:', currentCall, 'incomingCall:', incomingCall);
+      
+      // Create a copy of the status to avoid stale closure issues
+      const statusType = callStatus.type;
+      
+      switch (statusType) {
+        case 'STATUS_UPDATE':
+          console.log('📞 VideoCallProvider: Call status updated:', callStatus);
+          break;
         case 'CALL_ENDED':
-          setIsVideoCallOpen(false);
-          setCurrentCall(null);
-          // Show a brief notification that the call ended
-          setTimeout(() => {
-            // Create a temporary toast notification
-            const toast = document.createElement('div');
-            toast.className = 'fixed top-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50';
-            toast.textContent = 'Call ended by other participant';
-            document.body.appendChild(toast);
-            
-            // Remove toast after 3 seconds
-            setTimeout(() => {
-              if (document.body.contains(toast)) {
-                document.body.removeChild(toast);
-              }
-            }, 3000);
-          }, 100);
+          console.log('📞 VideoCallProvider: CALL_ENDED received - closing modal for both participants');
+          forceCloseAllModals();
           break;
         case 'CALL_DECLINED':
-          console.log('📞 VideoCallProvider: Call declined by vendor');
-          alert('The vendor declined your call');
-          setIsVideoCallOpen(false);
-          setCurrentCall(null);
+          console.log('📞 VideoCallProvider: Call declined - closing modals for both participants');
+          forceCloseAllModals();
           break;
+        case 'CALL_MISSED':
+          console.log('📞 VideoCallProvider: Call missed after 45 seconds - closing modals');
+          forceCloseAllModals();
+          break;
+        default:
+          console.log('📞 VideoCallProvider: Unknown call status type:', statusType);
       }
-      clearCallStatus();
+      
+      // Clear the status after handling
+      setTimeout(() => {
+        clearCallStatus();
+      }, 100);
     }
-  }, [callStatus, clearCallStatus]);
+  }, [callStatus]);
+
+  // Debug effect to monitor state changes
+  React.useEffect(() => {
+    console.log('📞 VideoCallProvider: State changed - isVideoCallOpen:', isVideoCallOpen, 'currentCall:', currentCall?.roomName, 'incomingCall:', incomingCall?.call?.roomName);
+  }, [isVideoCallOpen, currentCall, incomingCall]);
 
   const contextValue: VideoCallContextType = {
     isConnected,
     hasIncomingCall: !!incomingCall,
-    acceptPendingCall
+    acceptPendingCall,
+    forceCloseModals: forceCloseAllModals
   };
 
   return (
     <VideoCallContext.Provider value={contextValue}>
       {children}
-      
+
       {/* Incoming Call Modal */}
       <IncomingCallModal
         isOpen={!!incomingCall}
@@ -129,7 +148,7 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
         onClose={handleCloseVideoCall}
         call={currentCall}
         userEmail={session?.user?.email || ''}
-        userType="vendor"
+        userType={currentCall?.vendorEmail === session?.user?.email ? 'vendor' : 'buyer'}
       />
     </VideoCallContext.Provider>
   );

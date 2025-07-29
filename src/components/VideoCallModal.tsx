@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useVideoCall } from '@/hooks/useVideoCall';
 import { VideoCallResponse } from '@/services/videoCallService';
 
@@ -36,30 +36,34 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     toggleAudio
   } = useVideoCall({
     userEmail,
-    onCallEnd: onClose,
+    onCallEnd: () => {
+      console.log('🎥 VideoCallModal: onCallEnd triggered - Twilio room disconnected, closing modal');
+      onClose();
+    },
     onError: (error) => {
       console.error('Video call error:', error);
       alert('Video call error: ' + error);
+      onClose();
     }
   });
 
+  const hasJoinedRef = useRef<string | null>(null);
+  
   const handleJoinRoom = useCallback(() => {
-    console.log('🎥 VideoCallModal props:', { isOpen, call, userEmail, userType });
-    if (isOpen && call) {
-      console.log('🎥 VideoCallModal: Joining room', call.roomName);
+    if (isOpen && call && hasJoinedRef.current !== call.roomName) {
+      hasJoinedRef.current = call.roomName;
       joinRoom(call.roomName);
-      // Don't start timer yet - wait for both participants to be connected
     }
-  }, [isOpen, call, joinRoom, userEmail, userType]);
+  }, [isOpen, call, joinRoom]);
 
   useEffect(() => {
     handleJoinRoom();
   }, [handleJoinRoom]);
 
-  // Start timer only when both participants are connected
+  // Start timer only when both participants are connected (call becomes ACTIVE)
   useEffect(() => {
     if (isConnected && participants.length > 0 && !callStartTime) {
-      console.log('⏱️ Starting call timer - both participants connected');
+      console.log('⏱️ Starting call timer - both participants connected, call is now ACTIVE');
       setCallStartTime(new Date());
     }
   }, [isConnected, participants.length, callStartTime]);
@@ -76,24 +80,34 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     };
   }, [isConnected, callStartTime, participants.length]);
 
-  // Handle when the call is no longer open (closed by other participant)
+  // Handle when the call is no longer open - use ref to avoid dependency issues
+  const prevIsOpenRef = useRef(isOpen);
+  
   useEffect(() => {
-    if (!isOpen && call) {
-      console.log('🎥 VideoCallModal: Modal closed, cleaning up');
-      // Reset state when modal closes
+    // Only cleanup when modal was open and is now closed
+    if (prevIsOpenRef.current && !isOpen && call) {
       setCallDuration(0);
       setCallStartTime(null);
+      leaveRoom();
     }
-  }, [isOpen, call]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, call, leaveRoom]);
 
   const handleEndCall = async () => {
     console.log('🎥 VideoCallModal: User manually ending call');
     try {
       await leaveRoom();
-      console.log('🎥 VideoCallModal: Call ended successfully');
+      console.log('🎥 VideoCallModal: Call ended successfully, backend should notify both participants');
+      
+      // Set a timeout to ensure modal closes even if WebSocket notification fails
+      setTimeout(() => {
+        console.log('🎥 VideoCallModal: Timeout reached, ensuring modal closes');
+        onClose();
+      }, 2000);
+      
     } catch (error) {
       console.error('🎥 VideoCallModal: Error ending call:', error);
-    } finally {
+      // Close immediately if there was an error
       onClose();
     }
   };

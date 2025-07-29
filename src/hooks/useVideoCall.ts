@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { connect, Room, LocalVideoTrack, LocalAudioTrack, RemoteParticipant, RemoteTrack, RemoteVideoTrack, RemoteAudioTrack } from 'twilio-video';
-import { videoCallService, TwilioTokenResponse } from '@/services/videoCallService';
+import { connect, Room, LocalVideoTrack, LocalAudioTrack, RemoteParticipant, RemoteTrack } from 'twilio-video';
+import { videoCallService } from '@/services/videoCallService';
 
 export interface UseVideoCallProps {
   userEmail: string;
@@ -22,11 +22,17 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
   const remoteVideoRef = useRef<HTMLDivElement>(null);
 
   const joinRoom = async (roomName: string) => {
+    // Prevent multiple join attempts
+    if (isConnecting || room) {
+      console.log('📞 Already connecting or connected, skipping join attempt');
+      return;
+    }
+
     try {
       setIsConnecting(true);
 
       // Get Twilio access token
-      const tokenResponse: TwilioTokenResponse = await videoCallService.joinCall(roomName, userEmail);
+      const tokenResponse = await videoCallService.joinCall(roomName, userEmail);
 
       // Connect to Twilio Video room
       const connectedRoom = await connect(tokenResponse.token, {
@@ -37,11 +43,11 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
 
       setRoom(connectedRoom);
       setIsConnected(true);
+      console.log('📞 Successfully connected to Twilio room:', roomName);
 
       // Handle local tracks
       connectedRoom.localParticipant.videoTracks.forEach(publication => {
         if (publication.track && localVideoRef.current) {
-          // Clear existing video elements
           localVideoRef.current.innerHTML = '';
           const videoElement = publication.track.attach();
           videoElement.style.width = '100%';
@@ -74,6 +80,9 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
         setIsConnected(false);
         setRoom(null);
         setParticipants([]);
+        
+        // Always call onCallEnd when room disconnects - this ensures both participants are notified
+        console.log('📞 Room disconnected - calling onCallEnd to ensure both participants are notified');
         onCallEnd?.();
       });
 
@@ -86,6 +95,7 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
   };
 
   const handleParticipantConnected = (participant: RemoteParticipant) => {
+    console.log('📞 Participant connected:', participant.identity);
     setParticipants(prev => [...prev, participant]);
 
     // Handle existing tracks
@@ -95,7 +105,6 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
       }
     });
 
-    // Handle new tracks
     participant.on('trackSubscribed', handleTrackSubscribed);
     participant.on('trackUnsubscribed', handleTrackUnsubscribed);
   };
@@ -107,9 +116,8 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
   const handleTrackSubscribed = (track: RemoteTrack) => {
     console.log('📹 Track subscribed:', track.kind);
     if (track.kind === 'video' && remoteVideoRef.current) {
-      // Clear existing video elements
       remoteVideoRef.current.innerHTML = '';
-      const videoElement = track.attach() as HTMLVideoElement;
+      const videoElement = track.attach();
       videoElement.style.width = '100%';
       videoElement.style.height = '100%';
       videoElement.style.objectFit = 'cover';
@@ -122,10 +130,8 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
   };
 
   const handleTrackUnsubscribed = (track: RemoteTrack) => {
-    if (track.kind === 'video' || track.kind === 'audio') {
-      // Narrow track to RemoteVideoTrack or RemoteAudioTrack
-      const mediaTrack = track as RemoteVideoTrack | RemoteAudioTrack;
-      mediaTrack.detach().forEach((element: HTMLMediaElement) => {
+    if ('detach' in track && typeof track.detach === 'function') {
+      track.detach().forEach((element: HTMLElement) => {
         element.remove();
       });
     }

@@ -42,10 +42,19 @@ const IncomingCallModal: React.FC<IncomingCallModalProps> = ({
   const handleDecline = async () => {
     if (call) {
       try {
+        console.log('📞 IncomingCallModal: Declining call:', call.roomName);
         await videoCallService.declineCall(call.roomName, userEmail);
-        onDecline();
+        console.log('📞 IncomingCallModal: Call declined successfully, backend should notify both participants');
+        
+        // Set a timeout to ensure modal closes even if WebSocket notification fails
+        setTimeout(() => {
+          console.log('📞 IncomingCallModal: Timeout reached, ensuring modal closes');
+          onDecline();
+        }, 2000);
+        
       } catch (error) {
-        console.error('Error declining call:', error);
+        console.error('❌ IncomingCallModal: Error declining call:', error);
+        // Call onDecline immediately if there was an error
         onDecline();
       }
     }

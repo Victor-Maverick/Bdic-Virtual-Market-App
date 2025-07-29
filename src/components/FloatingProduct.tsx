@@ -25,6 +25,13 @@ const FloatingProduct: React.FC<FloatingProductProps> = ({ product, onClose }) =
     const [isClosing, setIsClosing] = useState(false);
     const router = useRouter();
 
+    const handleClose = useCallback(() => {
+        setIsClosing(true);
+        setTimeout(() => {
+            onClose();
+        }, 300); // Match animation duration
+    }, [onClose]);
+
     useEffect(() => {
         // Slide in animation
         const timer = setTimeout(() => {
@@ -40,14 +47,7 @@ const FloatingProduct: React.FC<FloatingProductProps> = ({ product, onClose }) =
             clearTimeout(timer);
             clearTimeout(autoCloseTimer);
         };
-    }, []);
-
-    const handleClose = useCallback(() => {
-        setIsClosing(true);
-        setTimeout(() => {
-            onClose();
-        }, 300); // Match animation duration
-    }, [onClose]);
+    }, [handleClose]);
 
     const handleView = () => {
         // Navigate to store page using the product ID

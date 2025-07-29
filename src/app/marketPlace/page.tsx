@@ -11,8 +11,6 @@ import MarketPlaceHeader from "@/components/marketPlaceHeader"
 import categoryImg from "@/../public/assets/images/categoryImg.svg"
 import filterImg from "@/../public/assets/images/filter.svg"
 import { useRouter } from "next/navigation"
-import store1 from "@/../public/assets/images/store1.png"
-import store2 from "@/../public/assets/images/store2.png"
 import { fetchMarkets } from "@/utils/api"
 import { ChevronDown, Menu, X } from "lucide-react"
 import FloatingProduct from "@/components/FloatingProduct"
@@ -210,50 +208,106 @@ const PromotedSection = ({ promotedProducts }: { promotedProducts: Product[] }) 
 
 const StoreSection = () => {
     const router = useRouter()
-    const stores = React.useMemo(
-        () => [
-            { id: 1, image: store1 },
-            { id: 2, image: store2 },
-            { id: 3, image: store1 },
-            { id: 4, image: store2 },
-            { id: 5, image: store1 },
-            { id: 6, image: store2 },
-            { id: 7, image: store1 },
-            { id: 8, image: store2 },
-            { id: 9, image: store1 },
-            { id: 10, image: store2 },
-        ],
-        [],
-    )
-    const PictureCard = ({ image }: { image: StaticImageData }) => {
+    const [promotedStores, setPromotedStores] = useState<{
+        id: number
+        name: string
+        logoUrl: string
+    }[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+
+    const fetchPromotedStores = async () => {
+        try {
+            setLoading(true)
+            const response = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/get-promoted`
+            )
+            if (response.data && Array.isArray(response.data)) {
+                // Transform and take first 10 stores
+                const stores = response.data.slice(0, 10).map(shop => ({
+                    id: shop.id,
+                    name: shop.name,
+                    logoUrl: shop.logoUrl
+                }))
+                setPromotedStores(stores)
+            }
+        } catch (err) {
+            console.error("Error fetching promoted stores:", err)
+            setError("Failed to load promoted stores")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchPromotedStores()
+    }, [])
+
+    const PictureCard = ({ store }: { store: { id: number; name: string; logoUrl: string } }) => {
         return (
             <div
                 onClick={() => {
-                    router.push("/marketPlace/store")
+                    router.push(`/marketPlace/store/${store.id}`)
                 }}
-                className="w-full h-[120px] sm:h-[160px] lg:h-[200px] rounded-[14px] overflow-hidden cursor-pointer"
+                className="w-full h-full rounded-[14px] overflow-hidden cursor-pointer flex flex-col group"
             >
-                <Image
-                    src={image || "/placeholder.svg"}
-                    alt="store"
-                    className="w-full h-full object-cover rounded-[14px]"
-                    priority
-                />
+                {/* Image container with light grey background */}
+                <div className="w-full h-[120px] sm:h-[160px] lg:h-[200px] bg-gray-100 rounded-t-[14px] overflow-hidden flex items-center justify-center p-4">
+                    {store.logoUrl ? (
+                        <div className="relative w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] lg:w-[120px] lg:h-[120px]">
+                            <Image
+                                src={store.logoUrl}
+                                alt={store.name}
+                                fill
+                                className="object-contain rounded-[8px] group-hover:scale-105 transition-transform duration-200"
+                                priority
+                            />
+                        </div>
+                    ) : (
+                        <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] lg:w-[120px] lg:h-[120px] bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-2xl font-bold text-gray-500">
+                            {store.name.charAt(0).toUpperCase()}
+                        </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Store name */}
+                <div className="p-2 bg-white rounded-b-[14px] border-t border-gray-200">
+                    <p className="text-sm font-medium text-[#1E1E1E] text-center truncate">
+                        {store.name}
+                    </p>
+                </div>
             </div>
         )
     }
+
+    // Don't render if there's no API base URL or if no stores after loading
+    if (!process.env.NEXT_PUBLIC_API_BASE_URL) return null
+    if (loading) return null
+    if (error) return null
+    if (promotedStores.length === 0) return null
+
+    // Calculate container height based on number of stores
+    const containerHeight = `min-h-[${Math.ceil(promotedStores.length / 5) * 240}px]`
+
     return (
         <div className="flex-col rounded-3xl mt-[20px] mx-4 sm:mx-6 lg:mx-25">
             <div className="bg-[#022B23] h-[60px] sm:h-[80px] flex justify-between px-2 sm:px-4 pt-2">
                 <div>
-                    <p className="font-medium text-[#C6EB5F] text-[18px] sm:text-[22px]">Stores</p>
-                    <p className="text-[#C6EB5F] text-[12px] sm:text-[14px]">Check out top verified stores</p>
+                    <p className="font-medium text-[#C6EB5F] text-[18px] sm:text-[22px]">Featured Stores</p>
+                    <p className="text-[#C6EB5F] text-[12px] sm:text-[14px]">Check out top promoted stores</p>
                 </div>
             </div>
-            <div className="bg-[#F9FDE8] mt-[6px] min-h-[300px] sm:min-h-[400px] lg:h-[440px] border border-[#C6EB5F] p-[6px] sm:p-[10px]">
+            <div
+                className={`bg-[#F9FDE8] mt-[6px] ${containerHeight} border border-[#C6EB5F] p-[6px] sm:p-[10px]`}
+                style={{
+                    minHeight: `${Math.ceil(promotedStores.length / 5) * 240}px`
+                }}
+            >
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-[4px] sm:gap-[6px]">
-                    {stores.map((product) => (
-                        <PictureCard key={product.id} image={product.image} />
+                    {promotedStores.map((store) => (
+                        <PictureCard key={store.id} store={store} />
                     ))}
                 </div>
             </div>
@@ -493,7 +547,6 @@ const MarketPlace = () => {
             setLoading(false)
         }
     }
-
 
     const fetchData = async () => {
         try {

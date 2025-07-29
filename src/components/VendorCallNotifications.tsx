@@ -7,7 +7,7 @@ import { useVideoCallContext } from '@/providers/VideoCallProvider';
 
 const VendorCallNotifications: React.FC = () => {
   const { data: session } = useSession();
-  const { hasIncomingCall, isConnected, acceptPendingCall } = useVideoCallContext();
+  const { hasIncomingCall, acceptPendingCall } = useVideoCallContext();
   const [pendingCalls, setPendingCalls] = useState<VideoCallResponse[]>([]);
   const [showPendingCalls, setShowPendingCalls] = useState(false);
 
@@ -26,8 +26,8 @@ const VendorCallNotifications: React.FC = () => {
   useEffect(() => {
     if (session?.user?.email) {
       fetchPendingCalls();
-      // Refresh pending calls every 30 seconds
-      const interval = setInterval(fetchPendingCalls, 30000);
+      // Refresh pending calls every 5 seconds
+      const interval = setInterval(fetchPendingCalls, 5000);
       return () => clearInterval(interval);
     }
   }, [session?.user?.email, fetchPendingCalls]);
@@ -82,14 +82,7 @@ const VendorCallNotifications: React.FC = () => {
 
   return (
       <div className="fixed top-4 right-4 z-40 pending-calls-container">
-        {/* Connection Status */}
-        <div className={`mb-2 px-3 py-1 rounded-full text-xs font-medium ${
-            isConnected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {isConnected ? '🟢 Video calls ready' : '🔴 Connecting...'}
-        </div>
-
-        {/* Incoming Call Indicator */}
+        {/* Real-time Incoming Call Indicator - Shows immediately when call comes in */}
         {hasIncomingCall && (
             <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg mb-2 animate-pulse">
               <div className="flex items-center">

@@ -53,15 +53,19 @@ export const useVideoCallNotifications = () => {
       client.subscribe(`/user/${session.user.email}/queue/call-status`, (message) => {
         try {
           const data = JSON.parse(message.body);
-          console.log('📞 Received call status update:', data);
+          console.log('📞 useVideoCallNotifications: Received call status update:', data);
           setCallStatus(data);
           
-          // Handle call ended by other participant
+          // Handle specific call status types
           if (data.type === 'CALL_ENDED') {
-            console.log('📞 Call ended by other participant');
+            console.log('📞 useVideoCallNotifications: Call ended by other participant');
+          } else if (data.type === 'CALL_DECLINED') {
+            console.log('📞 useVideoCallNotifications: Call declined');
+          } else if (data.type === 'CALL_MISSED') {
+            console.log('📞 useVideoCallNotifications: Call missed');
           }
         } catch (error) {
-          console.error('Error parsing call status message:', error);
+          console.error('❌ useVideoCallNotifications: Error parsing call status message:', error);
         }
       });
 
@@ -106,6 +110,7 @@ export const useVideoCallNotifications = () => {
   };
 
   const clearCallStatus = () => {
+    console.log('📞 useVideoCallNotifications: Clearing call status');
     setCallStatus(null);
   };
 

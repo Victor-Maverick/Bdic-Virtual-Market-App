@@ -106,10 +106,10 @@ const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { sec
         setIsMarketModalOpen(false);
     };
 
-    const handleMarketModalContinue = async (newName: string) => {
+    const handleMarketModalContinue = async (newName: string, id: number) => {
         try {
             const response = await axios.put(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/update/${marketId}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/update/${id}`,
                 { name: newName }
             );
 
@@ -121,7 +121,7 @@ const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { sec
             }
         } catch (error) {
             console.error("Error updating section:", error);
-            alert("Failed to update section. Please try again.");
+            toast.error("Failed to update section. Please try again.");
         }
         setIsMarketModalOpen(false);
     };

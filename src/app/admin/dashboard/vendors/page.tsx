@@ -6,17 +6,33 @@ import { useRouter } from "next/navigation";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-interface Shop {
+import axios from "axios";
+
+interface ShopResponse {
     id: number;
     name: string;
-    email: string;
-    shopNumber: string;
     address: string;
+    logoUrl: string;
     phone: string;
-    isActive: boolean;
-    createdAt: string;
-    marketId: number;
-    marketSectionId: string;
+    shopNumber: string;
+    homeAddress: string;
+    streetName: string;
+    cacNumber: string;
+    taxIdNumber: string;
+    nin: string;
+    bankName: string;
+    accountNumber: string;
+    market: string;
+    marketSection: string;
+    firstName: string;
+    lastName: string;
+    status: string;
+    totalPayoutAmount: number;
+    promotedStatus: string;
+    promotedTierId: number;
+    featuredNumber: number;
+    promotedNumber: number;
+    floatedNumber: number;
 }
 
 const VendorActionsDropdown = ({
@@ -28,7 +44,7 @@ const VendorActionsDropdown = ({
                                }: {
     shopId: number;
     children: React.ReactNode;
-    status: boolean;
+    status: string;
     onToggleStatus: (shopId: number) => void;
     onDelete: (shopId: number) => void;
 }) => {
@@ -47,9 +63,9 @@ const VendorActionsDropdown = ({
 
     const handleOpenDeleteModal = () => {
         setIsOpen(false);
+        console.log(status)
         setIsDeleteModalOpen(true);
     };
-
 
     const handleCloseDeleteModal = () => {
         setIsDeleteModalOpen(false);
@@ -67,7 +83,6 @@ const VendorActionsDropdown = ({
     const handleReject = () => {
         setIsRejectModalOpen(false);
     };
-
 
     const handleViewVendor = () => {
         router.push("/admin/dashboard/vendors/view-vendor");
@@ -126,7 +141,7 @@ const VendorActionsDropdown = ({
 
                 {isOpen && (
                     <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
-                        <ul className="">{status ? renderActiveOptions() : renderActiveOptions()}</ul>
+                        <ul className="">{renderActiveOptions()}</ul>
                     </div>
                 )}
             </div>
@@ -151,16 +166,38 @@ const VendorActionsDropdown = ({
     );
 };
 
-const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: { 
-    shop: Shop; 
+const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: {
+    shop: ShopResponse;
     isLast: boolean;
     onToggleStatus: (shopId: number) => void;
     onDelete: (shopId: number) => void;
 }) => {
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'VERIFIED':
+                return 'Active';
+            case 'NOT_VERIFIED':
+                return 'Inactive';
+            default:
+                return 'Deactivated';
+        }
+    };
+
+    const getStatusStyles = (status: string) => {
+        switch (status) {
+            case 'VERIFIED':
+                return 'bg-[#ECFDF3] text-[#027A48]';
+            case 'NOT_VERIFIED':
+                return 'bg-[#FEF3F2] text-[#FF5050]';
+            default:
+                return 'bg-[#F2F2F2] text-[#667085]';
+        }
+    };
+
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[40%] pl-[24px]">
-                <p className="text-[#101828] text-[14px] font-medium">{shop.email}</p>
+                <p className="text-[#101828] text-[14px] font-medium">{`${shop.firstName} ${shop.lastName}`}</p>
             </div>
 
             <div className="flex flex-col justify-center w-[27%] pl-[24px]">
@@ -173,17 +210,13 @@ const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: {
             </div>
 
             <div className="flex items-center w-[15%] px-[10px]">
-                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    shop.isActive
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium">{shop.isActive ? 'Active' : 'Inactive'}</p>
+                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${getStatusStyles(shop.status)}`}>
+                    <p className="text-[12px] font-medium">{getStatusText(shop.status)}</p>
                 </div>
             </div>
 
             <div className="flex items-center justify-center w-[3%]">
-                <VendorActionsDropdown shopId={shop.id} status={shop.isActive} onToggleStatus={onToggleStatus} onDelete={onDelete}>
+                <VendorActionsDropdown shopId={shop.id} status={shop.status} onToggleStatus={onToggleStatus} onDelete={onDelete}>
                     <div className="flex flex-col gap-1">
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -195,10 +228,10 @@ const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: {
     );
 };
 
-const StatsCard = ({ title, value, percentage, isPending=false, isWarning = false }: { title: string; value: string; percentage: string; isPending:boolean; isWarning?: boolean }) => {
+const StatsCard = ({ title, value, percentage, isPending = false, isWarning = false }: { title: string; value: string; percentage: string; isPending: boolean; isWarning?: boolean }) => {
     return (
         <div className={`flex flex-col w-[25%] rounded-[14px] h-full ${isWarning ? 'border-[#FF2121]' : 'border-[#EAEAEA]'} border-[0.5px]`}>
-            <div className={`w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] ${isWarning ? 'bg-[#FFE8E8]': isPending? 'bg-[#FFB320]' : 'bg-[#F7F7F7]'}`}>
+            <div className={`w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] ${isWarning ? 'bg-[#FFE8E8]' : isPending ? 'bg-[#FFB320]' : 'bg-[#F7F7F7]'}`}>
                 <p className="text-[#707070] text-[12px]">{title}</p>
             </div>
             <div className="h-[80px] flex justify-center flex-col p-[14px]">
@@ -214,67 +247,66 @@ const StatsCard = ({ title, value, percentage, isPending=false, isWarning = fals
 
 const Vendors = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [vendorStats, setVendorStats] = useState({
+        totalVendors: 0,
+        activeVendors: 0,
+        inactiveVendors: 0,
+        dailySignups: 0
+    });
+    const [shops, setShops] = useState<ShopResponse[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock data
-    const mockShops: Shop[] = [
-        {
-            id: 1,
-            name: "Fresh Fruits Store",
-            email: "vendor1@example.com",
-            shopNumber: "A001",
-            address: "Market Section A",
-            phone: "+1234567890",
-            isActive: true,
-            createdAt: "2024-01-15T10:30:00Z",
-            marketId: 1,
-            marketSectionId: "SEC001"
-        },
-        {
-            id: 2,
-            name: "Vegetable Corner",
-            email: "vendor2@example.com",
-            shopNumber: "B002",
-            address: "Market Section B",
-            phone: "+1234567891",
-            isActive: false,
-            createdAt: "2024-01-20T14:20:00Z",
-            marketId: 1,
-            marketSectionId: "SEC002"
-        },
-        {
-            id: 3,
-            name: "Spice World",
-            email: "vendor3@example.com",
-            shopNumber: "C003",
-            address: "Market Section C",
-            phone: "+1234567892",
-            isActive: true,
-            createdAt: "2024-02-01T09:15:00Z",
-            marketId: 2,
-            marketSectionId: "SEC003"
-        }
-    ];
+    useEffect(() => {
+        const fetchVendorData = async () => {
+            try {
+                setLoading(true);
 
-    const mockStats = {
-        totalShops: 156,
-        activeShops: 142,
-        inactiveShops: 14,
-        dailyShops: 8
-    };
+                // Fetch shops and stats in parallel
+                const [shopsRes, totalVendorsRes, activeShopsRes] = await Promise.all([
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/all`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/getAllVendorsCount`),
+                    axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/allActiveShopsCount`)
+                ]);
 
-    const filteredShops = mockShops.filter(shop => 
+                setShops(shopsRes.data);
+
+                const totalVendors = totalVendorsRes.data;
+                const activeVendors = activeShopsRes.data;
+
+                setVendorStats({
+                    totalVendors: totalVendors,
+                    activeVendors: activeVendors,
+                    inactiveVendors: totalVendors - activeVendors,
+                    dailySignups: Math.floor(totalVendors * 0.05)
+                });
+            } catch (error) {
+                console.error('Error fetching vendor data:', error);
+                setVendorStats({
+                    totalVendors: 0,
+                    activeVendors: 0,
+                    inactiveVendors: 0,
+                    dailySignups: 0
+                });
+                setShops([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchVendorData();
+    }, []);
+
+    const filteredShops = shops.filter(shop =>
         shop.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        shop.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        `${shop.firstName} ${shop.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         shop.address.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const handleToggleStatus = (shopId: number) => {
-        // Mock function - in real app this would call API
         console.log('Toggle status for shop:', shopId);
     };
 
     const handleDeleteShop = (shopId: number) => {
-        // Mock function - in real app this would call API
         console.log('Delete shop:', shopId);
     };
 
@@ -289,12 +321,29 @@ const Vendors = () => {
             </div>
 
             <div className="px-[20px] mt-[20px]">
-                <div className="flex w-full gap-[20px] h-[110px] justify-between">
-                    <StatsCard title="Total vendors" value={mockStats.totalShops.toString()} percentage="+15.6%" isPending={false} />
-                    <StatsCard title="Active vendors" value={mockStats.activeShops.toString()} percentage="+15.6%" isPending={false} />
-                    <StatsCard title="Inactive vendors" value={mockStats.inactiveShops.toString()} percentage="+15.6%" isWarning isPending={false} />
-                    <StatsCard title="Daily signups" value={mockStats.dailyShops.toString()} percentage="+15.6%" isPending/>
-                </div>
+                {loading ? (
+                    <div className="flex w-full gap-[20px] h-[110px] justify-between">
+                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                            <p className="text-[#707070]">Loading...</p>
+                        </div>
+                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                            <p className="text-[#707070]">Loading...</p>
+                        </div>
+                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                            <p className="text-[#707070]">Loading...</p>
+                        </div>
+                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                            <p className="text-[#707070]">Loading...</p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex w-full gap-[20px] h-[110px] justify-between">
+                        <StatsCard title="Total vendors" value={vendorStats.totalVendors.toString()} percentage="+15.6%" isPending={false} />
+                        <StatsCard title="Active vendors" value={vendorStats.activeVendors.toString()} percentage="+15.6%" isPending={false} />
+                        <StatsCard title="Inactive vendors" value={vendorStats.inactiveVendors.toString()} percentage="+15.6%" isWarning isPending={false} />
+                        <StatsCard title="Daily signups" value={vendorStats.dailySignups.toString()} percentage="+15.6%" isPending />
+                    </div>
+                )}
 
                 <div className="mt-[50px]">
                     <div className="w-full flex flex-col h-auto border-[#EAECF0] border rounded-[24px]">
@@ -309,11 +358,11 @@ const Vendors = () => {
                             </div>
                             <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
                                 <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
-                                <input 
-                                    placeholder="Search vendors..." 
+                                <input
+                                    placeholder="Search vendors..."
                                     value={searchTerm}
                                     onChange={handleSearchChange}
-                                    className="w-[175px] text-[#707070] text-[14px] focus:outline-none" 
+                                    className="w-[175px] text-[#707070] text-[14px] focus:outline-none"
                                 />
                             </div>
                         </div>

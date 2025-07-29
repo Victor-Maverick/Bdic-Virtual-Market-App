@@ -2,13 +2,14 @@
 import { useState } from "react";
 import Image from "next/image";
 import limeArrow from "../../../public/assets/images/green arrow.png";
-
-
+import axios from "axios";
+import { toast } from "react-hot-toast";
 
 interface AddNewLineModalProps {
     isOpen: boolean;
     onClose: () => void;
     onContinue: () => void;
+    marketId: number;
 }
 
 interface InputFieldProps {
@@ -33,23 +34,13 @@ const Toast = ({
     return (
         <div className={`fixed top-6 right-6 w-[243px] bg-white ${type === "success" ? 'h-auto' : 'h-[138px]'} rounded-md shadow-lg z-50 border border-[#ededed]`}>
             <div className="flex w-full gap-[16px] px-[16px] py-[12px]">
-                <div
-                    className={`flex items-center justify-center w-6 h-6 rounded-full ${
-                        type === "success" ? "bg-green-100" : "bg-red-100"
-                    }`}
-                >
-                    <div
-                        className={`w-3 h-3 rounded-full ${
-                            type === "success" ? "bg-green-500" : "bg-red-500"
-                        }`}
-                    ></div>
+                <div className={`flex items-center justify-center w-6 h-6 rounded-full ${type === "success" ? "bg-green-100" : "bg-red-100"}`}>
+                    <div className={`w-3 h-3 rounded-full ${type === "success" ? "bg-green-500" : "bg-red-500"}`}></div>
                 </div>
                 <div className="flex-1">
                     <p className="text-[#001234] text-[12px] font-medium">{message}</p>
                     <p className="text-[11px] text-[#707070] font-medium">{subMessage}</p>
-                    {type === "error" && (
-                        <p className="mt-[30px]">Try again</p>
-                    )}
+                    {type === "error" && <p className="mt-[30px]">Try again</p>}
                 </div>
             </div>
         </div>
@@ -71,9 +62,7 @@ const InputField = ({
             <label
                 htmlFor={id}
                 className={`absolute left-4 transition-all ${
-                    isFocused || value
-                        ? "text-[#6D6D6D] text-[12px] font-medium top-[6px]"
-                        : "hidden"
+                    isFocused || value ? "text-[#6D6D6D] text-[12px] font-medium top-[6px]" : "hidden"
                 }`}
             >
                 {label} {optional && <span className="text-[#B0B0B0]">(optional)</span>}
@@ -95,19 +84,11 @@ const InputField = ({
         </div>
     );
 };
-interface AddNewLineModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onContinue: () => void;
-    marketId: number; // Add this line
-}
 
 const AddNewLineModal = ({ isOpen, onClose, onContinue, marketId }: AddNewLineModalProps) => {
     const [formData, setFormData] = useState({
         name: "",
-        description: "",
     });
-
     const [showToast, setShowToast] = useState(false);
     const [toastType, setToastType] = useState<"success" | "error">("success");
     const [isLoading, setIsLoading] = useState(false);
@@ -117,56 +98,42 @@ const AddNewLineModal = ({ isOpen, onClose, onContinue, marketId }: AddNewLineMo
     };
 
     const handleSubmit = async () => {
-        if (!formData.name.trim() || !formData.description.trim()) {
+        if (!formData.name.trim()) {
             setToastType("error");
             setShowToast(true);
-            setTimeout(() => {
-                setShowToast(false);
-            }, 2000);
+            setTimeout(() => setShowToast(false), 2000);
             return;
         }
 
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/add`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    marketId: marketId,
+            const response = await axios.post(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/add`,
+                {
+                    marketId,
                     name: formData.name.trim(),
-                    description: formData.description.trim()
-                }),
-            });
+                }
+            );
 
-            if (response.ok) {
-                setToastType("success");
-                setShowToast(true);
+            if (response.status === 200) {
+                toast.success("Section added successfully");
                 setTimeout(() => {
-                    setShowToast(false);
                     onContinue();
-                    setFormData({ name: "", description: "" });
-                }, 2000);
+                    setFormData({ name: "" });
+                    onClose();
+                }, 1000);
             } else {
-                throw new Error('Failed to add new line');
+                throw new Error("Failed to add section");
             }
         } catch (error) {
-            console.error('Error adding new line:', error);
+            console.error("Error adding section:", error);
             setToastType("error");
             setShowToast(true);
-            setTimeout(() => {
-                setShowToast(false);
-            }, 2000);
+            setTimeout(() => setShowToast(false), 2000);
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handleCloseToast = () => {
-        setShowToast(false);
-        onClose();
     };
 
     if (!isOpen) return null;
@@ -185,7 +152,7 @@ const AddNewLineModal = ({ isOpen, onClose, onContinue, marketId }: AddNewLineMo
                             <p className="text-[14px] text-[#707070]">
                                 Add a new market line with
                                 <br />
-                                <span className="text-[#022B23] font-medium">name and description</span>
+                                <span className="text-[#022B23] font-medium">name</span>
                             </p>
                         </div>
 
@@ -198,22 +165,15 @@ const AddNewLineModal = ({ isOpen, onClose, onContinue, marketId }: AddNewLineMo
                                     onChange={handleChange("name")}
                                     placeholder="Line name"
                                 />
-                                <InputField
-                                    id="description"
-                                    label="Description"
-                                    value={formData.description}
-                                    onChange={handleChange("description")}
-                                    placeholder="Line description"
-                                />
                             </div>
                             <div
                                 onClick={handleSubmit}
                                 className={`flex w-[513px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors ${
-                                    isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                                    isLoading ? "opacity-50 cursor-not-allowed" : ""
                                 }`}
                             >
                                 <p className="text-[#C6EB5F] font-semibold text-[14px]">
-                                    {isLoading ? 'Adding...' : 'Add new line'}
+                                    {isLoading ? "Adding..." : "Add new line"}
                                 </p>
                                 {!isLoading && (
                                     <Image
@@ -232,19 +192,13 @@ const AddNewLineModal = ({ isOpen, onClose, onContinue, marketId }: AddNewLineMo
             {showToast && (
                 <Toast
                     type={toastType}
-                    message={
-                        toastType === "success"
-                            ? "Line added successfully"
-                            : "Validation error"
-                    }
+                    message={toastType === "success" ? "Line added successfully" : "Validation error"}
                     subMessage={
                         toastType === "success"
                             ? "New line has been created"
-                            : toastType === "error" && !formData.name.trim() || !formData.description.trim()
-                                ? "Please fill in all required fields"
-                                : "Failed to add new line. Please try again"
+                            : "Please fill in all required fields"
                     }
-                    onClose={handleCloseToast}
+                    onClose={() => setShowToast(false)}
                 />
             )}
         </>

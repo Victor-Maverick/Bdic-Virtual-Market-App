@@ -1,4 +1,4 @@
-import {useState} from "react";
+import { useState } from "react";
 import Image from "next/image";
 import limeArrow from "../../../public/assets/images/green arrow.png";
 
@@ -22,11 +22,10 @@ const Toast = ({
     onClose: () => void;
 }) => {
     return (
-        <div
-            className={`fixed top-6 right-6 w-[243px] bg-white ${type === "success" ? 'h-auto' : 'h-[138px]'} rounded-md shadow-lg z-50 border border-[#ededed]`}>
+        <div className={`fixed top-6 right-6 w-[243px] bg-white ${type === "success" ? 'h-auto' : 'h-[138px]'} rounded-md shadow-lg z-50 border border-[#ededed]`}>
             <div className="flex w-full gap-[16px] px-[16px] py-[12px]">
                 <div
-                    className={`flex  items-center justify-center w-6 h-6 rounded-full ${
+                    className={`flex items-center justify-center w-6 h-6 rounded-full ${
                         type === "success" ? "bg-green-100" : "bg-red-100"
                     }`}
                 >
@@ -39,14 +38,11 @@ const Toast = ({
                 <div className="flex-1">
                     <p className="text-[#001234] text-[12px] font-medium">{message}</p>
                     <p className="text-[11px] text-[#707070] font-medium">{subMessage}</p>
-                    {
-                        type === "error" && (
-                            <p className="mt-[30px]">Try again</p>
-                        )
-                    }
+                    {type === "error" && (
+                        <p className="mt-[30px]">Try again</p>
+                    )}
                 </div>
             </div>
-
         </div>
     );
 };
@@ -92,11 +88,11 @@ const InputField = ({
 };
 
 interface EditMarketLineModalProps {
-    isOpen: boolean,
-    onClose: () => void,
-    onContinue: (newName: string) => void, // Updated to pass the new name back
-    name?: string,
-    id?: number
+    isOpen: boolean;
+    onClose: () => void;
+    onContinue: (newName: string, id: number) => Promise<void>; // Updated to be async
+    name?: string;
+    id?: number;
 }
 
 const EditMarketLineModal = ({
@@ -104,33 +100,53 @@ const EditMarketLineModal = ({
                                  onClose,
                                  onContinue,
                                  name,
+                                 id,
                              }: EditMarketLineModalProps) => {
     const [formData, setFormData] = useState({
         name: name || ""
     });
-
     const [showToast, setShowToast] = useState(false);
     const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (field: keyof typeof formData) => (value: string) => {
-        setFormData((prev) => ({...prev, [field]: value}));
+        setFormData((prev) => ({ ...prev, [field]: value }));
     };
 
-    const handleSubmit = () => {
-        if (formData.name.trim()) {
-            setToastType("success");
-            setShowToast(true);
-            setTimeout(() => {
-                setShowToast(false);
-                onContinue(formData.name); // Pass the new name back
-                setFormData({name: ""});
-            }, 2000);
-        } else {
+    const handleSubmit = async () => {
+        if (!formData.name.trim()) {
             setToastType("error");
             setShowToast(true);
             setTimeout(() => {
                 setShowToast(false);
             }, 2000);
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            // Call the onContinue prop which should handle the API call
+            if (id) {
+                await onContinue(formData.name, id);
+            }
+
+            setToastType("success");
+            setShowToast(true);
+            setTimeout(() => {
+                setShowToast(false);
+                setFormData({ name: "" });
+                onClose();
+            }, 2000);
+        } catch (error) {
+            console.error("Error updating section:", error);
+            setToastType("error");
+            setShowToast(true);
+            setTimeout(() => {
+                setShowToast(false);
+            }, 2000);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -168,17 +184,21 @@ const EditMarketLineModal = ({
                             </div>
                             <div
                                 onClick={handleSubmit}
-                                className="flex w-[513px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors"
+                                className={`flex w-[513px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors ${
+                                    isLoading ? "opacity-50 cursor-not-allowed" : ""
+                                }`}
                             >
                                 <p className="text-[#C6EB5F] font-semibold text-[14px]">
-                                    Update and save
+                                    {isLoading ? "Saving..." : "Update and save"}
                                 </p>
-                                <Image
-                                    src={limeArrow}
-                                    alt="Continue arrow"
-                                    width={18}
-                                    height={18}
-                                />
+                                {!isLoading && (
+                                    <Image
+                                        src={limeArrow}
+                                        alt="Continue arrow"
+                                        width={18}
+                                        height={18}
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>
@@ -191,12 +211,12 @@ const EditMarketLineModal = ({
                     message={
                         toastType === "success"
                             ? "Changes saved successfully"
-                            : "Validation error"
+                            : "Error saving changes"
                     }
                     subMessage={
                         toastType === "success"
                             ? "Your changes have been updated"
-                            : "Please fill in all required fields"
+                            : "Failed to update section. Please try again."
                     }
                     onClose={handleCloseToast}
                 />
