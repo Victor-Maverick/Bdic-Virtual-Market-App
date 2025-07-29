@@ -125,14 +125,27 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
       console.log('📹 Remote video attached');
     }
     if (track.kind === 'audio') {
-      console.log('🔊 Remote audio attached');
+      // Attach audio track to the DOM to enable sound
+      const audioElement = track.attach();
+      audioElement.autoplay = true;
+      audioElement.volume = 1.0;
+      // Append to document body (audio elements don't need to be visible)
+      document.body.appendChild(audioElement);
+      console.log('🔊 Remote audio attached and playing');
     }
   };
 
   const handleTrackUnsubscribed = (track: RemoteTrack) => {
+    console.log('📹 Track unsubscribed:', track.kind);
     if ('detach' in track && typeof track.detach === 'function') {
       track.detach().forEach((element: HTMLElement) => {
+        // Stop audio/video playback before removing
+        if (element instanceof HTMLMediaElement) {
+          element.pause();
+          element.srcObject = null;
+        }
         element.remove();
+        console.log(`🔇 ${track.kind} track detached and removed`);
       });
     }
   };
