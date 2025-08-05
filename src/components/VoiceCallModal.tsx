@@ -6,27 +6,36 @@ import { VoiceCallResponse, voiceCallService } from '@/services/voiceCallService
 import { useVoiceCallNotifications } from '@/hooks/useVoiceCallNotifications';
 import AudioUtils from '@/utils/audioUtils';
 
-// Twilio types
+// Twilio Voice types
 declare global {
   interface Window {
     Twilio: {
       Video: {
-        connect: (token: string, options: unknown) => Promise<TwilioRoom>;
+        connect: (token: string, options: TwilioConnectOptions) => Promise<TwilioRoom>;
       };
     };
   }
 }
 
+interface TwilioConnectOptions {
+  name: string;
+  audio: boolean | { track: MediaStreamTrack };
+  video: boolean;
+  dominantSpeaker?: boolean;
+  maxAudioBitrate?: number;
+  preferredAudioCodecs?: string[];
+}
+
 interface TwilioRoom {
   participants: Map<string, TwilioParticipant>;
-  on: (event: string, callback: (participant: TwilioParticipant) => void) => void;
+  on: (event: 'participantConnected' | 'participantDisconnected', callback: (participant: TwilioParticipant) => void) => void;
   disconnect: () => void;
 }
 
 interface TwilioParticipant {
   identity: string;
   audioTracks: Map<string, TwilioTrackPublication>;
-  on: (event: string, callback: (track: TwilioTrack) => void) => void;
+  on: (event: 'trackSubscribed' | 'trackUnsubscribed', callback: (track: TwilioTrack) => void) => void;
 }
 
 interface TwilioTrackPublication {
@@ -38,6 +47,7 @@ interface TwilioTrack {
   kind: 'audio' | 'video';
   attach: () => HTMLAudioElement;
   detach: () => HTMLAudioElement[];
+  enabled: boolean;
 }
 
 interface VoiceCallModalProps {
@@ -49,12 +59,12 @@ interface VoiceCallModalProps {
 }
 
 const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
-                                                         isOpen,
-                                                         onClose,
-                                                         call,
-                                                         userEmail,
-                                                         userType,
-                                                       }) => {
+  isOpen,
+  onClose,
+  call,
+  userEmail,
+  userType
+}) => {
   const [localCallStatus, setLocalCallStatus] = useState<string>('Connecting...');
   const [isConnected, setIsConnected] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -69,7 +79,7 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
   const { callStatus: notificationCallStatus, clearCallStatus } = useVoiceCallNotifications();
 
-  // Define cleanup function first
+  // Define all callback functions first
   const cleanup = useCallback(() => {
     console.log('Cleaning up voice call resources');
 
@@ -96,11 +106,29 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       durationIntervalRef.current = null;
     }
 
-    // Remove all voice call audio elements from DOM
+    // Remove all voice call audio elements from DOM safely
     const audioElements = document.querySelectorAll('audio[data-voice-call-audio="true"]');
     audioElements.forEach((element) => {
-      if (element.parentNode) {
-        element.parentNode.removeChild(element);
+      const audioEl = element as HTMLAudioElement;
+      // Pause and reset before removing
+      try {
+        audioEl.pause();
+        audioEl.currentTime = 0;
+        audioEl.src = '';
+      } catch (e) {
+        console.warn('Error cleaning up audio element:', e);
+      }
+
+      if (audioEl.parentNode) {
+        audioEl.parentNode.removeChild(audioEl);
+      }
+    });
+
+    // Remove containers
+    const containers = document.querySelectorAll('div[data-voice-call-container="true"]');
+    containers.forEach((container) => {
+      if (container.parentNode) {
+        container.parentNode.removeChild(container);
       }
     });
 
@@ -113,7 +141,108 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     setIsInitiator(false);
   }, [twilioRoom, audioTrack]);
 
-  // Define handleEndCall function
+  const attachAudioTrack = useCallback((track: TwilioTrack) => {
+    try {
+      const audioElement = track.attach();
+      audioElement.volume = 1.0;
+      audioElement.autoplay = true;
+      audioElement.controls = false;
+      audioElement.style.display = 'none';
+
+      // Add unique identifier for cleanup
+      const trackId = `voice-call-audio-${Date.now()}-${Math.random()}`;
+      audioElement.setAttribute('data-voice-call-audio', 'true');
+      audioElement.setAttribute('data-track-id', trackId);
+
+      // Create a container to prevent removal issues
+      const container = document.createElement('div');
+      container.style.display = 'none';
+      container.setAttribute('data-voice-call-container', 'true');
+      container.appendChild(audioElement);
+      document.body.appendChild(container);
+
+      // Ensure audio plays with better error handling
+      const playPromise = audioElement.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            console.log('Audio playback started successfully');
+          })
+          .catch((error: unknown) => {
+            console.error('Error starting audio playback:', error);
+            // Only retry if element is still in DOM
+            if (document.body.contains(audioElement)) {
+              // Try to play again after user interaction
+              const retryPlay = () => {
+                if (document.body.contains(audioElement)) {
+                  audioElement.play().catch(console.error);
+                }
+              };
+              document.addEventListener('click', retryPlay, { once: true });
+            }
+          });
+      }
+    } catch (error) {
+      console.error('Error attaching audio track:', error);
+    }
+  }, []);
+
+  const detachAudioTrack = useCallback((track: TwilioTrack) => {
+    try {
+      const attachedElements = track.detach();
+      attachedElements.forEach((element: HTMLAudioElement) => {
+        // Safely pause and cleanup before removing
+        try {
+          element.pause();
+          element.currentTime = 0;
+          element.src = '';
+        } catch (e) {
+          console.warn('Error cleaning up detached audio element:', e);
+        }
+
+        // Remove the container instead of just the element
+        const container = element.parentNode;
+        if (container && container.parentNode) {
+          container.parentNode.removeChild(container);
+        } else if (element.parentNode) {
+          element.parentNode.removeChild(element);
+        }
+      });
+    } catch (error) {
+      console.error('Error detaching audio track:', error);
+    }
+  }, []);
+
+  const handleParticipantAudio = useCallback(
+    (participant: TwilioParticipant) => {
+      console.log('Setting up audio for participant:', participant.identity);
+
+      // Handle existing audio tracks
+      participant.audioTracks.forEach((publication: TwilioTrackPublication) => {
+        if (publication.isSubscribed && publication.track) {
+          attachAudioTrack(publication.track);
+        }
+      });
+
+      // Handle new track subscriptions
+      participant.on('trackSubscribed', (track: TwilioTrack) => {
+        console.log('Track subscribed:', track.kind);
+        if (track.kind === 'audio') {
+          attachAudioTrack(track);
+        }
+      });
+
+      // Handle track unsubscriptions
+      participant.on('trackUnsubscribed', (track: TwilioTrack) => {
+        console.log('Track unsubscribed:', track.kind);
+        if (track.kind === 'audio') {
+          detachAudioTrack(track);
+        }
+      });
+    },
+    [attachAudioTrack, detachAudioTrack]
+  );
+
   const handleEndCall = useCallback(async () => {
     if (!call) return;
 
@@ -135,89 +264,6 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     }
   }, [call, userEmail, cleanup, onClose]);
 
-  const attachAudioTrack = useCallback((track: TwilioTrack) => {
-    try {
-      const audioElement = track.attach();
-      audioElement.volume = 1.0;
-      audioElement.autoplay = true;
-      audioElement.controls = false;
-      audioElement.style.display = 'none';
-
-      // Add unique identifier for cleanup
-      audioElement.setAttribute('data-voice-call-audio', 'true');
-
-      // Ensure audio plays
-      const playPromise = audioElement.play();
-      if (playPromise !== undefined) {
-        playPromise
-            .then(() => {
-              console.log('Audio playback started successfully');
-            })
-            .catch((error: unknown) => {
-              console.error('Error starting audio playback:', error);
-              // Try to play again after user interaction
-              document.addEventListener(
-                  'click',
-                  () => {
-                    audioElement.play().catch(console.error);
-                  },
-                  { once: true }
-              );
-            });
-      }
-
-      document.body.appendChild(audioElement);
-    } catch (error) {
-      console.error('Error attaching audio track:', error);
-    }
-  }, []);
-
-  const detachAudioTrack = useCallback((track: TwilioTrack) => {
-    try {
-      const attachedElements = track.detach();
-      attachedElements.forEach((element: HTMLAudioElement) => {
-        if (element.parentNode) {
-          element.parentNode.removeChild(element);
-        }
-      });
-    } catch (error) {
-      console.error('Error detaching audio track:', error);
-    }
-  }, []);
-
-
-  // Define handleParticipantAudio function
-  const handleParticipantAudio = useCallback(
-      (participant: TwilioParticipant) => {
-        console.log('Setting up audio for participant:', participant.identity);
-
-        // Handle existing audio tracks
-        participant.audioTracks.forEach((publication: TwilioTrackPublication) => {
-          if (publication.isSubscribed && publication.track) {
-            attachAudioTrack(publication.track);
-          }
-        });
-
-        // Handle new track subscriptions
-        participant.on('trackSubscribed', (track: TwilioTrack) => {
-          console.log('Track subscribed:', track.kind);
-          if (track.kind === 'audio') {
-            attachAudioTrack(track);
-          }
-        });
-
-        // Handle track unsubscriptions
-        participant.on('trackUnsubscribed', (track: TwilioTrack) => {
-          console.log('Track unsubscribed:', track.kind);
-          if (track.kind === 'audio') {
-            detachAudioTrack(track);
-          }
-        });
-      },
-      [attachAudioTrack, detachAudioTrack]
-  );
-
-  // Define handleMissedCall function
   const handleMissedCall = useCallback(async () => {
     if (!call) return;
 
@@ -236,7 +282,6 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       onClose();
     }
   }, [call, userEmail, cleanup, onClose]);
-
 
   const initializeCall = useCallback(async () => {
     if (!call) return;
@@ -257,7 +302,7 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       const track = stream.getAudioTracks()[0];
 
       // Set audio track constraints for better quality
-      track.applyConstraints({
+      await track.applyConstraints({
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
@@ -273,9 +318,7 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         try {
           const room = await window.Twilio.Video.connect(tokenResponse.token, {
             name: call.roomName,
-            audio: {
-              track: track,
-            },
+            audio: { track: track },
             video: false, // Voice only
             dominantSpeaker: true,
             maxAudioBitrate: 16000,
@@ -327,15 +370,23 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           }
         } catch (twilioError) {
           console.error('Twilio connection error:', twilioError);
-          setLocalCallStatus('Audio connection failed - trying fallback');
 
-          // Fall back to basic connection without Twilio
-          setIsConnected(true);
-          if (isInitiator) {
-            setLocalCallStatus('Calling... (limited audio)');
-          } else {
-            setLocalCallStatus('Connected (limited audio)');
-          }
+          // Don't retry immediately to prevent restart loop
+          setLocalCallStatus('Connection failed - retrying...');
+
+          // Retry after a delay
+          setTimeout(() => {
+            if (call && isOpen) {
+              setLocalCallStatus('Retrying connection...');
+              // Fall back to basic connection without Twilio
+              setIsConnected(true);
+              if (isInitiator) {
+                setLocalCallStatus('Calling... (limited audio)');
+              } else {
+                setLocalCallStatus('Connected (limited audio)');
+              }
+            }
+          }, 2000);
         }
       } else {
         console.warn('Twilio SDK not loaded, using fallback mode');
@@ -348,13 +399,11 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       }
     } catch (error: unknown) {
       console.error('Error initializing voice call:', error);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      if (error.name === 'NotAllowedError') {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      if (errorMessage.includes('NotAllowed') || (error as Error)?.name === 'NotAllowedError') {
         setLocalCallStatus('Microphone access denied');
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-      } else if (error.name === 'NotFoundError') {
+      } else if (errorMessage.includes('NotFound') || (error as Error)?.name === 'NotFoundError') {
         setLocalCallStatus('No microphone found');
       } else {
         setLocalCallStatus('Connection failed');
@@ -366,8 +415,27 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     }
   }, [call, userEmail, handleEndCall, handleParticipantAudio, isInitiator, otherPartyJoined]);
 
+  // Store function refs to avoid dependency issues
+  const cleanupRef = useRef(cleanup);
+  const handleMissedCallRef = useRef(handleMissedCall);
+  const initializeCallRef = useRef(initializeCall);
+
+  // Update refs when functions change
   useEffect(() => {
-    if (isOpen && call) {
+    cleanupRef.current = cleanup;
+    handleMissedCallRef.current = handleMissedCall;
+    initializeCallRef.current = initializeCall;
+  }, [cleanup, handleMissedCall, initializeCall]);
+
+  // Main useEffect for initialization - FIXED to prevent restart loop
+  useEffect(() => {
+    if (!isOpen || !call) return;
+
+    let isComponentMounted = true;
+
+    const initCall = async () => {
+      if (!isComponentMounted) return;
+
       setCallStartTime(Date.now());
 
       // Determine if this user is the initiator
@@ -381,36 +449,43 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         setLocalCallStatus('Incoming call');
       }
 
+      // Set 30-second timeout for missed call (only for initiator)
+      if (initiator) {
+        timeoutRef.current = setTimeout(() => {
+          if (!otherPartyJoined && isComponentMounted) {
+            console.log('30 seconds passed without other party joining - marking as missed');
+            handleMissedCallRef.current();
+          }
+        }, 30000);
+      }
+
       // Load Twilio SDK if not already loaded
       if (typeof window !== 'undefined' && !window.Twilio) {
         const script = document.createElement('script');
         script.src = 'https://sdk.twilio.com/js/video/releases/2.28.1/twilio-video.min.js';
         script.onload = () => {
-          console.log('Twilio SDK loaded');
-          initializeCall();
+          if (isComponentMounted) {
+            console.log('Twilio SDK loaded');
+            initializeCallRef.current();
+          }
         };
         script.onerror = () => {
-          console.error('Failed to load Twilio SDK');
-          initializeCall(); // Try to initialize anyway
+          if (isComponentMounted) {
+            console.error('Failed to load Twilio SDK');
+            initializeCallRef.current(); // Try to initialize anyway
+          }
         };
         document.head.appendChild(script);
       } else {
-        initializeCall();
+        initializeCallRef.current();
       }
+    };
 
-      // Set 30-second timeout for missed call (only for initiator)
-      if (initiator) {
-        timeoutRef.current = setTimeout(() => {
-          if (!otherPartyJoined) {
-            console.log('30 seconds passed without other party joining - marking as missed');
-            handleMissedCall();
-          }
-        }, 30000);
-      }
-    }
+    initCall();
 
     return () => {
-      cleanup();
+      isComponentMounted = false;
+      cleanupRef.current();
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -420,7 +495,7 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       // Clean up audio utils
       AudioUtils.cleanup();
     };
-  }, [isOpen, call, cleanup, handleMissedCall, initializeCall, otherPartyJoined, userType]);
+  }, [isOpen, call, userType, otherPartyJoined]); // Added otherPartyJoined as it's used in timeout
 
   // Monitor other party joining to clear timeout and start call duration
   useEffect(() => {
@@ -484,15 +559,12 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         console.log('🎤 VoiceCallModal: Performing periodic status check for room:', call.roomName);
 
         // Get current call status from backend
-        const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_BASE_URL}/voice-calls/status/${call.roomName}`,
-            {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }
-        );
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/voice-calls/status/${call.roomName}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
         if (response.ok) {
           const callData = await response.json();
@@ -515,8 +587,8 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
   }, [isOpen, call, onClose, cleanup]);
 
-  const handleDeclineCall = async () => {
-    if (!call) return;
+  const handleDeclineCall = useCallback(async () => {
+    if (!call || !isOpen) return;
 
     try {
       // Play call end sound
@@ -534,7 +606,7 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       cleanup();
       onClose();
     }
-  };
+  }, [call, cleanup, onClose, userEmail, isOpen]);
 
   const toggleMute = () => {
     if (audioTrack) {
@@ -561,85 +633,96 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   if (!isOpen || !call) return null;
 
   return (
-      <div className="bg-[#808080]/40 fixed inset-0 z-50 flex items-center justify-center">
-        <div className="bg-white rounded-2xl p-8 w-full max-w-md mx-4 text-center">
-          {/* Call Status */}
-          <div className="mb-6">
-            <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
-              <Phone size={40} className="text-white" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">{getOtherPartyName()}</h2>
-            <p className="text-gray-600 mb-2">{localCallStatus}</p>
-            {otherPartyJoined && (
-                <div className="flex flex-col items-center justify-center">
-                  <div className="flex items-center justify-center mb-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
-                    <p className="text-sm text-green-600 font-medium">Connected</p>
-                  </div>
-                  <p className="text-lg font-mono text-gray-800">{formatCallDuration(callDuration)}</p>
-                </div>
-            )}
-            {!otherPartyJoined && isInitiator && isConnected && (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
-                  <p className="text-sm text-blue-600">Waiting for answer...</p>
-                </div>
-            )}
+    <div className="bg-[#808080]/40 fixed inset-0 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-2xl p-8 w-full max-w-md mx-4 text-center">
+        {/* Call Status */}
+        <div className="mb-6">
+          <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+            <Phone size={40} className="text-white" />
           </div>
-
-          {/* Product/Shop Info */}
-          {(call.productName || call.shopName) && (
-              <div className="mb-6 p-3 bg-gray-50 rounded-lg">
-                <p className="text-sm text-gray-600">
-                  {call.productName ? `About: ${call.productName}` : `Shop: ${call.shopName}`}
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            {getOtherPartyName()}
+          </h2>
+          <p className="text-gray-600 mb-2">
+            {localCallStatus}
+          </p>
+          {otherPartyJoined && (
+            <div className="flex flex-col items-center justify-center">
+              <div className="flex items-center justify-center mb-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></div>
+                <p className="text-sm text-green-600 font-medium">
+                  Connected
                 </p>
               </div>
+              <p className="text-lg font-mono text-gray-800">
+                {formatCallDuration(callDuration)}
+              </p>
+            </div>
+          )}
+          {!otherPartyJoined && isInitiator && isConnected && (
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+              <p className="text-sm text-blue-600">
+                Waiting for answer...
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Product/Shop Info */}
+        {(call.productName || call.shopName) && (
+          <div className="mb-6 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">
+              {call.productName ? `About: ${call.productName}` : `Shop: ${call.shopName}`}
+            </p>
+          </div>
+        )}
+
+        {/* Call Controls */}
+        <div className="flex justify-center gap-4">
+          {/* Mute Button */}
+          {isConnected && (
+            <button
+              onClick={toggleMute}
+              className={`p-4 rounded-full ${isMuted
+                ? 'bg-red-100 text-red-600'
+                : 'bg-gray-100 text-gray-600'
+                } hover:bg-opacity-80 transition-colors`}
+              title={isMuted ? 'Unmute' : 'Mute'}
+            >
+              {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+            </button>
           )}
 
-          {/* Call Controls */}
-          <div className="flex justify-center gap-4">
-            {/* Mute Button */}
-            {isConnected && (
-                <button
-                    onClick={toggleMute}
-                    className={`p-4 rounded-full ${
-                        isMuted ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
-                    } hover:bg-opacity-80 transition-colors`}
-                    title={isMuted ? 'Unmute' : 'Mute'}
-                >
-                  {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
-                </button>
-            )}
+          {/* End Call Button */}
+          <button
+            onClick={handleEndCall}
+            className="p-4 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+            title="End Call"
+          >
+            <PhoneOff size={24} />
+          </button>
 
-            {/* End Call Button */}
+          {/* Decline Button (for incoming calls) */}
+          {userType === 'vendor' && !isConnected && (
             <button
-                onClick={handleEndCall}
-                className="p-4 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                title="End Call"
+              onClick={handleDeclineCall}
+              className="p-4 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors"
+              title="Decline Call"
             >
               <PhoneOff size={24} />
             </button>
-
-            {/* Decline Button (for incoming calls) */}
-            {userType === 'vendor' && !isConnected && (
-                <button
-                    onClick={handleDeclineCall}
-                    className="p-4 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors"
-                    title="Decline Call"
-                >
-                  <PhoneOff size={24} />
-                </button>
-            )}
-          </div>
-
-          {/* Connection Status */}
-          {!isConnected && localCallStatus === 'Connecting...' && (
-              <div className="mt-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
-              </div>
           )}
         </div>
+
+        {/* Connection Status */}
+        {!isConnected && localCallStatus === 'Connecting...' && (
+          <div className="mt-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
+          </div>
+        )}
       </div>
+    </div>
   );
 };
 
