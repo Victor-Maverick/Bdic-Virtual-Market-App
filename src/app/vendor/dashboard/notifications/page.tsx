@@ -1,8 +1,7 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
 import Image from "next/image";
 import iPhone from "../../../../../public/assets/images/blue14.png";
-import DashboardOptions from "@/components/dashboardOptions";
+import VendorShopGuard from "@/components/VendorShopGuard";
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useSession } from "next-auth/react";
@@ -100,9 +99,7 @@ const Notifications = () => {
     };
 
     return (
-        <>
-            <DashboardHeader />
-            <DashboardOptions />
+        <VendorShopGuard showSubHeader={false}>
             <div className="flex px-4 md:px-8 lg:px-25 mt-[30px] gap-[40px] flex-col md:flex-row">
                 <div className="flex flex-col gap-[14px]">
                     <div className="flex flex-col">
@@ -210,7 +207,7 @@ const Notifications = () => {
                     )}
                 </div>
             </div>
-        </>
+        </VendorShopGuard>
     );
 };
 export default Notifications;

@@ -175,7 +175,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
     return (
         <div className="relative w-full">
             <div
-                className="h-[70px] border-b-[1px] border-[#EDEDED] px-25 py-[10px] w-full flex items-center gap-[14px] relative"
+                className="h-[60px] sm:h-[70px] border-b-[1px] border-[#EDEDED] px-4 sm:px-6 lg:px-25 py-2 sm:py-[10px] w-full flex items-center gap-2 sm:gap-3 lg:gap-[14px] relative overflow-x-auto scrollbar-hide"
                 style={{
                     backgroundImage: `url(${shadow.src})`,
                     backgroundSize: 'cover',
@@ -188,11 +188,11 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                         id={`menu-item-${item.id}`}
                         type="button"
                         className={`
-              text-[#171719] text-[14px] h-[40px] flex items-center gap-[6px] cursor-pointer
-              ${item.widthClass}
+              text-[#171719] text-[12px] sm:text-[13px] lg:text-[14px] h-[36px] sm:h-[40px] flex items-center gap-1 sm:gap-[4px] lg:gap-[6px] cursor-pointer
+              px-2 sm:px-3 lg:px-4 rounded-md sm:rounded-lg
               hover:bg-gray-50 transition-colors duration-200
-              relative
-              ${selectedOption === item.id ? 'font-bold' : ''} // Optional: Highlight selected item
+              relative flex-shrink-0
+              ${selectedOption === item.id ? 'font-bold bg-gray-50' : ''}
             `}
                         onClick={(e) => {
                             handleOptionClick(item.id, item.isNotification);
@@ -202,21 +202,24 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                         <Image
                             src={item.icon}
                             alt={`${item.label} icon`}
-                            width={16}
-                            height={16}
-                            className="flex-shrink-0"
+                            width={14}
+                            height={14}
+                            className="w-[12px] h-[12px] sm:w-[14px] sm:h-[14px] lg:w-[16px] lg:h-[16px] flex-shrink-0"
                         />
-                        <span className="whitespace-nowrap">{item.label}</span>
+                        <span className="whitespace-nowrap hidden sm:inline">{item.label}</span>
+                        <span className="whitespace-nowrap sm:hidden text-[10px]">
+                            {item.label === 'Reviews and Campaigns' ? 'Reviews' : item.label}
+                        </span>
                         {item.notifications && (
-                            <span className="text-[#ffffff] p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[10px] w-[22px] h-[18px] text-[14px]">
-                <span className="text-[8px] font-semibold">{item.notifications}</span>
-              </span>
+                            <span className="text-[#ffffff] p-[2px] sm:p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[8px] sm:rounded-[10px] w-[16px] h-[14px] sm:w-[22px] sm:h-[18px] text-[12px] sm:text-[14px]">
+                                <span className="text-[6px] sm:text-[8px] font-semibold">{item.notifications}</span>
+                            </span>
                         )}
                     </button>
                 ))}
             </div>
             <div
-                className="absolute bottom-0 h-[2px] bg-[#022B23] transition-all duration-300"
+                className="absolute bottom-0 h-[2px] bg-[#022B23] transition-all duration-300 hidden sm:block"
                 style={{
                     left: `${indicatorPosition.left}px`,
                     width: `${indicatorPosition.width}px`,

@@ -1,13 +1,13 @@
 'use client';
-import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
+import VendorShopGuard from "@/components/VendorShopGuard";
 import Image from "next/image";
 import arrow from "../../../../../public/assets/images/arrow-right.svg";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import doneImg from "../../../../../public/assets/images/doneImg.png";
 import dashSlideImg from "../../../../../public/assets/images/dashSlideImg.png";
 import {addShop} from "@/utils/api";
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useState, Suspense} from "react";
 import {useRouter} from "next/navigation";
 import Toast from "@/components/Toast";
 import {useSession} from 'next-auth/react';
@@ -106,7 +106,7 @@ const clearStoredTotalAmount = () => {
     localStorage.removeItem('expectedPayment');
 };
 
-const SetupComplete = () => {
+const SetupCompleteContent = () => {
     const { data: session } = useSession();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -464,7 +464,7 @@ const SetupComplete = () => {
                 </div>
             )}
 
-            <DashboardHeader />
+            <VendorShopGuard>
             <DashboardSubHeader
                 welcomeText="Hey, welcome"
                 description="Get started by setting up your shop"
@@ -527,7 +527,20 @@ const SetupComplete = () => {
                     </div>
                 </div>
             </div>
+            </VendorShopGuard>
         </>
+    );
+};
+
+const SetupComplete = () => {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500"></div>
+            </div>
+        }>
+            <SetupCompleteContent />
+        </Suspense>
     );
 };
 

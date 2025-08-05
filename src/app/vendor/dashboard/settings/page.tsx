@@ -1,5 +1,4 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
 import Image from "next/image";
 import vendorImg from "@/../public/assets/images/vendorImg.svg";
 import verify from "@/../public/assets/images/verify.svg";
@@ -12,7 +11,7 @@ import eyeOpen from "../../../../../public/assets/images/eye.svg";
 import eyeClosed from "../../../../../public/assets/images/eye.svg";
 import AddLogMemberModal from "@/components/addLogMemberModal";
 import AddLogMemberSuccessModal from "@/components/addLogMemberSuccessModal";
-import DashboardOptions from "@/components/dashboardOptions";
+import VendorShopGuard from "@/components/VendorShopGuard";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import Toast from "@/components/Toast";
@@ -579,42 +578,34 @@ const Settings = () => {
 
     if (loading) {
         return (
-            <>
-                <DashboardHeader />
-                <DashboardOptions />
+            <VendorShopGuard>
                 <div className="flex justify-center items-center h-screen">
                     <p>Loading profile...</p>
                 </div>
-            </>
+            </VendorShopGuard>
         );
     }
 
     if (error) {
         return (
-            <>
-                <DashboardHeader />
-                <DashboardOptions />
+            <VendorShopGuard>
                 <div className="flex justify-center items-center h-screen">
                     <p className="text-red-500">Error: {error}</p>
                 </div>
-            </>
+            </VendorShopGuard>
         );
     }
     if (!userProfile || !shopData) {
         return (
-            <>
-                <DashboardHeader />
-                <DashboardOptions />
+            <VendorShopGuard>
                 <div className="flex justify-center items-center h-screen">
                     <p>No profile data available</p>
                 </div>
-            </>
+            </VendorShopGuard>
         );
     }
     return (
-        <>
-            <DashboardHeader />
-            <DashboardOptions />
+        <VendorShopGuard showSubHeader={false}>
             <div className="flex flex-col pl-25 mt-[30px] gap-[40px]">
                 <div className="flex flex-col">
                     <p className="text-[18px] font-medium text-[#101828]">Settings</p>
@@ -654,24 +645,24 @@ const Settings = () => {
                             </div>
                         </div>
                         <div className="flex flex-col w-[380px] h-[120px] rounded-[12px] border-[1px] border-[#EDEDED]">
-                            <span
-                                className={`text-[#022B23] ${activeSection === 'general' ? 'bg-[#F8F8F8]' : ''} rounded-tr-[12px] rounded-tl-[12px] text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
-                                onClick={() => handleNavClick('general')}
-                            >
-                                General settings
-                            </span>
+                        <span
+                            className={`text-[#022B23] ${activeSection === 'general' ? 'bg-[#F8F8F8]' : ''} rounded-tr-[12px] rounded-tl-[12px] text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
+                            onClick={() => handleNavClick('general')}
+                        >
+                            General settings
+                        </span>
                             <span
                                 className={`text-[#022B23] ${activeSection === 'security' ? 'bg-[#F8F8F8]' : ''} text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
                                 onClick={() => handleNavClick('security')}
                             >
-                                Security
-                            </span>
+                            Security
+                        </span>
                             <span
                                 className={`text-[#022B23] ${activeSection === 'notifications' ? 'bg-[#F8F8F8]' : ''} rounded-br-[12px] rounded-bl-[12px] text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
                                 onClick={() => handleNavClick('notifications')}
                             >
-                                Notifications
-                            </span>
+                            Notifications
+                        </span>
                         </div>
                     </div>
                     <div className="flex flex-col gap-[24px] mb-10 w-[820px]">
@@ -850,8 +841,8 @@ const Settings = () => {
                                                 passwordValid[criteria.key as keyof PasswordValidation] ? 'bg-[#D1FAE7]' : 'bg-gray-300'
                                             }`}
                                         >
-                                            {criteria.label}
-                                        </span>
+                                        {criteria.label}
+                                    </span>
                                     ))}
                                 </div>
                                 <div className="flex gap-2">
@@ -862,8 +853,8 @@ const Settings = () => {
                                                 passwordValid[criteria.key as keyof PasswordValidation] ? 'bg-[#D1FAE7]' : 'bg-gray-300'
                                             }`}
                                         >
-                                            {criteria.label}
-                                        </span>
+                                        {criteria.label}
+                                    </span>
                                     ))}
                                 </div>
                             </div>
@@ -909,6 +900,7 @@ const Settings = () => {
                     </div>
                 </div>
             </div>
+
             <AddLogMemberModal
                 isAddLogMemberModalOpen={isAddMemberModalOpen}
                 onCloseAddLogMemberModal={() => setIsAddMemberModalOpen(false)}
@@ -934,8 +926,8 @@ const Settings = () => {
                     onClose={handleCloseToast}
                 />
             )}
-        </>
-    )
+        </VendorShopGuard>
+    );
 }
 
 export default Settings;

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useVideoCall } from '@/hooks/useVideoCall';
+import { useVideoCallNotifications } from '@/hooks/useVideoCallNotifications';
 import { VideoCallResponse } from '@/services/videoCallService';
 
 interface VideoCallModalProps {
@@ -19,8 +20,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
                                                          userEmail,
                                                          userType
                                                        }) => {
-  const [callDuration, setCallDuration] = useState(0);
-  const [callStartTime, setCallStartTime] = useState<Date | null>(null);
+  const [isInCall, setIsInCall] = useState(false);
 
   const {
     isConnected,
@@ -47,6 +47,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
     }
   });
 
+  const { callStatus, clearCallStatus } = useVideoCallNotifications();
+
   const hasJoinedRef = useRef<string | null>(null);
   
   const handleJoinRoom = useCallback(() => {
@@ -59,26 +61,77 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   useEffect(() => {
     handleJoinRoom();
   }, [handleJoinRoom]);
-
-  // Start timer only when both participants are connected (call becomes ACTIVE)
   useEffect(() => {
-    if (isConnected && participants.length > 0 && !callStartTime) {
-      console.log('⏱️ Starting call timer - both participants connected, call is now ACTIVE');
-      setCallStartTime(new Date());
+    if (isConnected && participants.length > 0) {
+      console.log('📞 Both participants connected - call is now ACTIVE');
+      setIsInCall(true);
+    } else {
+      setIsInCall(false);
     }
-  }, [isConnected, participants.length, callStartTime]);
+  }, [isConnected, participants.length]);
 
+  // Handle call status changes from backend
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isConnected && callStartTime && participants.length > 0) {
-      interval = setInterval(() => {
-        setCallDuration(Math.floor((Date.now() - callStartTime.getTime()) / 1000));
-      }, 1000);
+    if (callStatus && isOpen && call) {
+      console.log('🎥 VideoCallModal: Received call status:', callStatus);
+      
+      // Check if this status update is for our current call
+      const isForCurrentCall = callStatus.roomName === call.roomName;
+      
+      if (isForCurrentCall) {
+        if (callStatus.type === 'CALL_ENDED') {
+          console.log('🎥 VideoCallModal: Call ended, closing modal immediately');
+          clearCallStatus();
+          onClose();
+        } else if (callStatus.type === 'CALL_DECLINED') {
+          console.log('🎥 VideoCallModal: Call declined, closing modal immediately');
+          clearCallStatus();
+          onClose();
+        } else if (callStatus.type === 'CALL_MISSED') {
+          console.log('🎥 VideoCallModal: Call missed, closing modal immediately');
+          clearCallStatus();
+          onClose();
+        }
+      }
     }
+  }, [callStatus, isOpen, call, onClose, clearCallStatus]);
+
+  // Periodic status revalidation every 5 seconds as fallback
+  useEffect(() => {
+    if (!isOpen || !call) return;
+
+    const statusCheckInterval = setInterval(async () => {
+      try {
+        console.log('🎥 VideoCallModal: Performing periodic status check for room:', call.roomName);
+        
+        // Get current call status from backend
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/video-calls/status/${call.roomName}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const callData = await response.json();
+          console.log('🎥 VideoCallModal: Periodic status check result:', callData.status);
+          
+          // Check if call has ended, been declined, or missed
+          if (callData.status === 'ENDED' || callData.status === 'DECLINED' || callData.status === 'MISSED') {
+            console.log('🎥 VideoCallModal: Call status changed to', callData.status, '- closing modal');
+            clearCallStatus();
+            onClose();
+          }
+        }
+      } catch (error) {
+        console.error('🎥 VideoCallModal: Error during periodic status check:', error);
+      }
+    }, 5000); // Check every 5 seconds
+
     return () => {
-      if (interval) clearInterval(interval);
+      clearInterval(statusCheckInterval);
     };
-  }, [isConnected, callStartTime, participants.length]);
+  }, [isOpen, call, onClose, clearCallStatus]);
 
   // Handle when the call is no longer open - use ref to avoid dependency issues
   const prevIsOpenRef = useRef(isOpen);
@@ -86,37 +139,28 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   useEffect(() => {
     // Only cleanup when modal was open and is now closed
     if (prevIsOpenRef.current && !isOpen && call) {
-      setCallDuration(0);
-      setCallStartTime(null);
+      setIsInCall(false);
       leaveRoom();
     }
     prevIsOpenRef.current = isOpen;
   }, [isOpen, call, leaveRoom]);
 
-  const handleEndCall = async () => {
-    console.log('🎥 VideoCallModal: User manually ending call');
+  const handleEndCall = useCallback(async () => {
     try {
-      await leaveRoom();
-      console.log('🎥 VideoCallModal: Call ended successfully, backend should notify both participants');
+      // Close modal immediately for better UX
+      onClose();
       
-      // Set a timeout to ensure modal closes even if WebSocket notification fails
-      setTimeout(() => {
-        console.log('🎥 VideoCallModal: Timeout reached, ensuring modal closes');
-        onClose();
-      }, 2000);
+      // Then handle the backend cleanup
+      await leaveRoom();
       
     } catch (error) {
       console.error('🎥 VideoCallModal: Error ending call:', error);
-      // Close immediately if there was an error
+      // Ensure modal is closed even if there's an error
       onClose();
     }
-  };
+  }, [onClose, leaveRoom]);
 
-  const formatDuration = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+
 
   if (!isOpen || !call) return null;
 
@@ -129,9 +173,9 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
               <h2 className="text-lg font-semibold">
                 Video Call with {userType === 'buyer' ? 'Vendor' : 'Buyer'}
               </h2>
-              {isConnected && (
-                  <span className="text-sm text-gray-600">
-                Duration: {formatDuration(callDuration)}
+              {isInCall && (
+                  <span className="text-sm text-green-600 font-medium">
+                In Call
               </span>
               )}
             </div>

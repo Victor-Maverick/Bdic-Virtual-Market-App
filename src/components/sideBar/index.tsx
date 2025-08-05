@@ -12,7 +12,6 @@ import {
     TransactionsIcon,
     AdsIcon,
     DisputeIcon,
-    SupportIcon,
     NotificationsIcon,
     SettingsIcon,
 } from "./../icons";
@@ -219,12 +218,6 @@ export function Sidebar({ className }: SidebarProps) {
                         label="Dispute support"
                         href="/admin/dashboard/disputes"
                         isActive={isActive('/disputes')}
-                    />
-                    <NavItem
-                        icon={<SupportIcon />}
-                        label="Support"
-                        href="/admin/dashboard/support"
-                        isActive={isActive('/support')}
                     />
                 </div>
                 <div className="border-[#E7E7E7] border-t border-solid">

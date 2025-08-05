@@ -20,7 +20,7 @@ import wishlist from '../../../../../public/assets/images/wishHeart.png';
 import orangeCircle from '../../../../../public/assets/images/orangeCirlce.png';
 import greenVerify from '../../../../../public/assets/images/limeVerify.png';
 import { useSession } from 'next-auth/react';
-import VideoCallButton from '@/components/VideoCallButton';
+import CallDropdown from '@/components/CallDropdown';
 import ChatButton from '@/components/ChatButton';
 
 interface Review {
@@ -429,15 +429,18 @@ const ProductDetails = ({ params }: PageProps) => {
                             <ChatButton
                                 vendorEmail={product.vendorEmail}
                                 vendorName={product.vendorName}
+                                shopId={product.shopId}
+                                shopName={product.shopName}
+                                productId={product.id}
+                                productName={product.name}
                                 className="bg-[#ffeebe] text-[#461602] hover:bg-[#ffd700] w-full sm:w-[165px] h-[48px] rounded-[14px]"
                             />
-                            <VideoCallButton
+                            <CallDropdown
                                 vendorEmail={product.vendorEmail}
                                 shopId={product.shopId}
                                 shopName={product.shopName}
                                 productId={product.id}
                                 productName={product.name}
-                                variant="secondary"
                                 className="w-full sm:w-[140px] h-[48px] text-[14px] font-medium"
                             />
                         </div>

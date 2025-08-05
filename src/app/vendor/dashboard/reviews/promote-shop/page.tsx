@@ -1,8 +1,7 @@
 'use client'
 import {useCallback, useEffect, useState} from "react";
 import Image from "next/image";
-import DashboardHeader from "@/components/dashboardHeader";
-import DashboardOptions from "@/components/dashboardOptions";
+import VendorShopGuard from "@/components/VendorShopGuard";
 import arrowBack from '@/../public/assets/images/arrow-right.svg'
 import crownImg from '@/../public/assets/images/crown.svg'
 import gradient1 from '@/../public/assets/images/promote gradient 1.svg'
@@ -449,9 +448,7 @@ const PromoteShop = () => {
                 </div>
             )}
 
-            <DashboardHeader />
-            <DashboardOptions />
-
+            <VendorShopGuard showSubHeader={false}>
             <div className="flex flex-col py-[10px] px-25 relative">
                 <div className="w-[359px] h-[52px] gap-[24px] flex items-end">
                     <p className="py-2 text-[#11151F] cursor-pointer text-[14px] font-medium border-b-2 border-[#C6EB5F]">
@@ -672,6 +669,7 @@ const PromoteShop = () => {
                     </div>
                 )}
             </div>
+            </VendorShopGuard>
         </>
     );
 };

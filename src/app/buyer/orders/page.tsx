@@ -157,35 +157,36 @@ const OrderModal = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-            <div className="bg-white rounded-lg p-[30px] w-full max-w-5xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20 p-2 sm:p-4">
+            <div className="bg-white rounded-lg p-3 sm:p-6 lg:p-[30px] w-full max-w-5xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
                 <div className="flex border-b-[0.5px] pb-3 border-[#ededed] justify-between items-center">
-                    <h2 className="text-[16px] text-[#022B23] font-medium">Order Details</h2>
-                    <div className="flex items-center gap-4">
+                    <h2 className="text-[14px] sm:text-[16px] text-[#022B23] font-medium">Order Details</h2>
+                    <div className="flex items-center gap-2 sm:gap-4">
                         <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
                             {getStatusText(order.status)}
                         </span>
-                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-xl">
                             &times;
                         </button>
                     </div>
                 </div>
-                <div className={`flex w-full`}>
-                    <div className="w-[50%] pr-[12px] pt-[12px] border-r-[0.5px] border-[#ededed]">
+                <div className="flex flex-col lg:flex-row w-full gap-4 lg:gap-0">
+                    <div className="w-full lg:w-[50%] lg:pr-[12px] pt-[12px] lg:border-r-[0.5px] lg:border-[#ededed]">
                         <div className="mb-6">
-                            <h3 className="text-[16px] text-[#022B23]">#{order.orderNumber}</h3>
-                            <p className="text-[#7c7c7c] text-[14px]">Order date: {new Date(order.createdAt).toLocaleDateString('en-US', {
+                            <h3 className="text-[14px] sm:text-[16px] text-[#022B23]">#{order.orderNumber}</h3>
+                            <p className="text-[#7c7c7c] text-[12px] sm:text-[14px]">Order date: {new Date(order.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long',
                                 day: 'numeric'
                             })}</p>
                         </div>
                         <div className="mb-6">
-                            <h4 className="font-semibold mb-2">Products in order</h4>
-                            <div className="max-h-[300px] overflow-y-auto pr-2 relative" style={{ scrollbarGutter: 'stable' }}>
+                            <h4 className="font-semibold mb-2 text-[14px] sm:text-[16px]">Products in order</h4>
+                            <div className="max-h-[250px] sm:max-h-[300px] overflow-y-auto pr-2 relative" style={{ scrollbarGutter: 'stable' }}>
                                 {allItems.map((item) => (
-                                    <div key={item.id} className="w-full h-[60px] flex justify-between pr-[12px] items-center border border-[#ededed] rounded-[10px] mb-2 relative">                                        <div className="flex gap-[12px] items-center">
-                                            <div className="w-[60px] h-[60px] bg-[#f9f9f9] rounded-bl-[10px] rounded-tl-[10px] flex items-center justify-center overflow-hidden">
+                                    <div key={item.id} className="w-full min-h-[60px] flex justify-between pr-[8px] sm:pr-[12px] items-center border border-[#ededed] rounded-[10px] mb-2 relative p-2">
+                                        <div className="flex gap-[8px] sm:gap-[12px] items-center flex-1">
+                                            <div className="w-[50px] h-[50px] sm:w-[60px] sm:h-[60px] bg-[#f9f9f9] rounded-[8px] sm:rounded-bl-[10px] sm:rounded-tl-[10px] flex items-center justify-center overflow-hidden flex-shrink-0">
                                                 {item.productImage ? (
                                                     <Image
                                                         src={item.productImage}
@@ -198,61 +199,63 @@ const OrderModal = ({
                                                     <span className="text-xs text-gray-500">No image</span>
                                                 )}
                                             </div>
-                                            <div className="flex flex-col">
-                                                <p className="text-[#101828] text-[14px] font-medium">{item.productName}</p>
-                                                <p className="text-[#7c7c7c] text-[12px]">Qty: {item.quantity}</p>
+                                            <div className="flex flex-col flex-1 min-w-0">
+                                                <p className="text-[#101828] text-[12px] sm:text-[14px] font-medium truncate">{item.productName}</p>
+                                                <p className="text-[#7c7c7c] text-[10px] sm:text-[12px]">Qty: {item.quantity}</p>
                                             </div>
                                         </div>
 
-                                        <p className="text-[#101828] text-[14px] font-medium">₦{item.unitPrice.toLocaleString()}</p>
+                                        <div className="flex items-center gap-2">
+                                            <p className="text-[#101828] text-[12px] sm:text-[14px] font-medium">₦{item.unitPrice.toLocaleString()}</p>
 
-                                        {order.status === 'DELIVERED' && (
-                                            <OrderItemActionsDropdown
-                                                item={item}
-                                                onDispute={onDispute}
-                                                onReview={onReview}
-                                            >
-                                                <div className="flex flex-col gap-[2px] cursor-pointer p-2 -m-2">
-                                                    <span className="w-[4px] h-[4px] rounded-full bg-[#7c7c7c]"></span>
-                                                    <span className="w-[4px] h-[4px] rounded-full bg-[#7c7c7c]"></span>
-                                                    <span className="w-[4px] h-[4px] rounded-full bg-[#7c7c7c]"></span>
-                                                </div>
-                                            </OrderItemActionsDropdown>
-                                        )}
+                                            {order.status === 'DELIVERED' && (
+                                                <OrderItemActionsDropdown
+                                                    item={item}
+                                                    onDispute={onDispute}
+                                                    onReview={onReview}
+                                                >
+                                                    <div className="flex flex-col gap-[2px] cursor-pointer p-2 -m-2">
+                                                        <span className="w-[4px] h-[4px] rounded-full bg-[#7c7c7c]"></span>
+                                                        <span className="w-[4px] h-[4px] rounded-full bg-[#7c7c7c]"></span>
+                                                        <span className="w-[4px] h-[4px] rounded-full bg-[#7c7c7c]"></span>
+                                                    </div>
+                                                </OrderItemActionsDropdown>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
-                    <div className="w-[50%] flex flex-col justify-between pl-[12px]">
+                    <div className="w-full lg:w-[50%] flex flex-col justify-between lg:pl-[12px] border-t lg:border-t-0 pt-4 lg:pt-0">
                         <div className="gap-y-[12px] pt-[12px] flex flex-col border-b-[0.5px] pb-[12px] border-[#ededed]">
                             <div className="flex w-full justify-between items-center">
-                                <p className="text-[#707070] font-medium text-[14px]">Order time: </p>
-                                <span className="text-[#000000] font-medium text-[14px]">
+                                <p className="text-[#707070] font-medium text-[12px] sm:text-[14px]">Order time: </p>
+                                <span className="text-[#000000] font-medium text-[12px] sm:text-[14px]">
                                     {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                             </div>
                             <div className="flex w-full justify-between items-center">
-                                <p className="text-[#707070] font-medium text-[14px]">Order amount: </p>
-                                <span className="text-[#000000] font-medium text-[14px]">₦{order.totalAmount.toLocaleString()}</span>
+                                <p className="text-[#707070] font-medium text-[12px] sm:text-[14px]">Order amount: </p>
+                                <span className="text-[#000000] font-medium text-[12px] sm:text-[14px]">₦{order.totalAmount.toLocaleString()}</span>
                             </div>
                             <div className="flex w-full justify-between items-center">
-                                <p className="text-[#707070] font-medium text-[14px]">Delivery method: </p>
-                                <span className="text-[#000000] font-medium text-[14px]">{order.deliveryInfo.method}</span>
+                                <p className="text-[#707070] font-medium text-[12px] sm:text-[14px]">Delivery method: </p>
+                                <span className="text-[#000000] font-medium text-[12px] sm:text-[14px]">{order.deliveryInfo.method}</span>
                             </div>
                             <div className="flex w-full justify-between items-center">
-                                <p className="text-[#707070] font-medium text-[14px]">Delivery fee: </p>
-                                <span className="text-[#000000] font-medium text-[14px]">₦{order.deliveryFee.toLocaleString()}</span>
+                                <p className="text-[#707070] font-medium text-[12px] sm:text-[14px]">Delivery fee: </p>
+                                <span className="text-[#000000] font-medium text-[12px] sm:text-[14px]">₦{order.deliveryFee.toLocaleString()}</span>
                             </div>
                             <div className="flex w-full justify-between items-center">
-                                <p className="text-[#707070] font-medium text-[14px]">Total: </p>
-                                <span className="text-[#000000] font-medium text-[14px]">₦{order.grandTotal.toLocaleString()}</span>
+                                <p className="text-[#707070] font-medium text-[12px] sm:text-[14px]">Total: </p>
+                                <span className="text-[#000000] font-medium text-[12px] sm:text-[14px]">₦{order.grandTotal.toLocaleString()}</span>
                             </div>
                         </div>
 
                         <div className="flex justify-end mt-4">
                             <button
-                                className="bg-[#022B23] text-[#C6EB5F] font-semibold cursor-pointer px-4 py-2 rounded hover:bg-green-700"
+                                className="bg-[#022B23] text-[#C6EB5F] font-semibold cursor-pointer px-4 py-2 rounded hover:bg-green-700 text-[14px]"
                                 onClick={onClose}
                             >
                                 Close
@@ -730,37 +733,38 @@ const Orders = () => {
         <>
             <MarketPlaceHeader />
             <div className="h-[48px] w-full border-y-[0.5px] border-[#EDEDED]">
-                <div className="h-[48px] px-25 gap-[8px] items-center flex">
+                <div className="h-[48px] px-4 sm:px-6 lg:px-25 gap-[8px] items-center flex">
                     <BackButton variant="default" text="Go back" />
-                    <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Orders</span></p>
+                    <p className="text-[12px] sm:text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Orders</span></p>
                 </div>
             </div>
-            <div className="px-25 pt-[62px] h-auto w-full">
-                <div className="flex gap-[30px]">
-                    <div className="flex flex-col">
-                        <div className="w-[381px] text-[#022B23] text-[12px] font-medium h-[44px] bg-[#f8f8f8] rounded-[10px] flex items-center px-[8px] justify-between">
+            <div className="px-4 sm:px-6 lg:px-25 pt-4 sm:pt-8 lg:pt-[62px] h-auto w-full">
+                <div className="flex flex-col lg:flex-row gap-4 lg:gap-[30px]">
+                    {/* Sidebar - Hidden on mobile, shown as horizontal tabs on tablet */}
+                    <div className="flex flex-col lg:block">
+                        <div className="w-full lg:w-[381px] text-[#022B23] text-[12px] font-medium h-[44px] bg-[#f8f8f8] rounded-[10px] flex items-center px-[8px] justify-between mb-2 lg:mb-0">
                             <p>Go to profile</p>
                             <Image src={arrowRight} alt={'image'}/>
                         </div>
-                        <div className="flex flex-col h-auto w-[381px] mt-[6px] rounded-[12px] border border-[#eeeeee]">
-                            <div onClick={() => {router.push("/buyer/wishlist")}} className="w-full text-[#022B23] text-[12px]  h-[40px] rounded-t-[12px] flex items-center px-[8px]">
+                        <div className="flex flex-row lg:flex-col h-auto w-full lg:w-[381px] mt-0 lg:mt-[6px] rounded-[12px] border border-[#eeeeee] overflow-hidden">
+                            <div onClick={() => {router.push("/buyer/wishlist")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] lg:rounded-t-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
                                 <p>Wishlist</p>
                             </div>
-                            <div onClick={() => {router.push("/buyer/orders")}} className="w-full text-[#022B23] text-[12px] h-[40px] font-medium bg-[#f8f8f8] flex items-center px-[8px]">
+                            <div onClick={() => {router.push("/buyer/orders")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] font-medium bg-[#f8f8f8] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer">
                                 <p>My orders</p>
                             </div>
-                            <div onClick={() => {router.push("/buyer/disputes")}} className="w-full text-[#022B23] text-[12px] h-[40px] rounded-b-[12px] flex items-center px-[8px]">
+                            <div onClick={() => {router.push("/buyer/disputes")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] lg:rounded-b-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
                                 <p>Order disputes</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Main content */}
-                    <div className="flex flex-col w-[779px] gap-[24px]">
-                        <p className="text-[#000000] text-[14px] font-medium">My orders ({orders.length})</p>
+                    <div className="flex flex-col w-full lg:w-[779px] gap-4 lg:gap-[24px]">
+                        <p className="text-[#000000] text-[14px] sm:text-[16px] font-medium">My orders ({orders.length})</p>
                         <div className="border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
                             {currentOrders.length === 0 ? (
-                                <div className="flex items-center justify-center h-[151px] text-[#3D3D3D] text-[14px]">
+                                <div className="flex items-center justify-center h-[100px] sm:h-[151px] text-[#3D3D3D] text-[14px]">
                                     <p>No orders yet</p>
                                 </div>
                             ) : (
@@ -772,60 +776,116 @@ const Orders = () => {
                                     const statusText = getStatusDisplayText(order.status);
 
                                     return (
-                                        <div key={order.orderNumber} className={`flex items-center ${!isLastItem ? "border-b h-[151px] overflow-hidden border-[#ededed]" : "border-none h-[151px]"}`}>
-                                            <div className="flex border-r border-[#ededed] w-[169px] h-[151px] overflow-hidden">
-                                                {firstItem.productImage ? (
-                                                    <Image
-                                                        src={firstItem.productImage}
-                                                        alt={`product`}
-                                                        width={168}
-                                                        height={150}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                                        No image
+                                        <div key={order.orderNumber} className={`flex flex-col sm:flex-row items-start sm:items-center ${!isLastItem ? "border-b border-[#ededed]" : "border-none"} p-3 sm:p-0`}>
+                                            {/* Mobile layout */}
+                                            <div className="flex w-full sm:hidden gap-3 mb-3">
+                                                <div className="w-[80px] h-[80px] rounded-[8px] overflow-hidden flex-shrink-0">
+                                                    {firstItem.productImage ? (
+                                                        <Image
+                                                            src={firstItem.productImage}
+                                                            alt={`product`}
+                                                            width={80}
+                                                            height={80}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs">
+                                                            No image
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[12px] sm:text-[14px] text-[#1E1E1E] font-medium mb-1 truncate">
+                                                        {getProductDisplayName(order)}
+                                                    </p>
+                                                    <p className="text-[10px] font-normal text-[#3D3D3D] uppercase mb-2">
+                                                        Order #{order.orderNumber}
+                                                    </p>
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <p className="font-medium text-[#1E1E1E] text-[14px]">
+                                                                ₦{formatPrice(order.totalAmount)}
+                                                            </p>
+                                                            <p className="text-[#3D3D3D] text-[10px]">
+                                                                {formatDate(order.createdAt)}
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`flex h-[32px] px-2 items-center text-[12px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`}>
+                                                                <p>{statusText}</p>
+                                                            </div>
+                                                            <OrderActionsDropdown
+                                                                order={order}
+                                                                onMarkDelivered={handleMarkDelivered}
+                                                                onViewOrder={handleViewOrder}
+                                                            >
+                                                                <div className="flex flex-col gap-[2px] items-center justify-center p-2">
+                                                                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                </div>
+                                                            </OrderActionsDropdown>
+                                                        </div>
                                                     </div>
-                                                )}
+                                                </div>
                                             </div>
 
-                                            <div className="flex items-center w-full px-[20px] justify-between">
-                                                <div className="flex flex-col w-[30%]">
-                                                    <div className="mb-[13px]">
-                                                        <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">
-                                                            {getProductDisplayName(order)}
-                                                        </p>
-                                                        <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
-                                                            Order #{order.orderNumber}
-                                                        </p>
-                                                    </div>
-
-                                                    <div className="flex flex-col">
-                                                        <p className="font-medium text-[#1E1E1E] text-[16px]">
-                                                            ₦{formatPrice(order.totalAmount)}
-                                                        </p>
-                                                        <p className="text-[#3D3D3D] text-[10px]">
-                                                            {formatDate(order.createdAt)}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <div className={`flex h-[42px] px-3 items-center text-[14px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`} style={{ width: 'fit-content' }}>
-                                                    <p>{statusText}</p>
-                                                </div>
-
-                                                <div className="flex items-center justify-center w-[2%]">
-                                                    <OrderActionsDropdown
-                                                        order={order}
-                                                        onMarkDelivered={handleMarkDelivered}
-                                                        onViewOrder={handleViewOrder}
-                                                    >
-                                                        <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
-                                                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                            {/* Desktop layout */}
+                                            <div className="hidden sm:flex items-center w-full h-[151px]">
+                                                <div className="flex border-r border-[#ededed] w-[120px] sm:w-[169px] h-[151px] overflow-hidden">
+                                                    {firstItem.productImage ? (
+                                                        <Image
+                                                            src={firstItem.productImage}
+                                                            alt={`product`}
+                                                            width={168}
+                                                            height={150}
+                                                            className="w-full h-full object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-sm">
+                                                            No image
                                                         </div>
-                                                    </OrderActionsDropdown>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center w-full px-3 sm:px-[20px] justify-between">
+                                                    <div className="flex flex-col w-[40%] sm:w-[30%]">
+                                                        <div className="mb-[13px]">
+                                                            <p className="text-[12px] sm:text-[14px] text-[#1E1E1E] font-medium mb-[4px] line-clamp-2">
+                                                                {getProductDisplayName(order)}
+                                                            </p>
+                                                            <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
+                                                                Order #{order.orderNumber}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex flex-col">
+                                                            <p className="font-medium text-[#1E1E1E] text-[14px] sm:text-[16px]">
+                                                                ₦{formatPrice(order.totalAmount)}
+                                                            </p>
+                                                            <p className="text-[#3D3D3D] text-[10px]">
+                                                                {formatDate(order.createdAt)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className={`flex h-[36px] sm:h-[42px] px-2 sm:px-3 items-center text-[12px] sm:text-[14px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`} style={{ width: 'fit-content' }}>
+                                                        <p>{statusText}</p>
+                                                    </div>
+
+                                                    <div className="flex items-center justify-center">
+                                                        <OrderActionsDropdown
+                                                            order={order}
+                                                            onMarkDelivered={handleMarkDelivered}
+                                                            onViewOrder={handleViewOrder}
+                                                        >
+                                                            <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
+                                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                            </div>
+                                                        </OrderActionsDropdown>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -941,22 +1001,22 @@ const Orders = () => {
                 </div>
             )}
             {orders.length > ordersPerPage && (
-                <div className="flex justify-center mb-4">
-                    <div className="flex items-center gap-[70px] justify-between">
+                <div className="flex justify-center mb-4 px-4">
+                    <div className="flex items-center gap-4 sm:gap-8 lg:gap-[70px] justify-between w-full max-w-md">
                         <button
                             onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                             disabled={currentPage === 1}
-                            className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                            className={`px-2 sm:px-3 py-1 rounded-md text-sm ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
                         >
                             Previous
                         </button>
 
-                        <div className="flex items-center gap-[5px]">
+                        <div className="flex items-center gap-1 sm:gap-[5px] overflow-x-auto">
                             {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                                 <button
                                     key={page}
                                     onClick={() => setCurrentPage(page)}
-                                    className={`px-3 py-1 rounded-md ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                    className={`px-2 sm:px-3 py-1 rounded-md text-sm flex-shrink-0 ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
                                 >
                                     {page}
                                 </button>
@@ -966,7 +1026,7 @@ const Orders = () => {
                         <button
                             onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                             disabled={currentPage === totalPages}
-                            className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                            className={`px-2 sm:px-3 py-1 rounded-md text-sm ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
                         >
                             Next
                         </button>

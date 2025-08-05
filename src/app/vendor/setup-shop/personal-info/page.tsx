@@ -1,6 +1,6 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
+import VendorShopGuard from "@/components/VendorShopGuard";
 import Image from 'next/image'
 import arrow from '../../../../../public/assets/images/arrow-right.svg'
 import {ChevronDown} from "lucide-react";
@@ -170,8 +170,7 @@ const Setup2 = () => {
     };
 
     return (
-        <>
-            <DashboardHeader />
+        <VendorShopGuard>
             <DashboardSubHeader
                 welcomeText={"Hey, welcome"}
                 description={"Get started by setting up your shop"}
@@ -246,7 +245,7 @@ const Setup2 = () => {
                     </div>
                 </div>
             </div>
-        </>
+        </VendorShopGuard>
     );
 };
 

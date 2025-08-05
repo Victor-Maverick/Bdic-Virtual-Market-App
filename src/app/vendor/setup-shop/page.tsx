@@ -1,12 +1,11 @@
 'use client'
 import Image from "next/image";
-import DashboardHeader from "@/components/dashboardHeader";
 import arrow from '../../../../public/assets/images/dashArrow.png'
 import vendorStarterPack from '../../../../public/assets/images/starterPack.png'
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import DashboardOptions from "@/components/dashboardOptions";
 import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
+import VendorShopGuard from "@/components/VendorShopGuard";
 import {useRouter} from "next/navigation";
 import {useSession} from "next-auth/react";
 import BackButton from "@/components/BackButton";
@@ -23,9 +22,7 @@ const DashBoard = () => {
         return null;
     }
     return (
-        <div className="w-full pb-25 ">
-            <DashboardHeader/>
-            <DashboardOptions/>
+        <VendorShopGuard>
             <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Get started by setting up your shop"}
                                 background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'} />
             <div className="px-25 py-4">
@@ -54,7 +51,7 @@ const DashBoard = () => {
                     </div>
                 </div>
             </div>
-        </div>
+        </VendorShopGuard>
     );
 }
 

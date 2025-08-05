@@ -6,11 +6,14 @@ import { useRouter } from 'next/navigation';
 import { MessageCircle, Phone, Video, Send } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { chatService, ChatMessage } from '@/services/chatService';
+import { videoCallService, VideoCallRequest, VideoCallResponse } from '@/services/videoCallService';
+import { voiceCallService, VoiceCallRequest, VoiceCallResponse } from '@/services/voiceCallService';
+import VideoCallModal from '@/components/VideoCallModal';
+import VoiceCallModal from '@/components/VoiceCallModal';
 import Pusher from 'pusher-js';
 import Image from "next/image";
 import blueCircle from "../../../../../public/assets/images/blueGreenCircle.png";
-import DashboardHeader from "@/components/dashboardHeader";
-import DashboardOptions from "@/components/dashboardOptions";
+import VendorShopGuard from "@/components/VendorShopGuard";
 
 interface ChatConversation {
     id: string;
@@ -47,6 +50,13 @@ const VendorChatsPage = () => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const pusherRef = useRef<Pusher | null>(null);
     const channelRef = useRef<PusherChannel | null>(null);
+
+    // Call states
+    const [isVideoCallModalOpen, setIsVideoCallModalOpen] = useState(false);
+    const [isVoiceCallModalOpen, setIsVoiceCallModalOpen] = useState(false);
+    const [currentVideoCall, setCurrentVideoCall] = useState<VideoCallResponse | null>(null);
+    const [currentVoiceCall, setCurrentVoiceCall] = useState<VoiceCallResponse | null>(null);
+    const [shopId, setShopId] = useState<number>(0);
 
     const fetchConversations = useCallback(async () => {
         try {
@@ -258,9 +268,102 @@ const VendorChatsPage = () => {
 
 
 
-    const initiateCall = (buyerEmail: string, type: 'voice' | 'video') => {
-        // This would integrate with your calling service
-        toast.info(`${type} call feature coming soon!`);
+    // Fetch shop ID for the current vendor
+    useEffect(() => {
+        const fetchShopId = async () => {
+            if (session?.user?.email) {
+                try {
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`);
+                    if (response.ok) {
+                        const shopData = await response.json();
+                        setShopId(shopData.id);
+                    }
+                } catch (error) {
+                    console.error('Error fetching shop ID:', error);
+                }
+            }
+        };
+        fetchShopId();
+    }, [session?.user?.email]);
+
+    const initiateVideoCall = async (customerEmail: string) => {
+        if (!session?.user?.email || shopId === 0) {
+            toast.error('Unable to initiate call. Please try again.');
+            return;
+        }
+
+        // Prevent self-calling
+        if (session.user.email === customerEmail) {
+            toast.error('You cannot call yourself.');
+            return;
+        }
+
+        try {
+            const request: VideoCallRequest = {
+                buyerEmail: session.user.email, // The vendor making the call (initiator)
+                vendorEmail: customerEmail, // The customer receiving the call (recipient)
+                shopId: shopId,
+                shopName: selectedConversation?.buyerName || 'Shop'
+            };
+
+            console.log('Vendor initiating video call:', {
+                initiator: session.user.email,
+                recipient: customerEmail,
+                shopId: shopId
+            });
+
+            const call = await videoCallService.initiateCall(request);
+            setCurrentVideoCall(call);
+            setIsVideoCallModalOpen(true);
+        } catch (error) {
+            console.error('Error initiating video call:', error);
+            toast.error('Failed to initiate video call. Please try again.');
+        }
+    };
+
+    const initiateVoiceCall = async (customerEmail: string) => {
+        if (!session?.user?.email || shopId === 0) {
+            toast.error('Unable to initiate call. Please try again.');
+            return;
+        }
+
+        // Prevent self-calling
+        if (session.user.email === customerEmail) {
+            toast.error('You cannot call yourself.');
+            return;
+        }
+
+        try {
+            const request: VoiceCallRequest = {
+                buyerEmail: session.user.email, // The vendor making the call (initiator)
+                vendorEmail: customerEmail, // The customer receiving the call (recipient)
+                shopId: shopId,
+                shopName: selectedConversation?.buyerName || 'Shop'
+            };
+
+            console.log('Vendor initiating voice call:', {
+                initiator: session.user.email,
+                recipient: customerEmail,
+                shopId: shopId
+            });
+
+            const call = await voiceCallService.initiateCall(request);
+            setCurrentVoiceCall(call);
+            setIsVoiceCallModalOpen(true);
+        } catch (error) {
+            console.error('Error initiating voice call:', error);
+            toast.error('Failed to initiate voice call. Please try again.');
+        }
+    };
+
+    const handleCloseVideoCall = (): void => {
+        setIsVideoCallModalOpen(false);
+        setCurrentVideoCall(null);
+    };
+
+    const handleCloseVoiceCall = (): void => {
+        setIsVoiceCallModalOpen(false);
+        setCurrentVoiceCall(null);
     };
 
     const filteredConversations = conversations.filter(conv =>
@@ -291,10 +394,7 @@ const VendorChatsPage = () => {
     }
 
     return (
-        <div className="min-h-screen ">
-            <DashboardHeader />
-            <DashboardOptions />
-
+        <VendorShopGuard showSubHeader={false}>
             {/* Chat Interface with 100px margin */}
             <div className="mx-25 my-6">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[calc(100vh-200px)] flex">
@@ -323,8 +423,8 @@ const VendorChatsPage = () => {
                                         {searchTerm ? 'No conversations found' : 'No customer chats yet'}
                                     </h3>
                                     <p className="text-gray-600 text-sm">
-                                        {searchTerm 
-                                            ? 'Try adjusting your search terms' 
+                                        {searchTerm
+                                            ? 'Try adjusting your search terms'
                                             : 'When customers message you, they\'ll appear here'
                                         }
                                     </p>
@@ -343,15 +443,15 @@ const VendorChatsPage = () => {
                                                 {/* Profile Avatar */}
                                                 <div className="relative">
                                                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-400 to-red-400 flex items-center justify-center">
-                                                        <span className="text-white text-sm font-medium">
-                                                            {(conversation.buyerName || 'U').charAt(0).toUpperCase()}
-                                                        </span>
+                          <span className="text-white text-sm font-medium">
+                            {(conversation.buyerName || 'U').charAt(0).toUpperCase()}
+                          </span>
                                                     </div>
                                                     {conversation.unreadCount > 0 && (
                                                         <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                                                            <span className="text-white text-xs font-bold">
-                                                                {conversation.unreadCount > 9 ? '9' : conversation.unreadCount}
-                                                            </span>
+                            <span className="text-white text-xs font-bold">
+                              {conversation.unreadCount > 9 ? '9' : conversation.unreadCount}
+                            </span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -362,6 +462,9 @@ const VendorChatsPage = () => {
                                                         <h3 className="font-medium text-gray-900 truncate text-sm">
                                                             {conversation.buyerName}
                                                         </h3>
+                                                        <span className="text-xs text-gray-500">
+                            {formatTime(conversation.lastMessageTime)}
+                          </span>
                                                     </div>
                                                     <p className="text-xs text-gray-500 truncate">
                                                         {conversation.lastMessage}
@@ -378,119 +481,139 @@ const VendorChatsPage = () => {
                     {/* Right Panel - Chat Interface */}
                     {selectedConversation && (
                         <div className="flex-1 flex flex-col bg-white rounded-r-lg">
-                    {/* Chat Header */}
-                    <div className="border-b border-gray-200 px-6 py-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <h2 className="text-lg font-semibold text-gray-900">
-                                    {selectedConversation.buyerName}
-                                </h2>
-                                <span className="text-sm text-gray-500">
-                                    12:23 PM
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={() => initiateCall(selectedConversation.buyerEmail, 'video')}
-                                    className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200"
-                                    title="Video Call"
-                                >
-                                    <Video size={18} className="text-gray-600" />
-                                </button>
-                                <button
-                                    onClick={() => initiateCall(selectedConversation.buyerEmail, 'voice')}
-                                    className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200"
-                                    title="Voice Call"
-                                >
-                                    <Phone size={18} className="text-gray-600" />
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto px-6 py-6 bg-gray-50">
-                        {chatLoading ? (
-                            <div className="flex items-center justify-center h-full">
-                                <div className="text-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#022B23] mx-auto"></div>
-                                    <p className="mt-2 text-gray-600">Loading messages...</p>
+                            {/* Chat Header */}
+                            <div className="border-b border-gray-200 px-6 py-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <h2 className="text-lg font-semibold text-gray-900">
+                                            {selectedConversation.buyerName}
+                                        </h2>
+                                        <span className="text-sm text-gray-500">
+                    12:23 PM
+                  </span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => initiateVideoCall(selectedConversation.buyerEmail)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200"
+                                            title="Video Call"
+                                            disabled={shopId === 0}
+                                        >
+                                            <Video size={18} className={shopId === 0 ? "text-gray-400" : "text-blue-600"} />
+                                        </button>
+                                        <button
+                                            onClick={() => initiateVoiceCall(selectedConversation.buyerEmail)}
+                                            className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200"
+                                            title="Voice Call"
+                                            disabled={shopId === 0}
+                                        >
+                                            <Phone size={18} className={shopId === 0 ? "text-gray-400" : "text-green-600"} />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        ) : messages.length === 0 ? (
-                            <div className="text-center text-gray-500 mt-8">
-                                <p>No messages yet. Start the conversation!</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-4">
-                                {messages.map((message, index) => (
-                                    <div
-                                        key={`${message.id}-${message.timestamp}-${index}`}
-                                        className={`flex ${
-                                            message.fromEmail === session?.user?.email ? 'justify-end' : 'justify-start'
-                                        }`}
-                                    >
-                                        {message.fromEmail !== session?.user?.email && (
-                                            <div className="flex items-end gap-3">
-                                                <div className="w-[24px] h-[24px] rounded-full bg-gradient-to-br from-pink-400 to-red-400 flex items-center justify-center flex-shrink-0">
-                                                    <span className="text-white text-xs font-medium">
-                                                        {selectedConversation.buyerName.charAt(0).toUpperCase()}
-                                                    </span>
-                                                </div>
-                                                <div className="bg-gray-200 rounded-2xl rounded-tl-md px-4 py-2 max-w-xs">
-                                                    <p className="text-sm text-gray-900">{message.message}</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        {message.fromEmail === session?.user?.email && (
-                                            <div className="flex gap-2 items-end">
-                                                <div className="bg-[#022B23] text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs">
-                                                    <p className="text-sm">{message.message}</p>
-                                                    <div className="flex items-center justify-end mt-1 gap-1">
-                                                        <span className="text-xs text-gray-300">
-                                                            {formatTime(message.timestamp)}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <Image src={blueCircle} alt={'image'} height={24} width={24} />
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
 
-                    {/* Message Input */}
-                    <div className="border-t border-gray-200 px-6 py-4 bg-white">
-                        <div className="flex items-center gap-3">
-                            <div className="flex-1 relative">
-                                <input
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    onKeyDown={handleKeyPress}
-                                    placeholder="Type here"
-                                    className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#022B23] focus:border-transparent text-sm"
-                                />
+                            {/* Messages */}
+                            <div className="flex-1 overflow-y-auto px-6 py-6 bg-gray-50">
+                                {chatLoading ? (
+                                    <div className="flex items-center justify-center h-full">
+                                        <div className="text-center">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#022B23] mx-auto"></div>
+                                            <p className="mt-2 text-gray-600">Loading messages...</p>
+                                        </div>
+                                    </div>
+                                ) : messages.length === 0 ? (
+                                    <div className="text-center text-gray-500 mt-8">
+                                        <p>No messages yet. Start the conversation!</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {messages.map((message, index) => (
+                                            <div
+                                                key={`${message.id}-${message.timestamp}-${index}`}
+                                                className={`flex ${
+                                                    message.fromEmail === session?.user?.email ? 'justify-end' : 'justify-start'
+                                                }`}
+                                            >
+                                                {message.fromEmail !== session?.user?.email && (
+                                                    <div className="flex items-end gap-3">
+                                                        <div className="w-[24px] h-[24px] rounded-full bg-gradient-to-br from-pink-400 to-red-400 flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-medium">
+                              {selectedConversation.buyerName.charAt(0).toUpperCase()}
+                            </span>
+                                                        </div>
+                                                        <div className="bg-gray-200 rounded-2xl rounded-tl-md px-4 py-2 max-w-xs">
+                                                            <p className="text-sm text-gray-900">{message.message}</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {message.fromEmail === session?.user?.email && (
+                                                    <div className="flex gap-2 items-end">
+                                                        <div className="bg-[#022B23] text-white rounded-2xl rounded-tr-md px-4 py-2 max-w-xs">
+                                                            <p className="text-sm">{message.message}</p>
+                                                            <div className="flex items-center justify-end mt-1 gap-1">
+                              <span className="text-xs text-gray-300">
+                                {formatTime(message.timestamp)}
+                              </span>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <Image src={blueCircle} alt={'image'} height={24} width={24} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
                             </div>
-                            <button
-                                onClick={sendMessage}
-                                disabled={!newMessage.trim()}
-                                className="p-3 bg-[#022B23] text-white rounded-full hover:bg-[#033d32] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                                <Send size={18} />
-                            </button>
-                        </div>
-                    </div>
+
+                            {/* Message Input */}
+                            <div className="border-t border-gray-200 px-6 py-4 bg-white">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="text"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            onKeyDown={handleKeyPress}
+                                            placeholder="Type here"
+                                            className="w-full px-4 py-3 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-[#022B23] focus:border-transparent text-sm"
+                                        />
+                                    </div>
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={!newMessage.trim()}
+                                        className="p-3 bg-[#022B23] text-white rounded-full hover:bg-[#033d32] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        <Send size={18} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
-        </div>
+
+            {/* Video Call Modal */}
+            <VideoCallModal
+                isOpen={isVideoCallModalOpen}
+                onClose={handleCloseVideoCall}
+                call={currentVideoCall}
+                userEmail={session?.user?.email || ''}
+                userType="vendor"
+            />
+
+            {/* Voice Call Modal */}
+            <VoiceCallModal
+                isOpen={isVoiceCallModalOpen}
+                onClose={handleCloseVoiceCall}
+                call={currentVoiceCall}
+                userEmail={session?.user?.email || ''}
+                userType="vendor"
+            />
+        </VendorShopGuard>
     );
 };
 

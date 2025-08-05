@@ -1,9 +1,10 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import shadow from '../../../public/assets/images/shadow.png';
+import { userService } from '@/services/userService';
 import headerIcon from '../../../public/assets/images/headerImg.png';
 import emailIcon from '../../../public/assets/images/sms.svg';
 import eyeOpen from '../../../public/assets/images/eye.svg'; // Fixed: separate icons
@@ -33,20 +34,43 @@ const Login = () => {
     const [form, setForm] = useState<FormData>({ email: '', password: '' });
     const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [toastMessage, setToastMessage] = useState('');
     const [toastSubMessage, setToastSubMessage] = useState('');
     const [captchaToken, setCaptchaToken] = useState('');
+    const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
+    const [isResendingVerification, setIsResendingVerification] = useState(false);
 
+    // Helper function to handle localStorage safely
+    const safeLocalStorage = useMemo(() => ({
+        getItem: (key: string): string | null => {
+            if (typeof window !== 'undefined') {
+                return localStorage.getItem(key);
+            }
+            return null;
+        },
+        setItem: (key: string, value: string): void => {
+            if (typeof window !== 'undefined') {
+                localStorage.setItem(key, value);
+            }
+        },
+        removeItem: (key: string): void => {
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem(key);
+            }
+        }
+    }), []);
+
+    // Check for unverified email on component mount
     useEffect(() => {
-        const handleResize = () => setIsMobile(window.innerWidth < 768);
-        handleResize();
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+        const unverifiedEmail = safeLocalStorage.getItem('unverifiedEmail');
+        if (unverifiedEmail && !form.email) {
+            setForm(prev => ({ ...prev, email: unverifiedEmail }));
+            setShowVerificationPrompt(true);
+        }
+    }, [form.email, safeLocalStorage]);
 
     const [focusedFields, setFocusedFields] = useState<Record<keyof FormData, boolean>>(
         Object.fromEntries(Object.keys(form).map((key) => [key, false])) as Record<keyof FormData, boolean>
@@ -88,25 +112,6 @@ const Login = () => {
         setShowToast(true);
     }, []);
 
-    // Helper function to handle localStorage safely
-    const safeLocalStorage = {
-        getItem: (key: string): string | null => {
-            if (typeof window !== 'undefined') {
-                return localStorage.getItem(key);
-            }
-            return null;
-        },
-        setItem: (key: string, value: string): void => {
-            if (typeof window !== 'undefined') {
-                localStorage.setItem(key, value);
-            }
-        },
-        removeItem: (key: string): void => {
-            if (typeof window !== 'undefined') {
-                localStorage.removeItem(key);
-            }
-        }
-    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -126,11 +131,25 @@ const Login = () => {
             });
 
             if (result?.error) {
+                console.log('Login error:', result.error); // Debug log
+                
                 // Handle session conflict specifically
                 if (result.error.includes('logged in from another device')) {
                     showToastMessage('error', 'Session Conflict', 'You were logged out because you logged in from another device');
+                    setShowVerificationPrompt(false);
+                } else if (
+                    result.error.toLowerCase().includes('user not verified') || 
+                    result.error.toLowerCase().includes('not verified') ||
+                    result.error.toLowerCase().includes('verify') ||
+                    result.error.toLowerCase().includes('verification')
+                ) {
+                    showToastMessage('error', 'Account not verified', result.error);
+                    // Store email for potential resend
+                    safeLocalStorage.setItem('unverifiedEmail', form.email);
+                    setShowVerificationPrompt(true);
                 } else {
                     showToastMessage('error', 'Login failed', result.error);
+                    setShowVerificationPrompt(false);
                 }
             } else {
                 const response = await fetch('/api/auth/session');
@@ -161,9 +180,10 @@ const Login = () => {
                     router.push('/dashboard');
                 }
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (error) {
-            showToastMessage('error', 'Login failed', 'An unexpected error occurred');
+            console.error('Login error:', error);
+            showToastMessage('error', 'Login failed', 'An unexpected error occurred during login');
+            setShowVerificationPrompt(false);
         } finally {
             setIsLoading(false);
             // Clean up toast after 3 seconds
@@ -177,6 +197,30 @@ const Login = () => {
     // Fixed: Proper typing for ReCAPTCHA onChange
     const handleCaptchaChange = (token: string | null) => {
         setCaptchaToken(token || '');
+    };
+
+    const handleResendVerification = async () => {
+        const email = safeLocalStorage.getItem('unverifiedEmail') || form.email;
+        if (!email) {
+            showToastMessage('error', 'Email required', 'Please enter your email address first');
+            return;
+        }
+
+        setIsResendingVerification(true);
+        try {
+            const result = await userService.resendVerificationEmail(email);
+            
+            if (result.success) {
+                showToastMessage('success', 'Verification email sent', `A new verification email has been sent to ${email}`);
+            } else {
+                showToastMessage('error', 'Failed to send email', result.message);
+            }
+        } catch (error) {
+            console.error('Resend verification error:', error);
+            showToastMessage('error', 'Resend failed', 'Unable to send verification email. Please try again.');
+        } finally {
+            setIsResendingVerification(false);
+        }
     };
 
     return (
@@ -208,19 +252,15 @@ const Login = () => {
                     </div>
                 </div>
             </div>
-            <div className="flex">
-                <div
-                    className={`w-full md:w-[49%] px-6 md:pl-[185px] md:pr-0 flex-col flex ${
-                        isMobile ? 'pt-[60px] pb-[60px]' : 'pt-[190px]'
-                    }`}
-                >
-                    <div className={`w-full md:w-[400px] flex flex-col gap-[40px] md:gap-[60px] ${isMobile ? 'h-auto' : 'h-[361px]'}`}>
-                        <div className="flex flex-col leading-tight gap-[14px]">
+            <div className="flex flex-col lg:flex-row min-h-[calc(100vh-90px)]">
+                <div className="w-full lg:w-[49%] px-4 sm:px-6 lg:pl-[185px] lg:pr-0 flex-col flex pt-8 sm:pt-12 lg:pt-[190px] pb-8">
+                    <div className="w-full lg:w-[400px] flex flex-col gap-6 sm:gap-8 lg:gap-[60px]">
+                        <div className="flex flex-col leading-tight gap-3 sm:gap-[14px]">
                             <div className="flex flex-col leading-tight">
-                                <p className="font-['Instrument_Serif'] text-[#707070] font-medium text-[24px] italic">Hello there</p>
-                                <p className="text-[24px] font-medium text-[#022B23]">We&#39;ve missed you</p>
+                                <p className="font-['Instrument_Serif'] text-[#707070] font-medium text-xl sm:text-[24px] italic">Hello there</p>
+                                <p className="text-xl sm:text-[24px] font-medium text-[#022B23]">We&#39;ve missed you</p>
                             </div>
-                            <p className="text-[#1E1E1E] text-[16px]">Sign in to continue to your dashboard</p>
+                            <p className="text-[#1E1E1E] text-sm sm:text-[16px]">Sign in to continue to your dashboard</p>
                         </div>
                         <form onSubmit={handleSubmit}>
                             {formFields.map((field) => (
@@ -243,10 +283,10 @@ const Login = () => {
                                             onFocus={() => handleFocus(field.id)}
                                             onBlur={() => handleBlur(field.id)}
                                             placeholder={!focusedFields[field.id] && !form[field.id] ? field.label : ''}
-                                            className={`px-4 h-[58px] w-full border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] ${
+                                            className={`px-3 sm:px-4 h-12 sm:h-[58px] w-full border-[1.5px] border-[#D1D1D1] rounded-xl sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] transition-all ${
                                                 focusedFields[field.id] || form[field.id]
-                                                    ? 'pt-[14px] pb-[4px] text-[#121212] text-[14px] font-medium'
-                                                    : 'text-[#BDBDBD] text-[16px] font-medium'
+                                                    ? 'pt-3 sm:pt-[14px] pb-1 sm:pb-[4px] text-[#121212] text-sm sm:text-[14px] font-medium'
+                                                    : 'text-[#BDBDBD] text-sm sm:text-[16px] font-medium'
                                             }`}
                                             required
                                         />
@@ -274,7 +314,7 @@ const Login = () => {
                             ))}
                             <button
                                 type="submit"
-                                className="flex items-center justify-center cursor-pointer bg-[#033228] rounded-[12px] w-full h-[52px] text-[14px] font-semibold text-[#C6EB5F] disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="flex items-center justify-center cursor-pointer bg-[#033228] rounded-xl sm:rounded-[12px] w-full h-12 sm:h-[52px] text-sm sm:text-[14px] font-semibold text-[#C6EB5F] disabled:opacity-70 disabled:cursor-not-allowed transition-all"
                                 disabled={isLoading}
                             >
                                 {isLoading ? (
@@ -287,12 +327,39 @@ const Login = () => {
                             </button>
                         </form>
                     </div>
-                    <p className="mt-6 md:mt-[-15px] text-[#7C7C7C] text-[14px]">
+                    
+                    {/* Simplified verification prompt */}
+                    {showVerificationPrompt && (
+                        <p className="mt-3 sm:mt-4 text-[#7C7C7C] text-sm sm:text-[14px]">
+                            Account not verified?{' '}
+                            <span 
+                                onClick={handleResendVerification}
+                                className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all"
+                            >
+                                {isResendingVerification ? 'Sending...' : 'Resend verification email'}
+                            </span>
+                        </p>
+                    )}
+                    
+                    <p className="mt-4 sm:mt-6 md:mt-[-15px] text-[#7C7C7C] text-sm sm:text-[14px]">
                         Don&#39;t have an account?{' '}
-                        <span onClick={() => router.push('/register/getStarted')} className="text-[#001234] text-[16px] cursor-pointer hover:underline">
+                        <span onClick={() => router.push('/register/getStarted')} className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all">
                             Register
                         </span>
                     </p>
+                    
+                    {/* Test button - remove in production */}
+                    {process.env.NODE_ENV === 'development' && (
+                        <button
+                            onClick={() => {
+                                setShowVerificationPrompt(true);
+                                safeLocalStorage.setItem('unverifiedEmail', form.email || 'test@example.com');
+                            }}
+                            className="mt-2 text-[12px] text-gray-500 underline"
+                        >
+                            Test Verification Prompt
+                        </button>
+                    )}
                     {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
                         <ReCAPTCHA
                             sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
@@ -301,12 +368,12 @@ const Login = () => {
                         />
                     )}
                 </div>
-                <div className="hidden md:flex mt-[-90px] w-[51%] justify-between flex-col bg-[#f9f9f9] pt-[136px] h-[902px]">
-                    <p className="ml-[100px] text-[#000000] leading-tight text-[40px] italic font-['Instrument_Serif']">
+                <div className="hidden lg:flex mt-[-90px] w-[51%] justify-between flex-col bg-[#f9f9f9] pt-[136px] min-h-[calc(100vh-90px)]">
+                    <p className="ml-[60px] xl:ml-[100px] text-[#000000] leading-tight text-[28px] xl:text-[40px] italic font-['Instrument_Serif']">
                         Buying and selling <br /> made easy
                     </p>
-                    <div className="flex justify-end">
-                        <Image src={loginImg} alt="Login illustration" width={670} height={700} className="w-[670px]" />
+                    <div className="flex justify-end items-end flex-1">
+                        <Image src={loginImg} alt="Login illustration" width={670} height={700} className="w-[450px] xl:w-[670px] h-auto" />
                     </div>
                 </div>
             </div>

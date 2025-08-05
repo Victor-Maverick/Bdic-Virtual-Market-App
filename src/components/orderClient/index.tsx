@@ -1,8 +1,7 @@
 'use client'
 import {useEffect, useRef, useState} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import DashboardHeader from "@/components/dashboardHeader";
-import DashboardOptions from "@/components/dashboardOptions";
+
 import Image from "next/image";
 import { Toaster, toast } from 'react-hot-toast';
 import arrowDown from "../../../public/assets/images/arrow-down.svg";
@@ -1147,8 +1146,6 @@ const OrderClient = () => {
 
     return (
         <>
-            <DashboardHeader />
-            <DashboardOptions />
             <div className="flex flex-col">
                 <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
                     <div className="w-[359px] h-[52px] gap-[24px] flex items-end">

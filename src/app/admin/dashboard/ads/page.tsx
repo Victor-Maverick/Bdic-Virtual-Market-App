@@ -4,6 +4,7 @@ import Image from "next/image";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import TierEditModal from "@/components/tierEditModal";
+import { cleanPaymentType } from "@/utils/paymentUtils";
 
 interface Tier {
     id: number;
@@ -14,24 +15,107 @@ interface Tier {
     updateTime: string;
 }
 
-interface Transaction {
+interface TransactionDetails {
     id: number;
     credoReference: string;
     email: string;
     amount: number;
     status: string;
-    paymentType: string;
-    payerName: string;
+    paymentType: string | null;
     createdAt: string;
+    payerName?: string;
+    bankDetails?: {
+        bankName?: string;
+        accountNumber?: string;
+    };
 }
 
 const TransactionDetailsModal = ({
                                      transactionId,
                                      onClose,
                                  }: {
-    transactionId: string;
+    transactionId: number;
     onClose: () => void;
 }) => {
+    const [transactionDetails, setTransactionDetails] = useState<TransactionDetails | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        const fetchTransactionDetails = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/transaction?id=${transactionId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch transaction details');
+                }
+                const data = await response.json();
+                setTransactionDetails(data);
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Failed to fetch transaction details');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTransactionDetails();
+    }, [transactionId]);
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const formatTime = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true
+        });
+    };
+
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-NG', {
+            style: 'currency',
+            currency: 'NGN',
+            minimumFractionDigits: 2
+        }).format(amount / 100); // Assuming amount is in kobo
+    };
+
+    if (loading) {
+        return (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
+                <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative flex items-center justify-center">
+                    <p>Loading transaction details...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
+                <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative flex items-center justify-center">
+                    <p className="text-red-500">{error}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!transactionDetails) {
+        return (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
+                <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative flex items-center justify-center">
+                    <p>No transaction details found</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
             <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative">
@@ -40,53 +124,45 @@ const TransactionDetailsModal = ({
                         <p className={`text-[#022B23] text-[16px] font-medium`}>View details</p>
                         <p className="text-[#707070] text-[14px] font-medium">View details of transaction</p>
                     </div>
-                    <span className="w-[77px] text-[12px] text-[#DD6A02] font-medium flex justify-center items-center h-[32px] rounded-[8px] bg-[#fffaeb] border border-[#DD6A02]">
-                        Pending
+                    <span className={`w-[77px] text-[12px] font-medium flex justify-center items-center h-[32px] rounded-[8px] border ${
+                        transactionDetails.status === 'Successful' || transactionDetails.status === '0'
+                            ? 'text-[#027A48] bg-[#ECFDF3] border-[#027A48]'
+                            : 'text-[#DD6A02] bg-[#fffaeb] border-[#DD6A02]'
+                    }`}>
+                        {transactionDetails.status === '0' ? 'Successful' : transactionDetails.status}
                     </span>
                 </div>
 
-                <div className="w-full flex flex-col h-[430px] pt-[20px] pb-[2px]  gap-[30px]">
+                <div className="w-full flex flex-col h-[430px] pt-[20px] pb-[2px] gap-[30px]">
                     <div className="flex flex-col h-[79px] gap-[6px]">
-                        <p className="text-[16px] font-semibold text-[#022B23]">ID: <span>{transactionId}</span></p>
-                        <p className="text-[14px] font-medium text-[#707070]">User: <span className="text-[#000000] underline">Abba technologies</span></p>
-                        <p className="text-[14px] font-medium text-[#707070]">Type: <span className="text-[#000000] underline">Vendor</span></p>
+                        <p className="text-[16px] font-semibold text-[#022B23]">ID: <span>{transactionDetails.credoReference}</span></p>
+                        <p className="text-[14px] font-medium text-[#707070]">Type: <span className="text-[#000000]">{cleanPaymentType(transactionDetails.paymentType)}</span></p>
                     </div>
                     <div className="flex flex-col w-full pr-[30px]">
-                        <p className="text-[14px] text-[#022B23] font-medium">Request details</p>
+                        <p className="text-[14px] text-[#022B23] font-medium">Tier details</p>
                         <div className="flex flex-col w-full">
                             <div className="flex justify-between items-center">
-                                <p className="text-[14px] text-[#707070] font-medium">Request amount</p>
-                                <p className="text-[14px] text-[#1E1E1E] font-medium">N 123,000.00</p>
+                                <p className="text-[14px] text-[#707070] font-medium">Tier amount</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">{formatCurrency(transactionDetails.amount)}</p>
                             </div>
                             <div className="flex justify-between items-center">
-                                <p className="text-[14px] text-[#707070] font-medium">Fee</p>
-                                <p className="text-[14px] text-[#1E1E1E] font-medium">N 1,000.00</p>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <p className="text-[14px] text-[#707070] font-medium">Date</p>
-                                <p className="text-[14px] text-[#1E1E1E] font-medium">4th Apr. 2025</p>
+                                <p className="text-[14px] text-[#707070] font-medium">Date promoted</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">{formatDate(transactionDetails.createdAt)}</p>
                             </div>
                             <div className="flex text-start justify-between items-center">
                                 <p className="text-[14px] text-[#707070] font-medium">Time</p>
-                                <p className="text-[14px] text-[#1E1E1E] font-medium">02:33:09 PM</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">{formatTime(transactionDetails.createdAt)}</p>
                             </div>
-                        </div>
-                    </div>
-                    <div className="w-[97%] px-[22px] flex flex-col gap-[9px] py-[14px] h-[130px] rounded-[24px] border-[1px]  border-[#ededed] ">
-                        <p className="text-[16px] text-[#000000] font-medium">Bank details</p>
-                        <div className="flex flex-col gap-[5px]">
-                            <p className="text-[14px] text-[#707070]">BANK NAME: ACCESS BANK</p>
-                            <p className="text-[14px] text-[#707070]">ACCOUNT NUMBER: 00112233445</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex justify-end mt-3 h-[46px] gap-[6px]">
-                    <button onClick={onClose} className=" justify-center text-[16px] font-medium flex items-center text-[#FF5050] w-[87px] border border-[#FF5050] rounded-[12px] ">
-                        Decline
-                    </button>
-                    <button className="flex w-[159px] text-[16px] font-medium items-center justify-center border border-[#022B23] text-[#022B23] rounded-[12px] ">
-                        Approve pay-out
+                    <button
+                        onClick={onClose}
+                        className="justify-center text-[16px] font-medium flex items-center text-[#FF5050] w-[87px] border border-[#FF5050] rounded-[12px]"
+                    >
+                        Close
                     </button>
                 </div>
             </div>
@@ -99,7 +175,7 @@ const ActionsDropdown = ({
                              transactionId,
                          }: {
     children: React.ReactNode;
-    transactionId: string;
+    transactionId: number;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -159,7 +235,7 @@ const ActionsDropdown = ({
     );
 };
 
-const AdsTableRow = ({ transaction, isLast }: { transaction: Transaction; isLast: boolean }) => {
+const AdsTableRow = ({ transaction, isLast }: { transaction: TransactionDetails; isLast: boolean }) => {
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
@@ -180,25 +256,17 @@ const AdsTableRow = ({ transaction, isLast }: { transaction: Transaction; isLast
 
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex items-center w-[10%] pl-[24px]">
-                <p className="text-[#101828] text-[14px] font-medium">{transaction.credoReference}</p>
+            <div className="flex items-center pl-[15px] w-[20%] ">
+                <p className="text-[#101828] text-[14px] font-medium">{cleanPaymentType(transaction.paymentType)}</p>
             </div>
 
-            <div className="flex items-center pl-[15px] w-[12%] ">
-                <p className="text-[#101828] text-[14px] font-medium">{transaction.paymentType}</p>
-            </div>
-
-            <div className="flex flex-col justify-center w-[17%] px-[15px]">
+            <div className="flex flex-col justify-center w-[25%] px-[15px]">
                 <p className="text-[#101828] text-[14px] font-medium">{transaction.payerName}</p>
                 <p className="text-[#667085] text-[14px]">{transaction.email}</p>
             </div>
 
-            <div className="flex items-center w-[15%] pl-[24px]">
-                <p className="text-[#101828] text-[14px]">{transaction.amount}</p>
-            </div>
-
-            <div className="flex items-center w-[15%] pl-[24px]">
-                <p className="text-[#101828] text-[14px]">Tier 1</p>
+            <div className="flex items-center w-[20%] pl-[24px]">
+                <p className="text-[#101828] text-[14px]">{transaction.amount/100}</p>
             </div>
 
             <div className="flex flex-col justify-center w-[15%] ">
@@ -206,18 +274,20 @@ const AdsTableRow = ({ transaction, isLast }: { transaction: Transaction; isLast
                 <p className="text-[#667085] text-[14px]">{formatTime(transaction.createdAt)}</p>
             </div>
 
-            <div className="flex items-center w-[15%] px-[10px]">
+            <div className={`flex items-center w-[19%] px-[10px]`}>
                 <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    transaction.status === 'Successful'
+                    transaction.status === 'Successful' || transaction.status === '0'
                         ? 'bg-[#ECFDF3] text-[#027A48]'
                         : 'bg-[#FEF3F2] text-[#FF5050]'
                 }`}>
-                    <p className="text-[12px] font-medium">{transaction.status}</p>
+                    <p className="text-[12px] font-medium">
+                        {transaction.status === '0' ? 'Successful' : transaction.status}
+                    </p>
                 </div>
             </div>
 
             <div className="flex items-center justify-center w-[3%]">
-                <ActionsDropdown transactionId={transaction.credoReference}>
+                <ActionsDropdown transactionId={transaction.id}>
                     <div className="flex flex-col gap-1">
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -232,14 +302,17 @@ const AdsTableRow = ({ transaction, isLast }: { transaction: Transaction; isLast
 const Ads = () => {
     const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
     const [tiers, setTiers] = useState<Tier[]>([]);
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [transactions, setTransactions] = useState<TransactionDetails[]>([]);
+    const [totalPromotionAmount, setTotalPromotionAmount] = useState<number>(0);
     const [loading, setLoading] = useState({
         tiers: true,
-        transactions: true
+        transactions: true,
+        totalPromotionAmount: true
     });
     const [error, setError] = useState({
         tiers: '',
-        transactions: ''
+        transactions: '',
+        totalPromotionAmount: ''
     });
 
     const fetchTiers = async () => {
@@ -274,14 +347,26 @@ const Ads = () => {
         }
     };
 
+    const fetchTotalPromotionAmount = async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/allPromotionAmount`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch total promotion amount');
+            }
+            const data = await response.json();
+            setTotalPromotionAmount(data);
+        } catch (err) {
+            setError(prev => ({...prev, totalPromotionAmount: err instanceof Error ? err.message : 'Failed to fetch total promotion amount'}));
+        } finally {
+            setLoading(prev => ({...prev, totalPromotionAmount: false}));
+        }
+    };
+
     useEffect(() => {
         fetchTiers();
         fetchTransactions();
+        fetchTotalPromotionAmount();
     }, []);
-
-    const calculateTotalEarnings = () => {
-        return tiers.reduce((total, tier) => total + tier.price, 0);
-    };
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-NG', {
@@ -300,7 +385,7 @@ const Ads = () => {
                 <p>View all ads and promotions</p>
             </div>
             <div className="p-[20px] ">
-                {loading.tiers ? (
+                {loading.tiers || loading.totalPromotionAmount ? (
                     <div className="flex w-full gap-[20px] h-[86px] justify-between">
                         {[1, 2, 3, 4].map((i) => (
                             <div key={i} className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] animate-pulse">
@@ -311,8 +396,8 @@ const Ads = () => {
                             </div>
                         ))}
                     </div>
-                ) : error.tiers ? (
-                    <div className="text-red-500">{error.tiers}</div>
+                ) : error.tiers || error.totalPromotionAmount ? (
+                    <div className="text-red-500">{error.tiers || error.totalPromotionAmount}</div>
                 ) : (
                     <div className="flex w-full gap-[20px] h-[86px] justify-between">
                         <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
@@ -320,7 +405,7 @@ const Ads = () => {
                                 <p className="text-[#ffffff] text-[12px]">Total promotions earnings</p>
                             </div>
                             <div className="h-[52px] flex justify-center flex-col p-[14px]">
-                                <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(calculateTotalEarnings())}</p>
+                                <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(totalPromotionAmount/100)}</p>
                             </div>
                         </div>
                         {tiers.slice(0, 3).map((tier) => (
@@ -411,31 +496,26 @@ const Ads = () => {
                     </div>
 
                     <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
-                        <div className="h-full w-[10%] flex justify-center items-center font-medium text-[#667085] text-[12px]">
-                            <p>Transaction ID</p>
-                        </div>
-                        <div className="h-full w-[12%] gap-[4px] flex justify-center items-center font-medium text-[#667085] text-[12px]">
+
+                        <div className="h-full w-[20%] gap-[4px] flex justify-center items-center font-medium text-[#667085] text-[12px]">
                             <p>Transaction type</p>
                             <Image src={arrowDown} alt={'image'} />
                         </div>
-                        <div className="h-full w-[17%] gap-[4px] flex px-[24px] items-center font-medium text-[#667085] text-[12px]">
+                        <div className="h-full w-[25%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
                             <p>User</p>
                             <Image src={arrowDown} alt={'image'} />
                         </div>
 
-                        <div className="h-full w-[15%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
+                        <div className="h-full w-[20%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
                             <p>Amount (NGN)</p>
                             <Image src={arrowDown} alt={'image'} />
                         </div>
-                        <div className="h-full w-[15%] gap-[4px] flex justify-center items-center font-medium text-[#667085] text-[12px]">
-                            <p>Tier subscriptions</p>
-                            <Image src={arrowDown} alt={'image'} />
-                        </div>
+
                         <div className="h-full w-[15%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
                             <p>Date and Time</p>
                             <Image src={arrowDown} alt={'image'} />
                         </div>
-                        <div className="flex w-[15%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
+                        <div className="flex w-[19%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
                             Status
                         </div>
                         <div className="w-[3%]"></div>

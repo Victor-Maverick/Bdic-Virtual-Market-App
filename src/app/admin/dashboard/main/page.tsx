@@ -126,31 +126,31 @@ export default function DashboardOverview() {
     };
 
     return (
-        <div className="h-[900px]">
-            <div className="h-[46px] flex items-center border-b-[0.5px] border-[#ededed] px-[20px]">
-                <p className="text-[#022B23] font-medium text-[14px]">Dashboard overview</p>
+        <div className="min-h-[900px] pb-4">
+            <div className="h-[46px] flex items-center border-b-[0.5px] border-[#ededed] px-4 sm:px-6 lg:px-[20px]">
+                <p className="text-[#022B23] font-medium text-[14px] sm:text-[16px]">Dashboard overview</p>
             </div>
 
             {/* Metrics Section */}
-            <div className="flex w-full px-[20px] gap-[20px] mt-[20px] h-[110px] justify-between">
+            <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 lg:px-[20px] gap-4 lg:gap-[20px] mt-[20px] lg:h-[110px] lg:justify-between">
                 {/* Markets Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                        <p className="text-[#707070] text-[12px]">Markets</p>
+                        <p className="text-[#707070] text-[12px] sm:text-[14px]">Markets</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{data.marketsCount}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.marketsCount}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.marketsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.marketsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.marketsChangePercent >= 0 ? '+' : ''}{data.marketsChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/markets')}
                             >
                                 View markets
@@ -160,23 +160,23 @@ export default function DashboardOverview() {
                 </div>
 
                 {/* Vendors Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                        <p className="text-[#707070] text-[12px]">Vendors</p>
+                        <p className="text-[#707070] text-[12px] sm:text-[14px]">Vendors</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{data.vendorsCount.toLocaleString()}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.vendorsCount.toLocaleString()}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.vendorsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.vendorsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.vendorsChangePercent >= 0 ? '+' : ''}{data.vendorsChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/vendors')}
                             >
                                 View vendors
@@ -186,23 +186,23 @@ export default function DashboardOverview() {
                 </div>
 
                 {/* Logistics Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                        <p className="text-[#707070] text-[12px]">Logistics</p>
+                        <p className="text-[#707070] text-[12px] sm:text-[14px]">Logistics</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{data.logisticsCount}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.logisticsCount}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.logisticsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.logisticsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.logisticsChangePercent >= 0 ? '+' : ''}{data.logisticsChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/logistics')}
                             >
                                 View logistics
@@ -212,23 +212,23 @@ export default function DashboardOverview() {
                 </div>
 
                 {/* Users Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                        <p className="text-[#707070] text-[12px]">Users (customers)</p>
+                        <p className="text-[#707070] text-[12px] sm:text-[14px]">Users (customers)</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{data.usersCount.toLocaleString()}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.usersCount.toLocaleString()}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.usersChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.usersChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.usersChangePercent >= 0 ? '+' : ''}{data.usersChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/users')}
                             >
                                 View customers
@@ -239,25 +239,25 @@ export default function DashboardOverview() {
             </div>
 
             {/* Second Row Metrics */}
-            <div className="flex w-full px-[20px] gap-[20px] mt-[20px] h-[110px]">
+            <div className="flex flex-col lg:flex-row w-full px-4 sm:px-6 lg:px-[20px] gap-4 lg:gap-[20px] mt-4 lg:mt-[20px] lg:h-[110px]">
                 {/* Total Transactions Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#000000]">
-                        <p className="text-[#FFFFFF] text-[12px]">Total transactions</p>
+                        <p className="text-[#FFFFFF] text-[12px] sm:text-[14px]">Total transactions</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(data.totalTransactions)}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] text-[#022B23] font-medium">{formatCurrency(data.totalTransactions)}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.transactionsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.transactionsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.transactionsChangePercent >= 0 ? '+' : ''}{data.transactionsChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/transactions')}
                             >
                                 View transactions
@@ -267,23 +267,23 @@ export default function DashboardOverview() {
                 </div>
 
                 {/* Ads Revenue Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#000000]">
-                        <p className="text-[#FFFFFF] text-[12px]">Ads and promotion revenue</p>
+                        <p className="text-[#FFFFFF] text-[12px] sm:text-[14px]">Ads and promotion revenue</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(data.adsRevenue)}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] text-[#022B23] font-medium">{formatCurrency(data.adsRevenue)}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.adsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.adsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.adsChangePercent >= 0 ? '+' : ''}{data.adsChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/ads')}
                             >
                                 View details
@@ -293,23 +293,23 @@ export default function DashboardOverview() {
                 </div>
 
                 {/* Shop Sales Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#000000]">
-                        <p className="text-[#FFFFFF] text-[12px]">Shop sales</p>
+                        <p className="text-[#FFFFFF] text-[12px] sm:text-[14px]">Shop sales</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(data.shopSales)}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[16px] sm:text-[18px] lg:text-[20px] text-[#022B23] font-medium">{formatCurrency(data.shopSales)}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.salesChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.salesChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.salesChangePercent >= 0 ? '+' : ''}{data.salesChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/transactions')}
                             >
                                 View details
@@ -319,23 +319,23 @@ export default function DashboardOverview() {
                 </div>
 
                 {/* Disputes Card */}
-                <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#FF5050] border-[0.5px]">
+                <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#FF5050] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#FFF2F2]">
-                        <p className="text-[#FF5050] text-[12px]">Disputes</p>
+                        <p className="text-[#FF5050] text-[12px] sm:text-[14px]">Disputes</p>
                     </div>
-                    <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">{data.disputesCount}</p>
-                        <div className="flex justify-between">
+                    <div className="flex-1 flex justify-center flex-col p-[14px]">
+                        <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.disputesCount}</p>
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
                             <div className="flex items-center">
                                 <Image src={data.disputesChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] text-[#707070]">
+                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
                   <span className={data.disputesChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
                     {data.disputesChangePercent >= 0 ? '+' : ''}{data.disputesChangePercent}%
                   </span> from yesterday
                                 </p>
                             </div>
                             <p 
-                                className="text-[10px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
+                                className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/disputes')}
                             >
                                 View disputes
@@ -346,29 +346,29 @@ export default function DashboardOverview() {
             </div>
 
             {/* Analytics Section */}
-            <div className="px-[20px] w-full mt-25">
-                <p className="text-[#18181B] text-[12px]">Analytics</p>
-                <div className="w-[291px] mt-[10px] h-[26px] flex rounded-[6px] border-[0.5px] border-[#F2F2F2]">
-                    <div className="w-[55px] h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] rounded-tl-[6px] rounded-bl-[6px] bg-[#F8FAFB] text-[#03071E] justify-center">
+            <div className="px-4 sm:px-6 lg:px-[20px] w-full mt-6 lg:mt-25">
+                <p className="text-[#18181B] text-[12px] sm:text-[14px] mb-2">Analytics</p>
+                <div className="w-full max-w-[291px] mt-[10px] h-[26px] sm:h-[32px] flex rounded-[6px] border-[0.5px] border-[#F2F2F2] overflow-hidden">
+                    <div className="flex-1 h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] sm:text-[12px] rounded-tl-[6px] rounded-bl-[6px] bg-[#F8FAFB] text-[#03071E] justify-center">
                         <p>Markets</p>
                     </div>
-                    <div className="w-[56px] h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] text-[#8c8c8c] justify-center">
+                    <div className="flex-1 h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] sm:text-[12px] text-[#8c8c8c] justify-center">
                         <p>Vendor</p>
                     </div>
-                    <div className="w-[59px] h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] text-[#8c8c8c] justify-center">
+                    <div className="flex-1 h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] sm:text-[12px] text-[#8c8c8c] justify-center">
                         <p>Logistics</p>
                     </div>
-                    <div className="w-[44px] h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] text-[#8c8c8c] justify-center">
+                    <div className="flex-1 h-full border-r-[0.5px] border-[#f2f2f2] flex items-center text-[10px] sm:text-[12px] text-[#8c8c8c] justify-center">
                         <p>Users</p>
                     </div>
-                    <div className="w-[77px] h-full rounded-tr-[6px] rounded-br-[6px] flex items-center text-[10px] text-[#8c8c8c] justify-center">
+                    <div className="flex-1 h-full rounded-tr-[6px] rounded-br-[6px] flex items-center text-[10px] sm:text-[12px] text-[#8c8c8c] justify-center">
                         <p>Transactions</p>
                     </div>
                 </div>
             </div>
 
             {/* Chart Section */}
-            <div className="w-[calc(100%-40px)] mx-[20px] mt-[30px] h-[391px] border-[0.5px] border-[#f2f2f2] rounded-[14px]">
+            <div className="w-[calc(100%-32px)] sm:w-[calc(100%-48px)] lg:w-[calc(100%-40px)] mx-4 sm:mx-6 lg:mx-[20px] mt-6 lg:mt-[30px] h-[300px] sm:h-[350px] lg:h-[391px] border-[0.5px] border-[#f2f2f2] rounded-[14px] overflow-hidden">
                 <MarketPerformanceChart />
             </div>
         </div>

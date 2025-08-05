@@ -14,6 +14,8 @@ interface FeaturedProduct {
     market: string;
 }
 
+
+
 const MarketPlaceSection = () => {
     const [featuredProducts, setFeaturedProducts] = useState<FeaturedProduct[]>([]);
     const [loading, setLoading] = useState<boolean>(false);

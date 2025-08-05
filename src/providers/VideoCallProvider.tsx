@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useVideoCallNotifications } from '@/hooks/useVideoCallNotifications';
-import { VideoCallResponse } from '@/services/videoCallService';
+import { VideoCallResponse, videoCallService } from '@/services/videoCallService';
 import IncomingCallModal from '@/components/IncomingCallModal';
 import VideoCallModal from '@/components/VideoCallModal';
 
@@ -46,17 +46,35 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
     clearCallStatus
   } = useVideoCallNotifications();
 
-  const handleAcceptCall = () => {
+  const handleAcceptCall = async () => {
     if (incomingCall) {
-      setCurrentCall(incomingCall.call);
-      setIsVideoCallOpen(true);
-      clearIncomingCall();
+      try {
+        // Accept the call via API first
+        await videoCallService.acceptCall(incomingCall.call.roomName);
+        
+        // Then open the modal
+        setCurrentCall(incomingCall.call);
+        setIsVideoCallOpen(true);
+        clearIncomingCall();
+      } catch (error) {
+        console.error('Error accepting video call:', error);
+        clearIncomingCall();
+      }
     }
   };
 
-  const handleDeclineCall = () => {
-    console.log('📞 VideoCallProvider: handleDeclineCall called - clearing incoming call');
-    clearIncomingCall();
+  const handleDeclineCall = async () => {
+    if (incomingCall) {
+      try {
+        // Decline the call via API first
+        await videoCallService.declineCall(incomingCall.call.roomName, session?.user?.email || '');
+        console.log('📞 VideoCallProvider: handleDeclineCall called - clearing incoming call');
+        clearIncomingCall();
+      } catch (error) {
+        console.error('Error declining video call:', error);
+        clearIncomingCall();
+      }
+    }
   };
 
   const handleCloseVideoCall = () => {
@@ -93,16 +111,27 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
           console.log('📞 VideoCallProvider: Call status updated:', callStatus);
           break;
         case 'CALL_ENDED':
-          console.log('📞 VideoCallProvider: CALL_ENDED received - closing modal for both participants');
-          forceCloseAllModals();
+          console.log('📞 VideoCallProvider: CALL_ENDED received - FORCE closing modal for both participants');
+          // Force close immediately without any conditions
+          setIsVideoCallOpen(false);
+          setCurrentCall(null);
+          clearIncomingCall();
+          // Also trigger a page refresh to ensure clean state
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
           break;
         case 'CALL_DECLINED':
-          console.log('📞 VideoCallProvider: Call declined - closing modals for both participants');
-          forceCloseAllModals();
+          console.log('📞 VideoCallProvider: Call declined - FORCE closing modals for both participants');
+          setIsVideoCallOpen(false);
+          setCurrentCall(null);
+          clearIncomingCall();
           break;
         case 'CALL_MISSED':
-          console.log('📞 VideoCallProvider: Call missed after 45 seconds - closing modals');
-          forceCloseAllModals();
+          console.log('📞 VideoCallProvider: Call missed after 45 seconds - FORCE closing modals');
+          setIsVideoCallOpen(false);
+          setCurrentCall(null);
+          clearIncomingCall();
           break;
         default:
           console.log('📞 VideoCallProvider: Unknown call status type:', statusType);
@@ -113,7 +142,7 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
         clearCallStatus();
       }, 100);
     }
-  }, [callStatus]);
+  }, [callStatus, isVideoCallOpen, currentCall, incomingCall, clearIncomingCall, clearCallStatus]);
 
   // Debug effect to monitor state changes
   React.useEffect(() => {

@@ -5,17 +5,18 @@ import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import {useEffect, useRef, useState} from "react";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import BackButton from "@/components/BackButton";
+import axios from 'axios';
+import { UsersTableSkeleton, StatsCardsLoadingSkeleton } from "@/components/LoadingSkeletons";
 
 interface User {
     id: number;
     firstName: string;
     lastName: string;
     email: string;
-    phoneNumber: string;
+    phone: string;
     roles: string[];
     createdAt: string;
-    isActive: boolean;
-    isVerified: boolean;
+    active: boolean;
 }
 
 // const UserActionsDropdown = ({
@@ -88,9 +89,16 @@ const UserTableRow = ({
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
 
+    const handleRowClick = () => {
+        window.location.href = `/admin/dashboard/users/view-user/${encodeURIComponent(user.email)}`;
+    };
+
     return (
         <>
-            <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+            <div 
+                className={`flex h-[72px] cursor-pointer hover:bg-[#F9FAFB] transition-colors ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}
+                onClick={handleRowClick}
+            >
                 <div className="flex items-center w-[25%] pl-[24px]">
                     <div className="flex flex-col">
                         <p className="text-[14px] text-[#101828] font-medium">{user.firstName} {user.lastName}</p>
@@ -99,12 +107,18 @@ const UserTableRow = ({
                 </div>
 
                 <div className="flex flex-col justify-center w-[20%] px-[15px]">
-                    <p className="text-[14px] text-[#101828]">{user.phoneNumber || 'N/A'}</p>
+                    <p className="text-[14px] text-[#101828]">{user.phone || 'None'}</p>
                     <p className="text-[12px] text-[#667085]">Phone</p>
                 </div>
 
                 <div className="flex flex-col justify-center w-[20%] px-[15px]">
-                    <p className="text-[14px] text-[#101828]">{user.roles.join(', ')}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                        {user.roles.map((role, index) => (
+                            <span key={index} className="px-1 py-0.5 bg-[#F9FAFB] text-[#667085] text-[10px] rounded border">
+                                {role.replace(/[^a-zA-Z]/g, '')}
+                            </span>
+                        ))}
+                    </div>
                     <p className="text-[12px] text-[#667085]">Roles</p>
                 </div>
 
@@ -116,21 +130,22 @@ const UserTableRow = ({
 
                 <div className="flex items-center w-[10%] px-[24px]">
                     <div className={`px-2 py-1 rounded-[8px] flex items-center justify-center ${
-                        user.isActive && user.isVerified
+                        user.active
                             ? 'bg-[#ECFDF3] text-[#027A48]'
-                            : !user.isActive
-                            ? 'bg-[#FEF3F2] text-[#FF5050]'
-                            : 'bg-[#FFF4ED] text-[#F79009]'
+                            : 'bg-[#FEF3F2] text-[#FF5050]'
                     }`}>
                         <p className="text-[12px] font-medium">
-                            {user.isActive && user.isVerified ? 'Active' : !user.isActive ? 'Suspended' : 'Pending'}
+                            {user.active ? 'Active' : 'Inactive'}
                         </p>
                     </div>
                 </div>
 
                 <div className="flex items-center justify-center w-[10%] relative" ref={dropdownRef}>
                     <div
-                        onClick={() => setIsOpen(!isOpen)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsOpen(!isOpen);
+                        }}
                         className="cursor-pointer flex flex-col gap-[3px] items-center justify-center p-2"
                     >
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -142,36 +157,29 @@ const UserTableRow = ({
                         <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg z-50 border border-[#ededed] w-[150px]">
                             <ul className="py-1">
                                 <li 
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         setIsOpen(false);
-                                        // Navigate to user details
+                                        window.location.href = `/admin/dashboard/users/view-user/${encodeURIComponent(user.email)}`;
                                     }}
                                     className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
                                 >
                                     View details
                                 </li>
-                                {!user.isVerified && (
-                                    <li 
-                                        onClick={() => {
-                                            setIsOpen(false);
-                                            // Handle verify user
-                                        }}
-                                        className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer text-green-600"
-                                    >
-                                        Verify user
-                                    </li>
-                                )}
+
                                 <li 
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         setIsOpen(false);
                                         // Handle toggle suspension
                                     }}
                                     className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
                                 >
-                                    {user.isActive ? 'Suspend' : 'Activate'}
+                                    {user.active ? 'Suspend' : 'Activate'}
                                 </li>
                                 <li 
-                                    onClick={() => {
+                                    onClick={(e) => {
+                                        e.stopPropagation();
                                         setIsOpen(false);
                                         // Handle delete user
                                     }}
@@ -190,133 +198,128 @@ const UserTableRow = ({
 
 const Users = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 5;
 
-    // Mock data
-    const mockUsers: User[] = [
-        {
-            id: 1,
-            firstName: "John",
-            lastName: "Doe",
-            email: "john.doe@example.com",
-            phoneNumber: "+1234567890",
-            roles: ["BUYER"],
-            createdAt: "2024-01-15T10:30:00Z",
-            isActive: true,
-            isVerified: true
-        },
-        {
-            id: 2,
-            firstName: "Jane",
-            lastName: "Smith",
-            email: "jane.smith@example.com",
-            phoneNumber: "+1234567891",
-            roles: ["VENDOR"],
-            createdAt: "2024-01-20T14:20:00Z",
-            isActive: true,
-            isVerified: false
-        },
-        {
-            id: 3,
-            firstName: "Mike",
-            lastName: "Johnson",
-            email: "mike.johnson@example.com",
-            phoneNumber: "+1234567892",
-            roles: ["BUYER"],
-            createdAt: "2024-02-01T09:15:00Z",
-            isActive: false,
-            isVerified: true
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/users/buyersAll`);
+            setUsers(response.data);
+            console.log("Users: ",response.data);
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching users:', err);
+            setError('Failed to fetch users');
+        } finally {
+            setLoading(false);
         }
-    ];
-
-    const mockStats = {
-        totalUsers: 1247,
-        activeUsers: 1122,
-        dailySignups: 23,
-        inactiveUsers: 125
     };
 
-    const filteredUsers = mockUsers.filter(user => 
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    // Calculate stats from actual data
+    const stats = {
+        totalUsers: users.length,
+        activeUsers: users.filter(user => user.active).length,
+        dailySignups: users.filter(user => {
+            const today = new Date();
+            const userDate = new Date(user.createdAt);
+            return userDate.toDateString() === today.toDateString();
+        }).length,
+        inactiveUsers: users.filter(user => !user.active).length
+    };
+
+    const filteredUsers = users.filter(user => 
         user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    // Calculate pagination
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
+        setCurrentPage(1); // Reset to first page when searching
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
     };
 
     return(
         <>
-            <div className="text-[#022B23] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
+            <div className="text-[#022B23] text-[14px] px-4 sm:px-6 lg:px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
                 <BackButton variant="minimal" />
                 <p>User management</p>
             </div>
-            <div className="p-[20px]">
-                <div className="flex w-full  gap-[20px] h-[110px] justify-between">
-                    <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                            <p className="text-[#707070] text-[12px]">Total users</p>
+            <div className="p-4 sm:p-6 lg:p-[20px]">
+                {loading ? (
+                    <StatsCardsLoadingSkeleton cardCount={3} />
+                ) : (
+                    <div className="flex flex-col lg:flex-row w-full gap-4 lg:gap-[20px] lg:h-[110px] lg:justify-between">
+                        <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
+                            <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
+                                <p className="text-[#707070] text-[12px] sm:text-[14px]">Total users</p>
+                            </div>
+                            <div className="flex-1 flex justify-center flex-col p-[14px]">
+                                <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{stats.totalUsers.toLocaleString()}</p>
+                                <div className="flex items-center">
+                                    <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
+                                    <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">{mockStats.totalUsers.toLocaleString()}</p>
-                            <div className="flex items-center">
-                                <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
-                                <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
+                        <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
+                            <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
+                                <p className="text-[#707070] text-[12px] sm:text-[14px]">Active users</p>
+                            </div>
+                            <div className="flex-1 flex justify-center flex-col p-[14px]">
+                                <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{stats.activeUsers.toLocaleString()}</p>
+                                <div className="flex items-center">
+                                    <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
+                                    <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#FF2121] border-[0.5px]">
+                            <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#FFE8E8]">
+                                <p className="text-[#FF5050] font-medium text-[12px] sm:text-[14px]">Inactive users</p>
+                            </div>
+                            <div className="flex-1 flex justify-center flex-col p-[14px]">
+                                <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{stats.inactiveUsers.toLocaleString()}</p>
+                                <div className="flex items-center">
+                                    <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
+                                    <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                            <p className="text-[#707070] text-[12px]">Active users</p>
-                        </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">{mockStats.activeUsers.toLocaleString()}</p>
-                            <div className="flex items-center">
-                                <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
-                                <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#022B23]">
-                            <p className="text-[#C6EB5F] font-medium text-[12px]">Daily sign up</p>
-                        </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">{mockStats.dailySignups.toLocaleString()}</p>
-                            <div className="flex items-center">
-                                <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
-                                <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#FF2121] border-[0.5px] ">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#FFE8E8]">
-                            <p className="text-[#FF5050] font-medium text-[12px]">Inactive users</p>
-                        </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">{mockStats.inactiveUsers.toLocaleString()}</p>
-                            <div className="flex items-center">
-                                <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
-                                <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                )}
 
-                <div className="flex flex-col mt-[50px] rounded-[24px] border-[1px] border-[#EAECF0]">
-                    <div className="flex items-center justify-between pr-[20px]">
-                        <div className="my-[20px] mx-[25px] flex flex-col">
-                            <p className="text-[#101828] font-medium">Users ({filteredUsers.length})</p>
-                            <p className="text-[#667085] text-[14px]">View and manage users here</p>
+                <div className="flex flex-col mt-[30px] sm:mt-[50px] rounded-[24px] border-[1px] border-[#EAECF0]">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:pr-[20px] gap-4 sm:gap-0">
+                        <div className="mx-0 sm:mx-[25px] flex flex-col">
+                            <p className="text-[#101828] font-medium text-[16px] sm:text-[18px]">Users ({filteredUsers.length})</p>
+                            <p className="text-[#667085] text-[12px] sm:text-[14px]">View and manage users here</p>
                         </div>
 
-                        <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
+                        <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-3 sm:px-4 py-2 shadow-sm rounded-sm w-full sm:w-auto">
                             <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
                             <input 
                                 placeholder="Search users..." 
                                 value={searchTerm}
                                 onChange={handleSearchChange}
-                                className="w-[175px] text-[#707070] text-[14px] focus:outline-none"
+                                className="w-full sm:w-[175px] text-[#707070] text-[14px] focus:outline-none"
                             />
                         </div>
                     </div>
@@ -347,20 +350,70 @@ const Users = () => {
                     </div>
 
                     <div className="flex flex-col">
-                        {filteredUsers.length === 0 ? (
+                        {loading ? (
+                            <UsersTableSkeleton />
+                        ) : error ? (
+                            <div className="flex items-center justify-center h-[200px] flex-col">
+                                <p className="text-red-500 mb-2">{error}</p>
+                                <button 
+                                    onClick={fetchUsers}
+                                    className="px-4 py-2 bg-[#022B23] text-white rounded-md text-sm hover:bg-[#033228]"
+                                >
+                                    Retry
+                                </button>
+                            </div>
+                        ) : filteredUsers.length === 0 ? (
                             <div className="flex items-center justify-center h-[200px]">
                                 <p className="text-[#667085]">No users found</p>
                             </div>
                         ) : (
-                            filteredUsers.map((user, index) => (
+                            currentUsers.map((user, index) => (
                                 <UserTableRow
                                     key={user.id}
                                     user={user}
-                                    isLast={index === filteredUsers.length - 1}
+                                    isLast={index === currentUsers.length - 1}
                                 />
                             ))
                         )}
                     </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 lg:px-[24px] py-[16px] border-t border-[#EAECF0] gap-4 sm:gap-0">
+                            <p className="text-[12px] sm:text-[14px] text-[#667085]">
+                                Showing {indexOfFirstUser + 1} to {Math.min(indexOfLastUser, filteredUsers.length)} of {filteredUsers.length} users
+                            </p>
+                            <div className="flex items-center gap-1 sm:gap-2 flex-wrap justify-center sm:justify-start">
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-2 sm:px-3 py-1 text-[12px] sm:text-[14px] text-[#667085] border border-[#D0D5DD] rounded-md hover:bg-[#F9FAFB] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Previous
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                    <button
+                                        key={page}
+                                        onClick={() => handlePageChange(page)}
+                                        className={`px-2 sm:px-3 py-1 text-[12px] sm:text-[14px] border rounded-md ${
+                                            currentPage === page
+                                                ? 'bg-[#022B23] text-white border-[#022B23]'
+                                                : 'text-[#667085] border-[#D0D5DD] hover:bg-[#F9FAFB]'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-2 sm:px-3 py-1 text-[12px] sm:text-[14px] text-[#667085] border border-[#D0D5DD] rounded-md hover:bg-[#F9FAFB] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

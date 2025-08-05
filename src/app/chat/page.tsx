@@ -4,9 +4,11 @@ import { useSession } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
 import Pusher, { Channel } from 'pusher-js';
 import { chatService, ChatMessage } from '@/services/chatService';
-import { Send, Phone, Video } from 'lucide-react';
+import { Send } from 'lucide-react';
 import MarketPlaceHeader from '@/components/marketPlaceHeader';
 import BackButton from '@/components/BackButton';
+import VideoCallButton from '@/components/VideoCallButton';
+import VoiceCallButton from '@/components/VoiceCallButton';
 import blueCircle from '../../../public/assets/images/blueGreenCircle.png';
 import Image from 'next/image';
 
@@ -25,6 +27,10 @@ const ChatPage: React.FC = () => {
   // Rest of the code remains unchanged
   const vendorEmail = searchParams.get('vendor') || '';
   const vendorName = searchParams.get('vendorName') || vendorEmail;
+  const shopId = parseInt(searchParams.get('shopId') || '0');
+  const shopName = searchParams.get('shopName') || vendorName;
+  const productId = searchParams.get('productId') ? parseInt(searchParams.get('productId')!) : undefined;
+  const productName = searchParams.get('productName') || undefined;
 
   const initializeChat = useCallback(async () => {
     if (!session?.user?.email) return;
@@ -179,12 +185,24 @@ const ChatPage: React.FC = () => {
                 </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200">
-                    <Video size={18} className="text-gray-600" />
-                  </button>
-                  <button className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200">
-                    <Phone size={18} className="text-gray-600" />
-                  </button>
+                  <VideoCallButton
+                    vendorEmail={vendorEmail}
+                    shopId={shopId}
+                    shopName={shopName}
+                    productId={productId}
+                    productName={productName}
+                    variant="icon"
+                    className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200 bg-white text-blue-600"
+                  />
+                  <VoiceCallButton
+                    vendorEmail={vendorEmail}
+                    shopId={shopId}
+                    shopName={shopName}
+                    productId={productId}
+                    productName={productName}
+                    variant="icon"
+                    className="p-2 hover:bg-gray-100 rounded-lg border border-gray-200 bg-white text-green-600"
+                  />
                 </div>
               </div>
             </div>

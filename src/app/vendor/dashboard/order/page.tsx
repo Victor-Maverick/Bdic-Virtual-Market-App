@@ -1,6 +1,7 @@
 'use client'
 import dynamic from 'next/dynamic';
 import VendorVideoCallWrapper from '@/components/VendorVideoCallWrapper';
+import VendorShopGuard from '@/components/VendorShopGuard';
 
 const OrderClient = dynamic(() => import('@/components/orderClient'), {
     ssr: false
@@ -8,8 +9,10 @@ const OrderClient = dynamic(() => import('@/components/orderClient'), {
 
 export default function Orders() {
     return (
-        <VendorVideoCallWrapper>
-            <OrderClient />
-        </VendorVideoCallWrapper>
+        <VendorShopGuard showSubHeader={false}>
+            <VendorVideoCallWrapper>
+                <OrderClient />
+            </VendorVideoCallWrapper>
+        </VendorShopGuard>
     );
 }

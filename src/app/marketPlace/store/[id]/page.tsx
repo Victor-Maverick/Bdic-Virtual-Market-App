@@ -16,8 +16,9 @@ import shopImg from "../../../../../public/assets/images/shop.png";
 
 import { Star } from 'lucide-react';
 import { toast } from 'react-toastify';
-import VideoCallButton from '@/components/VideoCallButton';
+import CallDropdown from '@/components/CallDropdown';
 import ChatButton from '@/components/ChatButton';
+import { ProductGridSkeleton } from '@/components/LoadingSkeletons';
 
 interface Product {
     id: number;
@@ -69,9 +70,9 @@ interface ShopData {
 }
 
 const SearchBar = () => (
-    <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
-        <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-        <input placeholder="Search for items here" className="w-[540px] text-[#707070] text-[14px] focus:outline-none"/>
+    <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[44px] sm:h-[52px] px-[8px] sm:px-[10px] rounded-[8px] w-full">
+        <Image src={searchImg} alt="Search Icon" width={18} height={18} className="h-[18px] w-[18px] sm:h-[20px] sm:w-[20px] flex-shrink-0"/>
+        <input placeholder="Search for items here" className="flex-1 text-[#707070] text-[12px] sm:text-[14px] focus:outline-none bg-transparent"/>
     </div>
 );
 
@@ -82,24 +83,24 @@ const ProductCard = ({ product }: { product: Product }) => {
     }
 
     return (
-        <div onClick={handleOpen} className="cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed] hover:shadow-lg transition-shadow">
+        <div onClick={handleOpen} className="cursor-pointer w-full rounded-[10px] sm:rounded-[14px] bg-[#FFFFFF] border border-[#ededed] hover:shadow-lg transition-shadow">
             <Image 
                 src={product.mainImageUrl || "/placeholder.svg"} 
                 alt={product.name}
                 width={200}
                 height={200}
-                className="w-full h-[200px] object-cover rounded-t-[14px]" 
+                className="w-full h-[140px] sm:h-[180px] lg:h-[200px] object-cover rounded-t-[10px] sm:rounded-t-[14px]" 
             />
-            <div className="mt-4 px-4 flex-col gap-[2px]">
-                <p className="font-normal text-[#1E1E1E] truncate">{product.name}</p>
-                <p className="font-semibold text-[20px] text-[#1E1E1E] mb-4 mt-1">₦{product.price.toLocaleString()}</p>
+            <div className="mt-2 sm:mt-4 px-2 sm:px-4 flex-col gap-[2px] pb-2 sm:pb-4">
+                <p className="font-normal text-[#1E1E1E] truncate text-[12px] sm:text-[14px]">{product.name}</p>
+                <p className="font-semibold text-[16px] sm:text-[18px] lg:text-[20px] text-[#1E1E1E] mt-1">₦{product.price.toLocaleString()}</p>
             </div>
         </div>
     )
 }
 
 const ProductGrid = ({ products }: { products: Product[] }) => (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 w-full mt-[10px] gap-x-3 gap-y-[10px] px-4 sm:px-6 lg:px-25 py-[10px]">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 w-full mt-2 sm:mt-[10px] gap-x-2 sm:gap-x-3 gap-y-2 sm:gap-y-[10px] px-4 sm:px-6 lg:px-25 py-2 sm:py-[10px]">
         {products.map((product) => (
             <ProductCard
                 key={product.id}
@@ -224,26 +225,28 @@ const StorePage = () => {
     return (
         <>
             <MarketPlaceHeader />
-            <div className="h-[114px] w-full border-b-[0.5px] border-[#EDEDED]">
+            <div className="w-full border-b-[0.5px] border-[#EDEDED]">
                 <div
-                    className="h-[66px] bg-cover w-full flex justify-between items-center px-4 sm:px-6 lg:px-25 bg-no-repeat bg-center relative"
+                    className="h-[56px] sm:h-[66px] bg-cover w-full flex flex-col sm:flex-row justify-between items-center px-4 sm:px-6 lg:px-25 bg-no-repeat bg-center relative gap-2 sm:gap-0 py-2 sm:py-0"
                     style={{ backgroundImage: `url(${shadow.src})` }}
                 >
-                    <SearchBar/>
-                    <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between border border-[#ededed] rounded-[4px]">
-                        <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px]">
-                            <select className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] rounded-sm text-center w-full focus:outline-none">
+                    <div className="w-full sm:flex-1">
+                        <SearchBar/>
+                    </div>
+                    <div className="flex ml-0 sm:ml-[10px] gap-[2px] p-[2px] h-[44px] sm:h-[52px] items-center justify-between border border-[#ededed] rounded-[4px] w-full sm:w-auto">
+                        <div className="bg-[#F9F9F9] text-black px-[6px] sm:px-[8px] rounded-[4px] flex items-center justify-center h-[40px] sm:h-[48px] flex-1 sm:flex-none">
+                            <select className="bg-[#F9F9F9] text-[#1E1E1E] text-[12px] sm:text-[14px] rounded-sm text-center w-full focus:outline-none">
                                 <option>Benue State</option>
                                 <option>Enugu State</option>
                                 <option>Lagos State</option>
                             </select>
                         </div>
 
-                        <div className="relative">
-                            <div className="flex items-center bg-[#F9F9F9] px-[8px] h-[48px] rounded-[4px]">
-                                <Image src={marketIcon} alt="Market Icon" width={20} height={20} />
+                        <div className="relative flex-1 sm:flex-none">
+                            <div className="flex items-center bg-[#F9F9F9] px-[6px] sm:px-[8px] h-[40px] sm:h-[48px] rounded-[4px]">
+                                <Image src={marketIcon} alt="Market Icon" width={18} height={18} className="sm:w-5 sm:h-5" />
                                 <select
-                                    className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] items-center pr-1 focus:outline-none"
+                                    className="bg-[#F9F9F9] text-[#1E1E1E] text-[12px] sm:text-[14px] items-center pr-1 focus:outline-none w-full"
                                     onChange={(e) => setSelectedMarket(e.target.value)}
                                     value={selectedMarket}
                                 >
@@ -257,83 +260,84 @@ const StorePage = () => {
                 </div>
                 <div className="h-[48px] px-4 sm:px-6 lg:px-25 gap-[8px] items-center flex">
                     <button onClick={() => router.back()}>
-                        <Image src={arrowBack} alt={'back'} className="cursor-pointer"/>
+                        <Image src={arrowBack} alt={'back'} className="cursor-pointer w-4 h-4 sm:w-5 sm:h-5"/>
                     </button>
-                    <p className="text-[14px] text-[#3F3E3E]">
+                    <p className="text-[12px] sm:text-[14px] text-[#3F3E3E] truncate">
                         Go back // stores // <span className="font-medium text-[#022B23]">{shopData.name}</span>
                     </p>
                 </div>
             </div>
             
-            <div className="py-[20px] gap-y-[20px]">
-                <div className="pb-[20px] border-b border-[#ededed]">
-                    <div className="flex mx-4 sm:mx-6 lg:mx-25 justify-between flex-col lg:flex-row gap-6">
+            <div className="py-4 sm:py-[20px] gap-y-4 sm:gap-y-[20px]">
+                <div className="pb-4 sm:pb-[20px] border-b border-[#ededed]">
+                    <div className="flex mx-4 sm:mx-6 lg:mx-25 justify-between flex-col lg:flex-row gap-4 sm:gap-6">
                         {/* Left side */}
-                        <div className="flex flex-col gap-[20px]">
-                            <div className="border border-[#ededed] rounded-3xl h-auto lg:h-[157px] p-4 lg:p-0">
-                                <div className="flex items-center border-b border-[#ededed] px-0 lg:px-[20px] pt-0 lg:pt-[10px] justify-between pb-4 lg:pb-[8px]">
-                                    <div className="flex gap-[8px]">
-                                        <Image src={vendorImg} alt={'vendor'} width={40} height={40}/>
+                        <div className="flex flex-col gap-4 sm:gap-[20px]">
+                            <div className="border border-[#ededed] rounded-2xl sm:rounded-3xl h-auto lg:h-[157px] p-3 sm:p-4 lg:p-0">
+                                <div className="flex items-center border-b border-[#ededed] px-0 lg:px-[20px] pt-0 lg:pt-[10px] justify-between pb-3 sm:pb-4 lg:pb-[8px]">
+                                    <div className="flex gap-[6px] sm:gap-[8px] items-center">
+                                        <Image src={vendorImg} alt={'vendor'} width={32} height={32} className="sm:w-10 sm:h-10"/>
                                         <div className="flex-col">
-                                            <p className="text-[12px] text-[#707070]">Shop</p>
-                                            <p className="text-[16px] font-normal mt-[-4px]">{shopData.name}</p>
+                                            <p className="text-[10px] sm:text-[12px] text-[#707070]">Shop</p>
+                                            <p className="text-[14px] sm:text-[16px] font-normal mt-[-2px] sm:mt-[-4px] truncate max-w-[150px] sm:max-w-none">{shopData.name}</p>
                                         </div>
                                     </div>
                                     {shopData.status === 'ACTIVE' && (
-                                        <div className="w-[74px] p-[6px] gap-[4px] h-[30px] bg-[#C6EB5F] rounded-[8px] flex items-center">
-                                            <Image src={verify} alt={'verified'}/>
-                                            <p className="text-[12px]">verified</p>
+                                        <div className="w-[64px] sm:w-[74px] p-[4px] sm:p-[6px] gap-[3px] sm:gap-[4px] h-[26px] sm:h-[30px] bg-[#C6EB5F] rounded-[6px] sm:rounded-[8px] flex items-center">
+                                            <Image src={verify} alt={'verified'} width={12} height={12} className="sm:w-4 sm:h-4"/>
+                                            <p className="text-[10px] sm:text-[12px]">verified</p>
                                         </div>
                                     )}
                                 </div>
-                                <div className="px-0 lg:px-[20px] flex items-center gap-[4px] mt-4 lg:mt-[20px]">
-                                    <Image src={locationImg} alt={'location'} width={18} height={18}/>
-                                    <p className="text-[14px] font-light">{shopData.market || 'Market'}, {shopData.address}</p>
+                                <div className="px-0 lg:px-[20px] flex items-center gap-[3px] sm:gap-[4px] mt-3 sm:mt-4 lg:mt-[20px]">
+                                    <Image src={locationImg} alt={'location'} width={16} height={16} className="sm:w-[18px] sm:h-[18px] flex-shrink-0"/>
+                                    <p className="text-[12px] sm:text-[14px] font-light truncate">{shopData.market || 'Market'}, {shopData.address}</p>
                                 </div>
-                                <div className="flex flex-col sm:flex-row px-0 lg:px-[20px] mt-3 lg:mt-[15px] gap-2 lg:gap-[18px]">
-                                    <div className="flex items-center gap-[4px]">
-                                        <Image src={shopImg} alt={'shop'} width={18} height={18}/>
-                                        <p className="text-[14px] font-light">{shopData.name} Shop {shopData.shopNumber}</p>
+                                <div className="flex flex-col sm:flex-row px-0 lg:px-[20px] mt-2 sm:mt-3 lg:mt-[15px] gap-1 sm:gap-2 lg:gap-[18px]">
+                                    <div className="flex items-center gap-[3px] sm:gap-[4px]">
+                                        <Image src={shopImg} alt={'shop'} width={16} height={16} className="sm:w-[18px] sm:h-[18px]"/>
+                                        <p className="text-[12px] sm:text-[14px] font-light truncate">{shopData.name} Shop {shopData.shopNumber}</p>
                                     </div>
-                                    <div className="flex items-center gap-[4px]">
-                                        <Image src={shopImg} alt={'section'} width={18} height={18}/>
-                                        <p className="text-[14px] font-light">{shopData.marketSection || 'Section'}</p>
+                                    <div className="flex items-center gap-[3px] sm:gap-[4px]">
+                                        <Image src={shopImg} alt={'section'} width={16} height={16} className="sm:w-[18px] sm:h-[18px]"/>
+                                        <p className="text-[12px] sm:text-[14px] font-light truncate">{shopData.marketSection || 'Section'}</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full lg:w-[300px] gap-[14px] flex flex-col sm:flex-row items-center">
+                            <div className="w-full lg:w-[300px] gap-[10px] sm:gap-[14px] flex flex-col sm:flex-row items-center">
                                 <ChatButton
                                     vendorEmail={shopData.vendorEmail || (products.length > 0 ? products[0].vendorEmail : 'vendor@example.com')}
                                     vendorName={shopData.vendorName || shopData.name}
-                                    className="bg-[#ffeebe] text-[#461602] hover:bg-[#ffd700] w-full sm:w-[165px] h-[48px] rounded-[14px]"
+                                    shopId={shopData.id}
+                                    shopName={shopData.name}
+                                    className="bg-[#ffeebe] text-[#461602] hover:bg-[#ffd700] w-full sm:w-[165px] h-[44px] sm:h-[48px] rounded-[12px] sm:rounded-[14px] text-[14px]"
                                 />
-                                <VideoCallButton
+                                <CallDropdown
                                     vendorEmail={shopData.vendorEmail || (products.length > 0 ? products[0].vendorEmail : 'vendor@example.com')}
                                     shopId={shopData.id}
                                     shopName={shopData.name}
-                                    variant="secondary"
-                                    className="w-full sm:w-[121px] h-[48px] text-[#461602] border-[2px] border-[#461602] hover:bg-[#461602] hover:text-white"
+                                    className="w-full sm:w-[121px] h-[44px] sm:h-[48px] text-[14px]"
                                 />
                             </div>
                         </div>
                         
                         {/* Right side */}
-                        <div className="w-full lg:w-[442px] flex flex-col gap-[24px]">
+                        <div className="w-full lg:w-[442px] flex flex-col gap-4 sm:gap-[24px]">
                             {/* Rating Box */}
                             <div className="flex justify-start lg:justify-end">
-                                <div className="bg-[#f9f9f9] border border-[#ededed] rounded-[14px] p-[20px] w-[215px] h-[83px]">
-                                    <p className="text-[14px] text-[#0D0C22] font-medium">Shop rating</p>
-                                    <div className="flex items-center gap-[16px]">
-                                        <span className="text-xl font-bold text-gray-800">{rating}</span>
-                                        <div className="flex gap-[4px]">{renderStars(rating)}</div>
+                                <div className="bg-[#f9f9f9] border border-[#ededed] rounded-[12px] sm:rounded-[14px] p-[16px] sm:p-[20px] w-[180px] sm:w-[215px] h-[70px] sm:h-[83px]">
+                                    <p className="text-[12px] sm:text-[14px] text-[#0D0C22] font-medium">Shop rating</p>
+                                    <div className="flex items-center gap-[12px] sm:gap-[16px] mt-1">
+                                        <span className="text-lg sm:text-xl font-bold text-gray-800">{rating}</span>
+                                        <div className="flex gap-[2px] sm:gap-[4px]">{renderStars(rating)}</div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Categories - You might want to make this dynamic based on store products */}
-                            <div className="flex h-[56px] items-center p-[4px] gap-[4px] w-full rounded-[100px] border border-[#ededed] overflow-x-auto">
-                                <span className="w-[57px] h-[48px] rounded-[100px] text-[14px] font-medium text-[#022B23] flex items-center justify-center border border-[#ededed] flex-shrink-0">All</span>
-                                <span className="px-4 h-[48px] rounded-[100px] text-[14px] font-semibold text-[#022B23] bg-[#ECFDF6] flex items-center justify-center whitespace-nowrap flex-shrink-0">
+                            <div className="flex h-[48px] sm:h-[56px] items-center p-[3px] sm:p-[4px] gap-[3px] sm:gap-[4px] w-full rounded-[100px] border border-[#ededed] overflow-x-auto">
+                                <span className="w-[48px] sm:w-[57px] h-[40px] sm:h-[48px] rounded-[100px] text-[12px] sm:text-[14px] font-medium text-[#022B23] flex items-center justify-center border border-[#ededed] flex-shrink-0">All</span>
+                                <span className="px-3 sm:px-4 h-[40px] sm:h-[48px] rounded-[100px] text-[12px] sm:text-[14px] font-semibold text-[#022B23] bg-[#ECFDF6] flex items-center justify-center whitespace-nowrap flex-shrink-0">
                                     Products ({products.length})
                                 </span>
                             </div>
@@ -341,7 +345,11 @@ const StorePage = () => {
                     </div>
                 </div>
 
-                {products.length > 0 ? (
+                {loading ? (
+                    <div className="p-6">
+                        <ProductGridSkeleton itemCount={8} />
+                    </div>
+                ) : products.length > 0 ? (
                     <ProductGrid products={products}/>
                 ) : (
                     <div className="text-center py-12">

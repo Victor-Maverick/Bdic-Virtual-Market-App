@@ -91,16 +91,16 @@ const DashboardHeader = () => {
     };
 
     return (
-        <div className="flex justify-between items-center h-[78px] px-[100px] py-[18px] bg-white shadow-sm relative">
-            <div onClick={handleLogoClick} className="flex items-center gap-2 cursor-pointer">
+        <div className="flex justify-between items-center h-[60px] sm:h-[70px] lg:h-[78px] px-4 sm:px-6 lg:px-[100px] py-3 sm:py-4 lg:py-[18px] bg-white shadow-sm relative">
+            <div onClick={handleLogoClick} className="flex items-center gap-1 sm:gap-2 cursor-pointer">
                 <Image
                     src={headerImg}
                     alt="FarmGo Logo"
-                    width={50}
-                    height={50}
-                    className="md:w-[50px] md:h-[50px]"
+                    width={40}
+                    height={40}
+                    className="w-[35px] h-[35px] sm:w-[40px] sm:h-[40px] lg:w-[50px] lg:h-[50px]"
                 />
-                <p className="text-[14px] sm:text-[16px] md:text-[18px] font-semibold text-black leading-tight">
+                <p className="text-[12px] sm:text-[14px] lg:text-[18px] font-semibold text-black leading-tight">
                     Farm<span style={{ color: "#c6eb5f" }}>Go</span> <br />
                     <span className="block">Benue</span>
                 </p>
@@ -109,26 +109,29 @@ const DashboardHeader = () => {
             {!isLoading && userProfile && (
                 <div className="relative">
                     <div
-                        className="flex gap-[6px] items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                        className="flex gap-1 sm:gap-[6px] items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={handleProfileClick}
                     >
                         <Image
                             src={profileImage}
                             alt="User Profile"
-                            width={28}
-                            height={28}
-                            className="rounded-full"
+                            width={24}
+                            height={24}
+                            className="w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] lg:w-[28px] lg:h-[28px] rounded-full"
                         />
-                        <p className="text-[14px] text-[#171719] font-medium">
+                        <p className="text-[12px] sm:text-[13px] lg:text-[14px] text-[#171719] font-medium hidden sm:block">
                             Hey, <span className="font-semibold">{userProfile.firstName}</span>
+                        </p>
+                        <p className="text-[12px] text-[#171719] font-medium sm:hidden">
+                            <span className="font-semibold">{userProfile.firstName}</span>
                         </p>
                     </div>
 
                     {isProfileDropdownOpen && (
-                        <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
+                        <div className="absolute right-0 top-full mt-2 w-40 sm:w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
                             <button
                                 onClick={handleLogout}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block w-full text-left px-3 sm:px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                             >
                                 Logout
                             </button>

@@ -73,7 +73,7 @@ const GetStarted = () => {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [isMobile, setIsMobile] = useState(false);
+    const [, setIsMobile] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [toast, setToast] = useState<{
         show: boolean;
@@ -269,7 +269,7 @@ const GetStarted = () => {
 
     return (
         <div className="relative min-h-screen overflow-hidden">
-            <div className="absolute z-20 left-[660px] top-[1px] hidden md:block">
+            <div className="absolute z-20 left-[660px] top-[1px] hidden lg:block">
                 <Image src={topGraphics} alt="Decorative graphics" width={570} height={300} priority />
             </div>
 
@@ -282,36 +282,36 @@ const GetStarted = () => {
                 />
             )}
 
-            <div className="flex min-h-screen relative z-10">
-                <div className="w-full md:w-[65%] pb-[40px] flex flex-col bg-white">
-                    <div className={`mt-[40px] md:mt-[60px] mx-auto md:ml-[102px] md:mx-0 ${isMobile ? 'ml-[20px]' : 'ml-[102px]'}`}>
-                        <Image src={farmGoLogo} alt="FarmGo logo" width={90} height={45} />
+            <div className="flex min-h-screen relative z-10 flex-col lg:flex-row">
+                <div className="w-full lg:w-[65%] pb-[40px] flex flex-col bg-white">
+                    <div className="mt-[30px] sm:mt-[40px] lg:mt-[60px] px-4 sm:px-6 lg:px-0 lg:ml-[102px]">
+                        <Image src={farmGoLogo} alt="FarmGo logo" width={90} height={45} className="mx-auto lg:mx-0" />
                     </div>
 
-                    <div className="px-6 md:px-0 md:ml-[204px] mt-[30px] max-w-full">
-                        <div className="w-full md:w-[400px] flex justify-between items-center">
-                            <p className="text-[#022B23] text-[14px] font-medium">ACCOUNT SETUP</p>
-                            <p className="text-[#022B23] text-[14px] font-medium">1/3</p>
+                    <div className="px-4 sm:px-6 lg:px-0 lg:ml-[204px] mt-[30px] max-w-full">
+                        <div className="w-full lg:w-[400px] flex justify-between items-center">
+                            <p className="text-[#022B23] text-[12px] sm:text-[14px] font-medium">ACCOUNT SETUP</p>
+                            <p className="text-[#022B23] text-[12px] sm:text-[14px] font-medium">1/3</p>
                         </div>
 
-                        <div className="flex gap-[10px] mt-2">
-                            <div className="w-[80px] h-[6px] bg-[#C6EB5F]"></div>
-                            <div className="w-[80px] h-[6px] bg-[#F0FACD]"></div>
-                            <div className="w-[80px] h-[6px] bg-[#F0FACD]"></div>
+                        <div className="flex gap-[8px] sm:gap-[10px] mt-2">
+                            <div className="flex-1 max-w-[80px] h-[6px] bg-[#C6EB5F]"></div>
+                            <div className="flex-1 max-w-[80px] h-[6px] bg-[#F0FACD]"></div>
+                            <div className="flex-1 max-w-[80px] h-[6px] bg-[#F0FACD]"></div>
                         </div>
 
-                        <h1 className="mt-[40px] text-[#022B23] text-[20px] font-medium">
+                        <h1 className="mt-[30px] sm:mt-[40px] text-[#022B23] text-[18px] sm:text-[20px] font-medium leading-tight">
                             Get started by providing your details below.
                         </h1>
 
-                        <div className="mt-[20px] w-full md:w-[400px]">
+                        <div className="mt-[20px] w-full lg:w-[400px]">
                             {formFields.map((field) => (
-                                <div key={field.id} className="relative w-full flex flex-col mb-[14px]">
+                                <div key={field.id} className="relative w-full flex flex-col mb-[12px] sm:mb-[14px]">
                                     <label
                                         htmlFor={field.id}
-                                        className={`absolute left-4 transition-all ${
+                                        className={`absolute left-3 sm:left-4 transition-all ${
                                             focusedFields[field.id] || form[field.id]
-                                                ? "text-[#6D6D6D] text-[12px] font-medium top-[6px]"
+                                                ? "text-[#6D6D6D] text-[11px] sm:text-[12px] font-medium top-[6px]"
                                                 : "hidden"
                                         }`}
                                     >
@@ -327,29 +327,30 @@ const GetStarted = () => {
                                             onFocus={() => handleFocus(field.id)}
                                             onBlur={() => handleBlur(field.id)}
                                             placeholder={!focusedFields[field.id] && !form[field.id] ? field.label : ""}
-                                            className={`px-4 h-[58px] w-full border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] ${
+                                            className={`px-3 sm:px-4 h-[52px] sm:h-[58px] w-full border-[1.5px] border-[#D1D1D1] rounded-[12px] sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] ${
                                                 focusedFields[field.id] || form[field.id]
-                                                    ? "pt-[14px] pb-[4px] text-[#121212] text-[14px] font-medium"
-                                                    : "text-[#BDBDBD] text-[16px] font-medium"
+                                                    ? "pt-[14px] pb-[4px] text-[#121212] text-[13px] sm:text-[14px] font-medium"
+                                                    : "text-[#BDBDBD] text-[14px] sm:text-[16px] font-medium"
                                             }`}
                                         />
 
                                         {shouldShowIcon(field) && (
-                                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                                                <Image src={emailIcon} alt="Email icon" width={20} height={20} />
+                                            <div className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2">
+                                                <Image src={emailIcon} alt="Email icon" width={18} height={18} className="sm:w-5 sm:h-5" />
                                             </div>
                                         )}
 
                                         {shouldShowPasswordToggle(field) && (
                                             <div
-                                                className="absolute right-4 px-[6px] py-[4px] flex items-center text-[#DCDCDC] text-[12px] shadow-md gap-[8px] rounded-[8px] border-[1px] border-[#EAEAEA] w-[72px] top-1/2 transform -translate-y-1/2 cursor-pointer bg-white"
+                                                className="absolute right-3 sm:right-4 px-[4px] sm:px-[6px] py-[3px] sm:py-[4px] flex items-center text-[#DCDCDC] text-[11px] sm:text-[12px] shadow-md gap-[6px] sm:gap-[8px] rounded-[6px] sm:rounded-[8px] border-[1px] border-[#EAEAEA] w-[64px] sm:w-[72px] top-1/2 transform -translate-y-1/2 cursor-pointer bg-white"
                                                 onClick={field.id === 'password' ? togglePasswordVisibility : toggleConfirmPasswordVisibility}
                                             >
                                                 <Image
                                                     src={(field.id === 'password' ? showPassword : showConfirmPassword) ? eyeOpen : eyeClosed}
                                                     alt={field.id === 'password' ? (showPassword ? "Hide password" : "Show password") : (showConfirmPassword ? "Hide password" : "Show password")}
-                                                    width={16}
-                                                    height={16}
+                                                    width={14}
+                                                    height={14}
+                                                    className="sm:w-4 sm:h-4"
                                                 />
                                                 <span>{(field.id === 'password' ? showPassword : showConfirmPassword) ? "Hide" : "Show"}</span>
                                             </div>
@@ -358,11 +359,11 @@ const GetStarted = () => {
                                 </div>
                             ))}
 
-                            <div className="flex flex-wrap gap-2 mt-2">
+                            <div className="flex flex-wrap gap-1 sm:gap-2 mt-2">
                                 {passwordCriteria.map((criteria) => (
                                     <span
                                         key={criteria.key}
-                                        className={`px-2 flex items-center justify-center h-[33px] text-[14px] text-[#022B23] rounded-[10px] ${
+                                        className={`px-2 flex items-center justify-center h-[30px] sm:h-[33px] text-[12px] sm:text-[14px] text-[#022B23] rounded-[8px] sm:rounded-[10px] ${
                                             passwordValid[criteria.key as keyof PasswordValidation] ? 'bg-[#D1FAE7]' : 'bg-gray-300'
                                         }`}
                                     >
@@ -389,12 +390,12 @@ const GetStarted = () => {
                                 {!isLoading && <Image src={limeArrow} alt="Continue arrow" width={16} height={16} />}
                             </button>
 
-                            <p className="text-[14px] mt-[10px] text-[#7C7C7C]">
-                                Already have an account? <span onClick={()=>{router.push("/login")}} className="text-[16px] text-[#001234] cursor-pointer">Login</span>
+                            <p className="text-[12px] sm:text-[14px] mt-[10px] text-[#7C7C7C] text-center lg:text-left">
+                                Already have an account? <span onClick={()=>{router.push("/login")}} className="text-[14px] sm:text-[16px] text-[#001234] cursor-pointer hover:underline">Login</span>
                             </p>
 
-                            <p className="text-[16px] mt-[10px] text-[#7C7C7C]">
-                                By clicking continue you agree with our<br />
+                            <p className="text-[14px] sm:text-[16px] mt-[10px] text-[#7C7C7C] text-center lg:text-left leading-relaxed">
+                                By clicking continue you agree with our<br className="hidden sm:block" />
                                 <span className="font-medium underline cursor-pointer">Terms of Service</span> and{' '}
                                 <span className="font-medium underline cursor-pointer">Privacy Policy</span>
                             </p>
@@ -402,10 +403,10 @@ const GetStarted = () => {
                     </div>
                 </div>
 
-                <div className="hidden md:flex bg-[#022B23] w-[35%] flex-col justify-between relative">
-                    <div className="pl-[20px] pt-[171px]">
-                        <p className="mb-[15px] text-[#FFEEBE] text-[20px] font-medium">Get started</p>
-                        <p className="text-[#C6EB5F] text-[25px]">
+                <div className="hidden lg:flex bg-[#022B23] w-[35%] flex-col justify-between relative">
+                    <div className="pl-[20px] pt-[120px] xl:pt-[171px]">
+                        <p className="mb-[15px] text-[#FFEEBE] text-[18px] xl:text-[20px] font-medium">Get started</p>
+                        <p className="text-[#C6EB5F] text-[20px] xl:text-[25px] leading-tight">
                             Register on the largest<br />
                             vendor and buyer marketplace<br />
                             to buy and sale products.

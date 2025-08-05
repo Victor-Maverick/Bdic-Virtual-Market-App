@@ -18,6 +18,8 @@ export interface VideoCallResponse {
   vendorEmail: string;
   productId?: number;
   shopId?: number;
+  productName?: string;
+  shopName?: string;
   status: 'INITIATED' | 'RINGING' | 'ACTIVE' | 'ENDED' | 'DECLINED' | 'MISSED';
   createdAt: string;
   startedAt?: string;
@@ -100,6 +102,16 @@ class VideoCallService {
       return response.data;
     } catch (error) {
       console.error('Error getting pending calls:', error);
+      throw error;
+    }
+  }
+
+  async acceptCall(roomName: string): Promise<VideoCallResponse> {
+    try {
+      const response = await axios.post(`${API_BASE_URL}/video-calls/accept/${roomName}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error accepting video call:', error);
       throw error;
     }
   }

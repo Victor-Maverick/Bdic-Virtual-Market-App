@@ -7,6 +7,8 @@ import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import axios from "axios";
+import { toast } from "react-toastify";
+import { VendorsTableSkeleton, StatsCardsLoadingSkeleton } from "@/components/LoadingSkeletons";
 
 interface ShopResponse {
     id: number;
@@ -85,7 +87,7 @@ const VendorActionsDropdown = ({
     };
 
     const handleViewVendor = () => {
-        router.push("/admin/dashboard/vendors/view-vendor");
+        router.push(`/admin/dashboard/vendors/view-vendor/${shopId}`);
         setIsOpen(false);
     };
 
@@ -105,20 +107,29 @@ const VendorActionsDropdown = ({
         return () => document.removeEventListener("click", handleClickOutside);
     }, []);
 
-    const renderActiveOptions = () => (
+    const renderOptions = () => (
         <>
             <li
                 onClick={handleViewVendor}
                 className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer"
             >
-                View vendor
+                View
             </li>
-            <li
-                onClick={handleDeactivate}
-                className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
-            >
-                Deactivate vendor
-            </li>
+            {status === 'VERIFIED' ? (
+                <li
+                    onClick={handleDeactivate}
+                    className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
+                >
+                    Deactivate
+                </li>
+            ) : (
+                <li
+                    onClick={handleDeactivate}
+                    className="px-[8px] py-[4px] h-[38px] text-[#52A43E] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
+                >
+                    Activate
+                </li>
+            )}
             <li
                 onClick={handleOpenDeleteModal}
                 className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]"
@@ -141,7 +152,7 @@ const VendorActionsDropdown = ({
 
                 {isOpen && (
                     <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
-                        <ul className="">{renderActiveOptions()}</ul>
+                        <ul className="">{renderOptions()}</ul>
                     </div>
                 )}
             </div>
@@ -255,6 +266,8 @@ const Vendors = () => {
     });
     const [shops, setShops] = useState<ShopResponse[]>([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const vendorsPerPage = 5;
 
     useEffect(() => {
         const fetchVendorData = async () => {
@@ -272,11 +285,12 @@ const Vendors = () => {
 
                 const totalVendors = totalVendorsRes.data;
                 const activeVendors = activeShopsRes.data;
+                const totalShops = shopsRes.data.length;
 
                 setVendorStats({
                     totalVendors: totalVendors,
                     activeVendors: activeVendors,
-                    inactiveVendors: totalVendors - activeVendors,
+                    inactiveVendors: totalShops - activeVendors,
                     dailySignups: Math.floor(totalVendors * 0.05)
                 });
             } catch (error) {
@@ -302,16 +316,46 @@ const Vendors = () => {
         shop.address.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleToggleStatus = (shopId: number) => {
-        console.log('Toggle status for shop:', shopId);
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredShops.length / vendorsPerPage);
+    const startIndex = (currentPage - 1) * vendorsPerPage;
+    const endIndex = startIndex + vendorsPerPage;
+    const currentVendors = filteredShops.slice(startIndex, endIndex);
+
+    const handleToggleStatus = async (shopId: number) => {
+        try {
+            await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/deactivateShop`, null, {
+                params: { shopId }
+            });
+            
+            // Refresh the shops data after successful toggle
+            const shopsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/all`);
+            setShops(shopsRes.data);
+            
+            toast.success('Vendor status updated successfully');
+        } catch (error) {
+            console.error('Error toggling shop status:', error);
+            toast.error('Failed to update vendor status');
+        }
     };
 
-    const handleDeleteShop = (shopId: number) => {
-        console.log('Delete shop:', shopId);
+    const handleDeleteShop = async (shopId: number) => {
+        try {
+            await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/delete/${shopId}`);
+            
+            // Remove the deleted shop from the local state
+            setShops(prevShops => prevShops.filter(shop => shop.id !== shopId));
+            
+            toast.success('Vendor deleted successfully');
+        } catch (error) {
+            console.error('Error deleting shop:', error);
+            toast.error('Failed to delete vendor');
+        }
     };
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
+        setCurrentPage(1); // Reset to first page when searching
     };
 
     return (
@@ -322,25 +366,12 @@ const Vendors = () => {
 
             <div className="px-[20px] mt-[20px]">
                 {loading ? (
-                    <div className="flex w-full gap-[20px] h-[110px] justify-between">
-                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                            <p className="text-[#707070]">Loading...</p>
-                        </div>
-                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                            <p className="text-[#707070]">Loading...</p>
-                        </div>
-                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                            <p className="text-[#707070]">Loading...</p>
-                        </div>
-                        <div className="flex items-center justify-center w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                            <p className="text-[#707070]">Loading...</p>
-                        </div>
-                    </div>
+                    <StatsCardsLoadingSkeleton />
                 ) : (
                     <div className="flex w-full gap-[20px] h-[110px] justify-between">
                         <StatsCard title="Total vendors" value={vendorStats.totalVendors.toString()} percentage="+15.6%" isPending={false} />
-                        <StatsCard title="Active vendors" value={vendorStats.activeVendors.toString()} percentage="+15.6%" isPending={false} />
-                        <StatsCard title="Inactive vendors" value={vendorStats.inactiveVendors.toString()} percentage="+15.6%" isWarning isPending={false} />
+                        <StatsCard title="Active Vendor shops" value={vendorStats.activeVendors.toString()} percentage="+15.6%" isPending={false} />
+                        <StatsCard title="Inactive vendor shops" value={vendorStats.inactiveVendors.toString()} percentage="+15.6%" isWarning isPending={false} />
                         <StatsCard title="Daily signups" value={vendorStats.dailySignups.toString()} percentage="+15.6%" isPending />
                     </div>
                 )}
@@ -350,7 +381,7 @@ const Vendors = () => {
                         <div className="w-full h-[91px] flex items-center justify-between px-[24px] pt-[20px] pb-[19px]">
                             <div className="flex flex-col gap-[4px]">
                                 <div className="h-[28px] flex items-center">
-                                    <p className="text-[18px] font-medium text-[#101828]">Vendors ({filteredShops.length})</p>
+                                    <p className="text-[18px] font-medium text-[#101828]">Vendor shops ({filteredShops.length})</p>
                                 </div>
                                 <div className="flex h-[20px] items-center">
                                     <p className="text-[14px] text-[#667085]">View and manage vendors here</p>
@@ -386,22 +417,47 @@ const Vendors = () => {
                         </div>
 
                         <div className="flex flex-col">
-                            {filteredShops.length === 0 ? (
+                            {loading ? (
+                                <VendorsTableSkeleton />
+                            ) : currentVendors.length === 0 ? (
                                 <div className="flex items-center justify-center h-[200px]">
                                     <p className="text-[#667085]">No vendors found</p>
                                 </div>
                             ) : (
-                                filteredShops.map((shop, index) => (
+                                currentVendors.map((shop, index) => (
                                     <VendorTableRow
                                         key={shop.id}
                                         shop={shop}
-                                        isLast={index === filteredShops.length - 1}
+                                        isLast={index === currentVendors.length - 1}
                                         onToggleStatus={handleToggleStatus}
                                         onDelete={handleDeleteShop}
                                     />
                                 ))
                             )}
                         </div>
+
+                        {/* Pagination */}
+                        {totalPages > 1 && (
+                            <div className="flex justify-center items-center gap-2 py-4 border-t border-[#EAECF0]">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 border border-[#EAECF0] rounded disabled:opacity-50 text-[#667085] text-[14px]"
+                                >
+                                    Previous
+                                </button>
+                                <span className="text-[14px] text-[#667085]">
+                                    Page {currentPage} of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 border border-[#EAECF0] rounded disabled:opacity-50 text-[#667085] text-[14px]"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

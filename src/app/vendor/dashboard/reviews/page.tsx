@@ -2,8 +2,7 @@
 import {Suspense, useCallback, useEffect, useState} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import DashboardHeader from "@/components/dashboardHeader";
-import DashboardOptions from "@/components/dashboardOptions";
+import VendorShopGuard from "@/components/VendorShopGuard";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import arrowBack from "../../../../../public/assets/images/arrowBack.svg";
 import arrowFoward from "../../../../../public/assets/images/arrowFoward.svg";
@@ -460,9 +459,7 @@ const ReviewsContent = () => {
     };
 
     return (
-        <>
-            <DashboardHeader />
-            <DashboardOptions />
+        <VendorShopGuard showSubHeader={false}>
             <div className="flex flex-col py-[30px] px-25">
                 <div className="w-[359px] h-[52px] gap-[24px] flex items-end">
                     <button
@@ -491,7 +488,7 @@ const ReviewsContent = () => {
                     {activeTab === 'coupons' && <Coupons />}
                 </div>
             </div>
-        </>
+        </VendorShopGuard>
     );
 }
 

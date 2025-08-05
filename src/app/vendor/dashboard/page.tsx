@@ -1,6 +1,6 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
-import DashboardSubHeader from "@/components/dashboardSubHeader";
+// import DashboardHeader from "@/components/dashboardHeader";
+// import DashboardSubHeader from "@/components/dashboardSubHeader";
 import archiveImg from '../../../../public/assets/images/archive.svg'
 import Image from "next/image";
 import biArrows from '../../../../public/assets/images/biArrows.svg'
@@ -11,12 +11,13 @@ import arrowUp from '../../../../public/assets/images/arrow-up.svg'
 import {useRouter} from "next/navigation";
 import {useSession} from "next-auth/react";
 import {useEffect, useState, useCallback} from "react";
-import DashboardOptions from "@/components/dashboardOptions";
-import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
+// import DashboardOptions from "@/components/dashboardOptions";
+// import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
 import axios from "axios";
 import {useSearchParams} from "next/navigation";
 import Toast from "@/components/Toast";
 import VendorVideoCallWrapper from "@/components/VendorVideoCallWrapper";
+import VendorShopGuard from "@/components/VendorShopGuard";
 
 interface ShopData {
     id: number;
@@ -38,17 +39,17 @@ interface ShopData {
     status: string;
 }
 
-interface PaymentData {
-    authorizationUrl: string;
-    reference: string;
-    credoReference: string;
-}
+// interface PaymentData {
+//     authorizationUrl: string;
+//     reference: string;
+//     credoReference: string;
+// }
 
-interface InitializePaymentResponse {
-    status: string;
-    message: string;
-    data?: PaymentData;
-}
+// interface InitializePaymentResponse {
+//     status: string;
+//     message: string;
+//     data?: PaymentData;
+// }
 
 interface VerifyPaymentResponse {
     status: string;
@@ -88,10 +89,10 @@ type Product = {
 
 const DashBoard = () => {
     const [activeView, setActiveView] = useState('orders');
-    const [shopData, setShopData] = useState<ShopData>();
-    const [loading, setLoading] = useState(true);
-    const [activating, setActivating] = useState(false);
-    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [, setShopData] = useState<ShopData>();
+    const [, setLoading] = useState(true);
+    // const [, setActivating] = useState(false);
+    // const [, setPaymentError] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const {data: session} = useSession();
@@ -155,7 +156,8 @@ const DashBoard = () => {
                 }
             } catch (error) {
                 console.error('Error fetching shop data:', error);
-            } finally {
+            }
+            finally {
                 setLoading(false);
             }
         }
@@ -213,7 +215,7 @@ const DashBoard = () => {
         } catch (error) {
             console.error('Payment verification error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
-            setPaymentError(errorMessage);
+            // setPaymentError(errorMessage);
             showErrorToast('Payment Error', errorMessage);
         }
     }, [session, fetchShopData, verifyShopStatus]);
@@ -225,127 +227,65 @@ const DashBoard = () => {
         }
     }, [searchParams, verifyPayment]);
 
-    const initializePayment = async () => {
-        if (!session?.user?.email) {
-            showErrorToast('Error', 'User email not found');
-            return;
-        }
+    // const initializePayment = async () => {
+    //     if (!session?.user?.email) {
+    //         showErrorToast('Error', 'User email not found');
+    //         return;
+    //     }
 
-        setActivating(true);
-        setPaymentError(null);
+    //     setActivating(true);
+    //     setPaymentError(null);
 
-        try {
-            const requestData = {
-                email: session.user.email,
-                amount: 500000,
-                currency: 'NGN',
-                callbackUrl: `${window.location.origin}/vendor/dashboard`,
-                paymentType: 'SHOP_ACTIVATION'
-            };
+    //     try {
+    //         const requestData = {
+    //             email: session.user.email,
+    //             amount: 500000,
+    //             currency: 'NGN',
+    //             callbackUrl: `${window.location.origin}/vendor/dashboard`,
+    //             paymentType: 'SHOP_ACTIVATION'
+    //         };
 
-            const response = await axios.post<InitializePaymentResponse>(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
-                requestData,
-                {
-                    headers: {'Content-Type': 'application/json'},
-                    timeout: 30000,
-                }
-            );
+    //         const response = await axios.post<InitializePaymentResponse>(
+    //             `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
+    //             requestData,
+    //             {
+    //                 headers: {'Content-Type': 'application/json'},
+    //                 timeout: 30000,
+    //             }
+    //         );
 
-            const paymentResponse = response.data;
+    //         const paymentResponse = response.data;
 
-            if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
-                const authorizationUrl = paymentResponse.data?.authorizationUrl;
+    //         if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
+    //             const authorizationUrl = paymentResponse.data?.authorizationUrl;
 
-                if (!authorizationUrl) {
-                    throw new Error('Authorization URL not found');
-                }
+    //             if (!authorizationUrl) {
+    //                 throw new Error('Authorization URL not found');
+    //             }
 
-                showSuccessToast('Payment Initialized', 'Redirecting to payment page...');
-                setTimeout(() => {
-                    window.location.href = authorizationUrl;
-                }, 2000);
-            } else {
-                throw new Error(paymentResponse.message || 'Payment initialization failed');
-            }
-        } catch (error) {
-            console.error('Payment initialization error:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
-            setPaymentError(errorMessage);
-            showErrorToast('Payment Error', errorMessage);
-        } finally {
-            setActivating(false);
-        }
-    };
+    //             showSuccessToast('Payment Initialized', 'Redirecting to payment page...');
+    //             setTimeout(() => {
+    //                 window.location.href = authorizationUrl;
+    //             }, 2000);
+    //         } else {
+    //             throw new Error(paymentResponse.message || 'Payment initialization failed');
+    //         }
+    //     } catch (error) {
+    //         console.error('Payment initialization error:', error);
+    //         const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
+    //         setPaymentError(errorMessage);
+    //         showErrorToast('Payment Error', errorMessage);
+    //     }
+    //     finally {
+    //         setActivating(false);
+    //     }
+    // };
 
-    const handleActivateShop = async () => {
-        await initializePayment();
-    };
+    // const handleActivateShop = async () => {
+    //     await initializePayment();
+    // };
 
-    if (loading) {
-        return (
-            <>
-                <DashboardHeader/>
-                <div className="flex justify-center items-center h-screen">
-                    <p>Loading...</p>
-                </div>
-            </>
-        );
-    }
 
-    if (!shopData) {
-        return (
-            <>
-                <DashboardHeader/>
-                <DashboardOptions/>
-                <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Explore your shop, products, sales and orders"}
-                                    background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'}/>
-                <div className="flex flex-col items-center justify-center h-screen">
-                    <p className="mb-4">You need to set up your shop first</p>
-                    <button
-                        onClick={() => router.push('/vendor/setup-shop')}
-                        className="h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px]"
-                    >
-                        Setup Shop
-                    </button>
-                </div>
-            </>
-        );
-    }
-
-    if (shopData.status === 'NOT_VERIFIED') {
-        return (
-            <>
-                <DashboardHeader/>
-                <DashboardOptions/>
-                <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Explore your shop, products, sales and orders"}
-                                    background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'}/>
-                <div className="flex flex-col items-center justify-center h-screen">
-                    <p className="mb-4">Your shop is not yet activated</p>
-                    <button
-                        onClick={handleActivateShop}
-                        disabled={activating}
-                        className={`h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px] ${
-                            activating ? 'opacity-70 cursor-not-allowed' : ''
-                        }`}
-                    >
-                        {activating ? 'Processing...' : 'Activate Shop'}
-                    </button>
-                    {paymentError && (
-                        <p className="mt-2 text-red-500">{paymentError}</p>
-                    )}
-                </div>
-                {showToast && (
-                    <Toast
-                        type={toastType}
-                        message={toastMessage}
-                        subMessage={toastSubMessage}
-                        onClose={handleCloseToast}
-                    />
-                )}
-            </>
-        );
-    }
 
     // Calculate order percentages for the stats visualization
     const calculateOrderPercentage = (count: number) => {
@@ -355,87 +295,84 @@ const DashBoard = () => {
 
     return (
         <VendorVideoCallWrapper>
-            <DashboardHeader/>
-            <DashboardOptions/>
-            <DashboardSubHeader welcomeText={"Hey, welcome"} description={"Explore your shop, products, sales and orders"}
-                                background={'#ECFDF6'} image={dashSlideImg} textColor={'#05966F'}/>
-            <div className="h-[58px] px-25 border-b-[0.5px] border-[#EDEDED] items-center flex">
-                <p className="text-[#022B23] font-medium text-[20px]">Dashboard overview</p>
+            <VendorShopGuard>
+                <div className="h-12 sm:h-[58px] px-4 sm:px-6 lg:px-25 border-b-[0.5px] border-[#EDEDED] items-center flex">
+                <p className="text-[#022B23] font-medium text-base sm:text-[18px] lg:text-[20px]">Dashboard overview</p>
             </div>
-            <div className="flex flex-col gap-[32px] py-[10px]">
-                <div className="px-25 w-[919px] flex flex-col gap-[12px]">
-                    <p className="font-medium text-[16px] text-[#022B23]">Sales summary</p>
-                    <div className="flex items-center gap-[20px] h-[100px]">
-                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#ECFDF6] border-[#52A43E]">
-                            <div className="flex items-center gap-[8px] text-[12px] text-[#52A43E] font-medium p-[15px]">
-                                <Image src={biArrows} alt="total sales" width={18} height={18} className="h-[18px] w-[18px]"/>
+            <div className="flex flex-col gap-4 sm:gap-6 lg:gap-[32px] py-4 sm:py-[10px]">
+                <div className="px-4 sm:px-6 lg:px-25 w-full max-w-[919px] flex flex-col gap-3 sm:gap-[12px]">
+                    <p className="font-medium text-sm sm:text-[14px] lg:text-[16px] text-[#022B23]">Sales summary</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-[20px]">
+                        <div className="w-full hover:shadow-lg transition-shadow min-h-[90px] sm:min-h-[100px] border-[0.5px] rounded-xl sm:rounded-[14px] bg-[#ECFDF6] border-[#52A43E]">
+                            <div className="flex items-center gap-2 sm:gap-[8px] text-xs sm:text-[12px] text-[#52A43E] font-medium p-3 sm:p-[15px]">
+                                <Image src={biArrows} alt="total sales" width={16} height={16} className="h-4 w-4 sm:h-[18px] sm:w-[18px]"/>
                                 <p>Total sales ({completedTransactions.toLocaleString()})</p>
                             </div>
-                            <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">N {totalSales.toLocaleString()}.00</p>
+                            <div className="flex justify-between px-3 sm:px-[15px] pb-2">
+                                <p className="text-[#18181B] font-medium text-sm sm:text-[16px]">N {totalSales.toLocaleString()}.00</p>
                             </div>
                         </div>
 
-                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
-                            <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={archiveImg} alt="completed transactions" width={18} height={18}
-                                       className="h-[18px] w-[18px]"/>
+                        <div className="w-full hover:shadow-lg transition-shadow min-h-[90px] sm:min-h-[100px] border-[0.5px] rounded-xl sm:rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
+                            <div className="flex items-center gap-2 sm:gap-[8px] text-xs sm:text-[12px] text-[#707070] font-medium p-3 sm:p-[15px]">
+                                <Image src={archiveImg} alt="completed transactions" width={16} height={16}
+                                       className="h-4 w-4 sm:h-[18px] sm:w-[18px]"/>
                                 <p>Completed transactions</p>
                             </div>
-                            <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">{completedTransactions.toLocaleString()}</p>
-                                <div className="flex items-center gap-[4px]">
-                                    <Image src={arrowUp} alt={'image'} width={10} height={10}/>
-                                    <p className="text-[#22C55E] text-[12px]">2%</p>
+                            <div className="flex justify-between px-3 sm:px-[15px] pb-2">
+                                <p className="text-[#18181B] font-medium text-sm sm:text-[14px] lg:text-[16px]">{completedTransactions.toLocaleString()}</p>
+                                <div className="flex items-center gap-1 sm:gap-[4px]">
+                                    <Image src={arrowUp} alt={'image'} width={8} height={8} className="sm:w-[10px] sm:h-[10px]"/>
+                                    <p className="text-[#22C55E] text-xs sm:text-[12px]">2%</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#FF9500]">
-                            <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={awardImg} alt="pending orders" width={18} height={18}
-                                       className="h-[18px] w-[18px]"/>
+                        <div className="w-full hover:shadow-lg transition-shadow min-h-[90px] sm:min-h-[100px] border-[0.5px] rounded-xl sm:rounded-[14px] bg-[#FFFFFF] border-[#FF9500]">
+                            <div className="flex items-center gap-2 sm:gap-[8px] text-xs sm:text-[12px] text-[#707070] font-medium p-3 sm:p-[15px]">
+                                <Image src={awardImg} alt="pending orders" width={16} height={16}
+                                       className="h-4 w-4 sm:h-[18px] sm:w-[18px]"/>
                                 <p>Pending orders</p>
                             </div>
-                            <p className="text-[#18181B] ml-[15px] font-medium text-[16px]">0</p>
+                            <p className="text-[#18181B] ml-3 sm:ml-[15px] pb-2 font-medium text-sm sm:text-[16px]">0</p>
                         </div>
                     </div>
 
-                    <p className="font-medium  text[16px] text-[#022B23] mt-[20px]">Store performance</p>
-                    <div className="flex items-center gap-[20px] h-[100px]">
-                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
-                            <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={dropBoxImg} alt="top product" width={18} height={18}
-                                       className="h-[18px] w-[18px]"/>
+                    <p className="font-medium text-sm sm:text-[14px] lg:text-[16px] text-[#022B23] mt-4 sm:mt-[20px]">Store performance</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 lg:gap-[20px]">
+                        <div className="w-full hover:shadow-lg transition-shadow min-h-[90px] sm:min-h-[100px] border-[0.5px] rounded-xl sm:rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
+                            <div className="flex items-center gap-2 sm:gap-[8px] text-xs sm:text-[12px] text-[#707070] font-medium p-3 sm:p-[15px]">
+                                <Image src={dropBoxImg} alt="top product" width={16} height={16}
+                                       className="h-4 w-4 sm:h-[18px] sm:w-[18px]"/>
                                 <p>Top selling product</p>
                             </div>
-                            <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">
+                            <div className="flex justify-between px-3 sm:px-[15px] pb-2">
+                                <p className="text-[#18181B] font-medium text-sm sm:text-[14px] lg:text-[16px] truncate">
                                     {bestSelling?.name || 'No best selling product'}
                                 </p>
-                                <div className="flex items-center gap-[4px]">
-                                    <Image src={arrowUp} alt={'image'} width={10} height={10}/>
-                                    <p className="text-[#22C55E] text-[12px]">2%</p>
+                                <div className="flex items-center gap-1 sm:gap-[4px]">
+                                    <Image src={arrowUp} alt={'image'} width={8} height={8} className="sm:w-[10px] sm:h-[10px]"/>
+                                    <p className="text-[#22C55E] text-xs sm:text-[12px]">2%</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="w-[246px] hover:shadow-2xl h-full border-[0.5px] rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
-                            <div className="flex items-center gap-[8px] text-[12px] text-[#707070] font-medium p-[15px]">
-                                <Image src={flag} alt="inventory" width={18} height={18} className="h-[18px] w-[18px]"/>
+                        <div className="w-full hover:shadow-lg transition-shadow min-h-[90px] sm:min-h-[100px] border-[0.5px] rounded-xl sm:rounded-[14px] bg-[#FFFFFF] border-[#E4E4E7]">
+                            <div className="flex items-center gap-2 sm:gap-[8px] text-xs sm:text-[12px] text-[#707070] font-medium p-3 sm:p-[15px]">
+                                <Image src={flag} alt="inventory" width={16} height={16} className="h-4 w-4 sm:h-[18px] sm:w-[18px]"/>
                                 <p>All products (in stock)</p>
                             </div>
-                            <div className="flex justify-between px-[15px]">
-                                <p className="text-[#18181B] font-medium text-[16px]">{totalStock.toLocaleString()}</p>
-                                <div className="flex items-center gap-[4px]">
-                                    <Image src={arrowUp} alt={'image'} width={10} height={10}/>
-                                    <p className="text-[#22C55E] text-[12px]">2%</p>
+                            <div className="flex justify-between px-3 sm:px-[15px] pb-2">
+                                <p className="text-[#18181B] font-medium text-sm sm:text-[14px] lg:text-[16px]">{totalStock.toLocaleString()}</p>
+                                <div className="flex items-center gap-1 sm:gap-[4px]">
+                                    <Image src={arrowUp} alt={'image'} width={8} height={8} className="sm:w-[10px] sm:h-[10px]"/>
+                                    <p className="text-[#22C55E] text-xs sm:text-[12px]">2%</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div className="h-[366px] mx-[100px] border-[1px] border-[#ededed] rounded-[24px] p-6">
+                <div className="min-h-[300px] sm:min-h-[366px] mx-4 sm:mx-6 lg:mx-[100px] border-[1px] border-[#ededed] rounded-2xl sm:rounded-[24px] p-4 sm:p-6">
                     <div className="flex items-center text-[#8C8C8C] text-[10px] w-[91px] h-[26px] border-[0.5px] border-[#ededed] rounded-[8px] relative mb-4">
                         <div
                             className={`flex items-center justify-center w-[100%] h-full z-10 cursor-pointer ${
@@ -487,8 +424,8 @@ const DashBoard = () => {
                                     ></div>
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between gap-4">
-                                <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                <div className="w-full sm:w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
                                     <div className="flex items-center gap-[9px]">
                                         <span className="rounded-full w-[6px] h-[6px] bg-[#C6EB5F]"></span>
                                         <p className="text-[#707070] text-[12px]">DELIVERED</p>
@@ -499,7 +436,7 @@ const DashBoard = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="w-[326px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-[8px] p-4">
+                                <div className="w-full sm:w-[326px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-[8px] p-4">
                                     <div className="flex items-center gap-[9px]">
                                         <span className="rounded-full w-[6px] h-[6px] bg-[#1E1E1E]"></span>
                                         <p className="text-[#707070] text-[12px]">SHIPPED</p>
@@ -511,7 +448,7 @@ const DashBoard = () => {
                                     </div>
                                 </div>
 
-                                <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
+                                <div className="w-full sm:w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
                                     <div className="flex items-center gap-[9px]">
                                         <span className="rounded-full w-[6px] h-[6px] bg-[#FF5050]"></span>
                                         <p className="text-[#707070] text-[12px]">PENDING</p>
@@ -522,7 +459,7 @@ const DashBoard = () => {
                                         </span>
                                     </div>
                                 </div>
-                                <div className="w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
+                                <div className="w-full sm:w-[234px] border-[1px] flex flex-col border-[#EDEDED] gap-[9px] rounded-lg p-4">
                                     <div className="flex items-center gap-[9px]">
                                         <span className="rounded-full w-[6px] h-[6px] bg-[#F99007]"></span>
                                         <p className="text-[#707070] text-[12px]">PROCESSING</p>
@@ -539,8 +476,6 @@ const DashBoard = () => {
                 </div>
             </div>
 
-
-
             {showToast && (
                 <Toast
                     type={toastType}
@@ -549,6 +484,7 @@ const DashBoard = () => {
                     onClose={handleCloseToast}
                 />
             )}
+            </VendorShopGuard>
         </VendorVideoCallWrapper>
     );
 };

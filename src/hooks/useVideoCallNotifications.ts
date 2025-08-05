@@ -55,6 +55,7 @@ export const useVideoCallNotifications = () => {
           const data = JSON.parse(message.body);
           console.log('📞 useVideoCallNotifications: Received call status update:', data);
           setCallStatus(data);
+          console.log("Status: ", data)
           
           // Handle specific call status types
           if (data.type === 'CALL_ENDED') {

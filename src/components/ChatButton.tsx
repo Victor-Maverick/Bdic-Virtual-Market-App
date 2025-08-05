@@ -8,10 +8,22 @@ import Image from "next/image";
 interface ChatButtonProps {
   vendorEmail: string;
   vendorName: string;
+  shopId?: number;
+  shopName?: string;
+  productId?: number;
+  productName?: string;
   className?: string;
 }
 
-const ChatButton = ({ vendorEmail, vendorName, className = '' }: ChatButtonProps) => {
+const ChatButton = ({ 
+  vendorEmail, 
+  vendorName, 
+  shopId, 
+  shopName, 
+  productId, 
+  productName, 
+  className = '' 
+}: ChatButtonProps) => {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -32,6 +44,12 @@ const ChatButton = ({ vendorEmail, vendorName, className = '' }: ChatButtonProps
       vendor: vendorEmail,
       vendorName: vendorName
     });
+
+    // Add optional parameters if provided
+    if (shopId) query.append('shopId', shopId.toString());
+    if (shopName) query.append('shopName', shopName);
+    if (productId) query.append('productId', productId.toString());
+    if (productName) query.append('productName', productName);
     
     router.push(`/chat?${query.toString()}`);
   };

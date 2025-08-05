@@ -1,4 +1,5 @@
 'use client'
+import { useState, useEffect } from 'react';
 import Image from "next/image";
 import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
 import arrowLeft from "../../../../public/assets/images/arrow-right.svg";
@@ -6,9 +7,27 @@ import limeArrow from "../../../../public/assets/images/green arrow.png";
 import goodsPack from "../../../../public/assets/images/goodsPack.png";
 import envelopeImg from '@/../public/assets/images/envelopeImg.svg';
 import { useRouter } from "next/navigation";
+import Toast from '@/components/Toast';
+import { userService } from '@/services/userService';
 
 const EmailVerification = () => {
     const router = useRouter();
+    const [userEmail, setUserEmail] = useState('');
+    const [isResending, setIsResending] = useState(false);
+    const [toast, setToast] = useState<{
+        show: boolean;
+        type: "success" | "error";
+        message: string;
+        subMessage: string;
+    } | null>(null);
+
+    useEffect(() => {
+        // Get user email from localStorage
+        const email = localStorage.getItem('userEmail');
+        if (email) {
+            setUserEmail(email);
+        }
+    }, []);
 
     const handleClick = () => {
         router.push("/register/userType");
@@ -17,8 +36,63 @@ const EmailVerification = () => {
     const handleBack = () => {
         router.push("/register/getStarted");
     };
+
+    const handleResendVerification = async () => {
+        if (!userEmail) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Email not found",
+                subMessage: "Please go back and register again"
+            });
+            return;
+        }
+
+        setIsResending(true);
+        try {
+            const result = await userService.resendVerificationEmail(userEmail);
+            
+            if (result.success) {
+                setToast({
+                    show: true,
+                    type: "success",
+                    message: "Email sent",
+                    subMessage: "Verification email has been resent to your inbox"
+                });
+            } else {
+                setToast({
+                    show: true,
+                    type: "error",
+                    message: "Resend failed",
+                    subMessage: result.message
+                });
+            }
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Resend failed",
+                subMessage: "Failed to resend verification email"
+            });
+        } finally {
+            setIsResending(false);
+        }
+    };
+
+    const closeToast = () => {
+        setToast(null);
+    };
     return (
         <div className="flex flex-col md:flex-row min-h-screen">
+            {toast && (
+                <Toast
+                    type={toast.type}
+                    message={toast.message}
+                    subMessage={toast.subMessage}
+                    onClose={closeToast}
+                />
+            )}
             {/* Left Panel - Main content */}
             <div className="w-full md:w-2/3 pb-10 z-10 flex flex-col">
                 {/* Logo */}
@@ -63,10 +137,10 @@ const EmailVerification = () => {
                             {/* Verification text */}
                             <div className="flex flex-col md:text-left">
                                 <p className="text-[#022B23] font-medium text-[18px] md:text-[20px]">
-                                    Mail verified successfully
+                                    Check your email
                                 </p>
                                 <p className="text-[#1E1E1E] text-[14px] md:text-[16px] font-medium mt-1">
-                                    Your email address has been verified successfully
+                                    We&apos;ve sent a verification link to {userEmail || 'your email'}
                                 </p>
                             </div>
 
@@ -75,7 +149,7 @@ const EmailVerification = () => {
                                 onClick={handleClick}
                                 className="w-full flex cursor-pointer gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px]"
                             >
-                                <p className="text-[#C6EB5F] font-semibold text-[14px]">Verify and continue</p>
+                                <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue</p>
                                 <Image
                                     src={limeArrow}
                                     alt="continue arrow"
@@ -87,7 +161,13 @@ const EmailVerification = () => {
 
                         {/* Resend option */}
                         <p className="mt-[10px] md:text-left text-[14px] md:text-[16px] text-[#7C7C7C]">
-                            Didn&apos;t receive mail? <span className="font-medium underline text-[#022B23] cursor-pointer">Resend</span>
+                            Didn&apos;t receive mail? {' '}
+                            <span 
+                                onClick={handleResendVerification}
+                                className={`font-medium underline text-[#022B23] cursor-pointer ${isResending ? 'opacity-50' : 'hover:text-[#033228]'}`}
+                            >
+                                {isResending ? 'Sending...' : 'Resend'}
+                            </span>
                         </p>
                     </div>
                 </div>

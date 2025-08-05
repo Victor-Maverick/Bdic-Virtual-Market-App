@@ -558,9 +558,9 @@ const Cart = () => {
             {/*<ProductDetailHeroBar />*/}
             <NavigationBar page="//cart" name="Cart" />
 
-            <div className="px-[100px] py-[10px] border-b border-[#ededed]">
-                <div className="w-[182px] h-[46px] flex border-[0.5px] border-[#ededed] rounded-[4px] p-[2px]">
-                    <div className="flex justify-center gap-[2px] items-center bg-[#F9F9F9] w-[180px] h-[40px]">
+            <div className="px-4 sm:px-6 lg:px-[100px] py-[10px] border-b border-[#ededed]">
+                <div className="w-full max-w-[182px] h-[46px] flex border-[0.5px] border-[#ededed] rounded-[4px] p-[2px]">
+                    <div className="flex justify-center gap-[2px] items-center bg-[#F9F9F9] w-full h-[40px]">
                         <Image src={cartIcon} alt="cart icon" width={20} height={20} />
                         <p className="text-[14px] text-[#1E1E1E]">My cart</p>
                         <p className="font-medium text-[14px] text-[#1E1E1E]">({getTotalItems()})</p>
@@ -568,7 +568,7 @@ const Cart = () => {
                 </div>
             </div>
 
-            <div className="flex px-[100px] items-center mt-[20px] gap-[24px]">
+            <div className="flex px-4 sm:px-6 lg:px-[100px] items-center mt-[20px] gap-[12px] sm:gap-[24px] overflow-x-auto">
                 <div className="flex gap-[6px] items-center">
                     <Image src={cartIcon} alt="cart" width={20} height={20} />
                     <p className="text-[14px] font-medium">Cart / checkout</p>
@@ -581,34 +581,34 @@ const Cart = () => {
             </div>
 
             {getTotalItems() === 0 ? (
-                <div className="flex flex-col items-center justify-center px-[100px] py-[80px]">
+                <div className="flex flex-col items-center justify-center px-4 sm:px-6 lg:px-[100px] py-[60px] sm:py-[80px]">
                     <Image
                         src={emptyCartImg}
                         alt="Empty cart"
-                        width={200}
-                        height={200}
-                        className="mb-6"
+                        width={150}
+                        height={150}
+                        className="mb-6 sm:w-[200px] sm:h-[200px]"
                     />
-                    <h3 className="text-[24px] font-medium mb-2">Your cart is empty</h3>
-                    <p className="text-[#707070] mb-6 text-center max-w-md">
+                    <h3 className="text-[20px] sm:text-[24px] font-medium mb-2 text-center">Your cart is empty</h3>
+                    <p className="text-[#707070] mb-6 text-center max-w-md text-[14px] sm:text-[16px]">
                         Looks like you haven&#39;t added anything to your cart yet
                     </p>
                     <button
-                        className="bg-[#022B23] text-white px-6 py-3 rounded-[12px] hover:bg-[#033a30] transition-colors"
+                        className="bg-[#022B23] text-white px-6 py-3 rounded-[12px] hover:bg-[#033a30] transition-colors text-[14px] sm:text-[16px]"
                         onClick={() => router.push('/marketPlace')}
                     >
                         Continue Shopping
                     </button>
                 </div>
             ) : (
-                <div className="flex gap-[12px] mt-[20px] px-[100px] py-4">
-                    <div className="border-[0.5px] border-[#ededed] w-[60%] h-full rounded-[14px]">
+                <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-[12px] mt-4 sm:mt-6 lg:mt-[20px] px-4 sm:px-6 lg:px-[100px] py-4">
+                    <div className="border-[0.5px] border-[#ededed] w-full lg:w-[60%] h-full rounded-xl sm:rounded-[14px] mb-4 lg:mb-0">
                         {cartItems.map((product, index) => (
                             <div
                                 key={`${product.productId}-${index}`}
                                 className={`flex items-center ${index !== cartItems.length - 1 ? 'border-b border-[#ededed]' : ''}`}
                             >
-                                <div className="flex border-r border-[#ededed] w-[133px] h-[110px] overflow-hidden">
+                                <div className="flex border-r border-[#ededed] w-20 sm:w-24 lg:w-[133px] h-16 sm:h-20 lg:h-[110px] overflow-hidden flex-shrink-0">
                                     <Image
                                         src={product.imageUrl}
                                         alt={product.name}
@@ -618,17 +618,17 @@ const Cart = () => {
                                     />
                                 </div>
 
-                                <div className="flex items-center w-full px-[20px] justify-between">
-                                    <div className="flex flex-col w-[30%]">
-                                        <div className="mb-[13px]">
-                                            <p className="text-[14px] text-[#1E1E1E] font-medium mb-[4px]">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center w-full px-3 sm:px-4 lg:px-[20px] justify-between gap-3 sm:gap-4 lg:gap-0 py-2 sm:py-0">
+                                    <div className="flex flex-col w-full sm:w-[40%] lg:w-[30%] min-w-0">
+                                        <div className="mb-2 sm:mb-[8px] lg:mb-[13px]">
+                                            <p className="text-xs sm:text-sm lg:text-[14px] text-[#1E1E1E] font-medium mb-1 sm:mb-[4px] truncate">
                                                 {product.name}
                                             </p>
-                                            <p className="text-[10px] font-normal text-[#3D3D3D] line-clamp-2">
+                                            <p className="text-xs font-normal text-[#3D3D3D] line-clamp-2 hidden sm:block">
                                                 {product.description}
                                             </p>
                                         </div>
-                                        <p className="font-medium text-[16px]">
+                                        <p className="font-medium text-sm sm:text-[14px] lg:text-[16px]">
                                             ₦{product.price.toLocaleString()}.00
                                         </p>
                                     </div>
