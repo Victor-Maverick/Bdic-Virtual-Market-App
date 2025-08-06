@@ -23,7 +23,6 @@ interface ShopData {
     bankName: string;
     accountNumber: string;
     marketId: number;
-    marketSectionId: number;
     firstName: string;
     status: string;
     vendorName?: string;

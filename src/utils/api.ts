@@ -9,7 +9,26 @@ const api = axios.create({
 const handleApiError = (error: unknown, context: string) => {
     if (error instanceof AxiosError) {
         console.error(`Error ${context}:`, error.message, error.response?.data);
-        throw new Error(error.response?.data?.message || `Failed to ${context}`);
+        
+        // Extract error message from different possible response formats
+        let errorMessage = `Failed to ${context}`;
+        
+        if (error.response?.data) {
+            // If the response data is a string (like from your backend controller)
+            if (typeof error.response.data === 'string') {
+                errorMessage = error.response.data;
+            }
+            // If the response data is an object with a message property
+            else if (error.response.data.message) {
+                errorMessage = error.response.data.message;
+            }
+            // If the response data is an object with an error property
+            else if (error.response.data.error) {
+                errorMessage = error.response.data.error;
+            }
+        }
+        
+        throw new Error(errorMessage);
     } else {
         console.error(`Unexpected error ${context}:`, error);
         throw new Error(`Failed to ${context} due to an unexpected error`);
@@ -100,6 +119,7 @@ export const addShop = async (shopData: {
         // IDs
         formData.append('marketId', shopData.shopInfo.marketId.toString());
         formData.append('marketSectionId', shopData.shopInfo.marketSectionId.toString());
+        formData.append('lgaId', shopData.personalInfo.lgaId.toString());
         formData.append('email', shopData.email);
 
         // Handle logo image

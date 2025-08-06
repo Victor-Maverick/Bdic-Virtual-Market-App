@@ -1,6 +1,7 @@
 'use client';
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import VendorShopGuard from "@/components/VendorShopGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 import Image from "next/image";
 import arrow from "../../../../../public/assets/images/arrow-right.svg";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
@@ -464,7 +465,9 @@ const SetupCompleteContent = () => {
                 </div>
             )}
 
-            <VendorShopGuard>
+            <>
+            <DashboardHeader />
+            <DashboardOptions />
             <DashboardSubHeader
                 welcomeText="Hey, welcome"
                 description="Get started by setting up your shop"
@@ -527,7 +530,7 @@ const SetupCompleteContent = () => {
                     </div>
                 </div>
             </div>
-            </VendorShopGuard>
+            </>
         </>
     );
 };

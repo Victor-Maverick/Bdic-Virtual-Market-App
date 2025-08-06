@@ -7,11 +7,12 @@ import shadow from '../../../public/assets/images/shadow.png';
 import { userService } from '@/services/userService';
 import headerIcon from '../../../public/assets/images/headerImg.png';
 import emailIcon from '../../../public/assets/images/sms.svg';
-import eyeOpen from '../../../public/assets/images/eye.svg'; // Fixed: separate icons
+import eyeOpen from '../../../public/assets/images/eye.svg'; 
 import eyeClosed from '../../../public/assets/images/eye.svg'; // Fixed: separate icons
 import loginImg from '@/../public/assets/images/loginImg.svg';
 import Toast from '@/components/Toast';
 import ReCAPTCHA from "react-google-recaptcha";
+import { useTokenVerification } from '@/hooks/useTokenVerification';
 
 type FormField = {
     id: keyof FormData;
@@ -42,6 +43,9 @@ const Login = () => {
     const [captchaToken, setCaptchaToken] = useState('');
     const [showVerificationPrompt, setShowVerificationPrompt] = useState(false);
     const [isResendingVerification, setIsResendingVerification] = useState(false);
+    
+    // Use token verification hook
+    const { verificationStatus, message: verificationMessage } = useTokenVerification();
 
     // Helper function to handle localStorage safely
     const safeLocalStorage = useMemo(() => ({
@@ -112,6 +116,18 @@ const Login = () => {
         setShowToast(true);
     }, []);
 
+    // Handle verification status changes
+    useEffect(() => {
+        if (verificationStatus === 'success') {
+            showToastMessage('success', 'Email Verified', verificationMessage);
+            setShowVerificationPrompt(false);
+        } else if (verificationStatus === 'error') {
+            showToastMessage('error', 'Verification Failed', verificationMessage);
+        } else if (verificationStatus === 'verifying') {
+            showToastMessage('success', 'Verifying Email', 'Please wait while we verify your email...');
+        }
+    }, [verificationStatus, verificationMessage, showToastMessage]);
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -130,24 +146,24 @@ const Login = () => {
                 redirect: false,
             });
 
+            console.log('Login error:', result);
             if (result?.error) {
-                console.log('Login error:', result.error); // Debug log
-                
-                // Handle session conflict specifically
+                console.log('Login error:', result.error);
+                // Handle specific error cases
                 if (result.error.includes('logged in from another device')) {
-                    showToastMessage('error', 'Session Conflict', 'You were logged out because you logged in from another device');
+                    showToastMessage('error', 'Session Conflict', result.error);
                     setShowVerificationPrompt(false);
                 } else if (
-                    result.error.toLowerCase().includes('user not verified') || 
+                    result.error.toLowerCase().includes('account not verified') ||
                     result.error.toLowerCase().includes('not verified') ||
                     result.error.toLowerCase().includes('verify') ||
                     result.error.toLowerCase().includes('verification')
                 ) {
                     showToastMessage('error', 'Account not verified', result.error);
-                    // Store email for potential resend
                     safeLocalStorage.setItem('unverifiedEmail', form.email);
                     setShowVerificationPrompt(true);
                 } else {
+                    // Display the exact backend error message
                     showToastMessage('error', 'Login failed', result.error);
                     setShowVerificationPrompt(false);
                 }
@@ -182,7 +198,9 @@ const Login = () => {
             }
         } catch (error) {
             console.error('Login error:', error);
-            showToastMessage('error', 'Login failed', 'An unexpected error occurred during login');
+            // Extract error message from the caught error
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+            showToastMessage('error', 'Login failed', errorMessage);
             setShowVerificationPrompt(false);
         } finally {
             setIsLoading(false);

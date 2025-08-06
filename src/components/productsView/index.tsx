@@ -26,7 +26,6 @@ interface ShopData {
     firstName: string;
     status: string;
     vendorName?: string;
-    businessPhone?: string;
     market?: string;
     marketSection?: string;
 }
@@ -36,7 +35,7 @@ interface Product {
     name: string;
     price: string;
     mainImageUrl: string;
-    // Add other properties from ProductResponseDto as needed
+
 }
 
 interface ShopInformationProps {
@@ -159,7 +158,7 @@ export default function ShopInformation({ shopData }: ShopInformationProps) {
                         </div>
                         <div className="flex items-center gap-[4px]">
                             <Image src={barCodeImg} alt={'image'} width={18} height={18}/>
-                            <p className="text-[14px] font-light">Lagos line**</p>
+                            <p className="text-[14px] font-light">{shopData.marketSection}</p>
                         </div>
                     </div>
 
@@ -186,7 +185,7 @@ export default function ShopInformation({ shopData }: ShopInformationProps) {
                         </div>
                         <div className="flex px-[18px] gap-[4px] justify-center  w-[513px] border-[0.5px] border-[#E4E4E4] rounded-[14px] h-[56px] bg-[#F7F7F7] flex-col ">
                             <p className="text-[12px] text-[#6D6D6D] font-medium">Shop line</p>
-                            <p className="text-[#121212] text-[14px] font-medium">Lagos line</p>
+                            <p className="text-[#121212] text-[14px] font-medium">{shopData.marketSection}</p>
                         </div>
                         <div className="flex px-[18px] gap-[4px] justify-center  w-[513px] border-[0.5px] border-[#E4E4E4] rounded-[14px] h-[56px] bg-[#F7F7F7] flex-col ">
                             <p className="text-[12px] text-[#6D6D6D] font-medium">Shop number</p>

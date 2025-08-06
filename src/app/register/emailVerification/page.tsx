@@ -9,6 +9,7 @@ import envelopeImg from '@/../public/assets/images/envelopeImg.svg';
 import { useRouter } from "next/navigation";
 import Toast from '@/components/Toast';
 import { userService } from '@/services/userService';
+import { useTokenVerification } from '@/hooks/useTokenVerification';
 
 const EmailVerification = () => {
     const router = useRouter();
@@ -20,6 +21,9 @@ const EmailVerification = () => {
         message: string;
         subMessage: string;
     } | null>(null);
+    
+    // Use token verification hook
+    const { verificationStatus, message: verificationMessage } = useTokenVerification();
 
     useEffect(() => {
         // Get user email from localStorage
@@ -28,6 +32,29 @@ const EmailVerification = () => {
             setUserEmail(email);
         }
     }, []);
+
+    // Handle verification status changes
+    useEffect(() => {
+        if (verificationStatus === 'success') {
+            setToast({
+                show: true,
+                type: "success",
+                message: "Email Verified",
+                subMessage: verificationMessage
+            });
+            // Redirect to next step after verification
+            setTimeout(() => {
+                router.push("/register/userType");
+            }, 2000);
+        } else if (verificationStatus === 'error') {
+            setToast({
+                show: true,
+                type: "error",
+                message: "Verification Failed",
+                subMessage: verificationMessage
+            });
+        }
+    }, [verificationStatus, verificationMessage, router]);
 
     const handleClick = () => {
         router.push("/register/userType");
@@ -110,8 +137,8 @@ const EmailVerification = () => {
 
                     <div className="flex gap-2.5 mt-2">
                         <div className="w-20 h-1.5 bg-[#C6EB5F]"></div>
-                        <div className="w-20 h-1.5 bg-[#C6EB5F]"></div>
-                        <div className="w-20 h-1.5 bg-[#F0FACD]"></div>
+                        <div className={`w-20 h-1.5 ${verificationStatus === 'success' ? 'bg-[#C6EB5F]' : 'bg-[#C6EB5F]'}`}></div>
+                        <div className={`w-20 h-1.5 ${verificationStatus === 'success' ? 'bg-[#C6EB5F]' : 'bg-[#F0FACD]'}`}></div>
                     </div>
 
                     {/* Back button */}
@@ -136,26 +163,80 @@ const EmailVerification = () => {
 
                             {/* Verification text */}
                             <div className="flex flex-col md:text-left">
-                                <p className="text-[#022B23] font-medium text-[18px] md:text-[20px]">
-                                    Check your email
-                                </p>
-                                <p className="text-[#1E1E1E] text-[14px] md:text-[16px] font-medium mt-1">
-                                    We&apos;ve sent a verification link to {userEmail || 'your email'}
-                                </p>
+                                {verificationStatus === 'verifying' ? (
+                                    <>
+                                        <p className="text-[#022B23] font-medium text-[18px] md:text-[20px]">
+                                            Verifying your email...
+                                        </p>
+                                        <p className="text-[#1E1E1E] text-[14px] md:text-[16px] font-medium mt-1">
+                                            Please wait while we verify your email address
+                                        </p>
+                                    </>
+                                ) : verificationStatus === 'success' ? (
+                                    <>
+                                        <p className="text-[#22c55e] font-medium text-[18px] md:text-[20px]">
+                                            Email verified successfully!
+                                        </p>
+                                        <p className="text-[#1E1E1E] text-[14px] md:text-[16px] font-medium mt-1">
+                                            Redirecting you to the next step...
+                                        </p>
+                                    </>
+                                ) : verificationStatus === 'error' ? (
+                                    <>
+                                        <p className="text-[#dc2626] font-medium text-[18px] md:text-[20px]">
+                                            Verification failed
+                                        </p>
+                                        <p className="text-[#1E1E1E] text-[14px] md:text-[16px] font-medium mt-1">
+                                            {verificationMessage}
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <p className="text-[#022B23] font-medium text-[18px] md:text-[20px]">
+                                            Check your email
+                                        </p>
+                                        <p className="text-[#1E1E1E] text-[14px] md:text-[16px] font-medium mt-1">
+                                            We&apos;ve sent a verification link to {userEmail || 'your email'}
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             {/* Continue button */}
                             <div
-                                onClick={handleClick}
-                                className="w-full flex cursor-pointer gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px]"
+                                onClick={verificationStatus === 'verifying' ? undefined : 
+                                        verificationStatus === 'success' ? () => router.push("/register/userType") : handleClick}
+                                className={`w-full flex gap-[9px] justify-center items-center rounded-[12px] h-[52px] ${
+                                    verificationStatus === 'verifying' 
+                                        ? 'bg-[#6b7280] cursor-not-allowed'
+                                        : verificationStatus === 'success' 
+                                        ? 'bg-[#22c55e] cursor-pointer' 
+                                        : verificationStatus === 'error'
+                                        ? 'bg-[#dc2626] cursor-pointer'
+                                        : 'bg-[#022B23] cursor-pointer'
+                                }`}
                             >
-                                <p className="text-[#C6EB5F] font-semibold text-[14px]">Continue</p>
-                                <Image
-                                    src={limeArrow}
-                                    alt="continue arrow"
-                                    width={18}
-                                    height={18}
-                                />
+                                {verificationStatus === 'verifying' ? (
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                ) : (
+                                    <>
+                                        <p className={`font-semibold text-[14px] ${
+                                            verificationStatus === 'success' || verificationStatus === 'error' 
+                                                ? 'text-white' 
+                                                : 'text-[#C6EB5F]'
+                                        }`}>
+                                            {verificationStatus === 'success' ? 'Continue' : 
+                                             verificationStatus === 'error' ? 'Try Again' : 
+                                             'Continue'}
+                                        </p>
+                                        <Image
+                                            src={limeArrow}
+                                            alt="continue arrow"
+                                            width={18}
+                                            height={18}
+                                        />
+                                    </>
+                                )}
                             </div>
                         </div>
 

@@ -1,6 +1,7 @@
 'use client'
 import DashboardSubHeader from "@/components/dashboardSubHeader";
-import VendorShopGuard from "@/components/VendorShopGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 import uploadIcon from '../../../../../public/assets/images/uploadIcon.png'
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
@@ -286,7 +287,9 @@ const Setup1 = () => {
     );
 
     return (
-        <VendorShopGuard>
+        <>
+            <DashboardHeader />
+            <DashboardOptions />
             <DashboardSubHeader
                 welcomeText={"Hey, welcome"}
                 description={"Get started by setting up your shop"}
@@ -423,7 +426,7 @@ const Setup1 = () => {
                     )}
                 </div>
             </div>
-        </VendorShopGuard>
+        </>
     );
 };
 
