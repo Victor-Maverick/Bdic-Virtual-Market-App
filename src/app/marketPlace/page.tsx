@@ -2,7 +2,6 @@
 import React, { useCallback, useEffect, useState, useRef } from "react"
 import BannerSection from "@/components/bannerSection"
 import Image, { type StaticImageData } from "next/image"
-import MarketProductCard from "@/components/marketProductCard"
 import marketIcon from "@/../public/assets/images/market element.png"
 import searchImg from "@/../public/assets/images/search-normal.png"
 import axios from "axios"
@@ -48,6 +47,52 @@ interface Product {
     categoryName: string
 }
 
+// Updated MarketProductCard to accept height as a number
+const MarketProductCard = ({
+                               id,
+                               name,
+                               image,
+                               price,
+                               height,
+                               imageHeight,
+                           }: {
+    id: number
+    name: string
+    image: string | StaticImageData
+    price: string
+    height: number
+    imageHeight: number
+}) => {
+    const router = useRouter()
+    const handleOpen = () => {
+        router.push(`/marketPlace/productDetails/${id}`)
+    }
+
+    return (
+        <div
+            onClick={handleOpen}
+            className="hover:shadow-lg cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed] flex flex-col overflow-hidden group transition-all duration-300"
+            style={{ height: `${height}px` }}
+        >
+            <div className="relative w-full overflow-hidden rounded-t-[14px]" style={{ height: `${imageHeight}px` }}>
+                <Image
+                    src={image || "/placeholder.svg"}
+                    alt={name}
+                    width={400}
+                    height={imageHeight}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+            </div>
+            <div className="flex-1 p-3 flex flex-col justify-between" style={{ height: `${height - imageHeight}px` }}>
+                <div className="space-y-1">
+                    <p className="font-medium text-[#1E1E1E] text-sm line-clamp-2 leading-tight">{name}</p>
+                    <p className="font-bold text-[#1E1E1E] text-base">₦{price}</p>
+                </div>
+            </div>
+        </div>
+    )
+}
+
 const ProductCard = ({
                          image,
                          price,
@@ -69,26 +114,33 @@ const ProductCard = ({
     return (
         <div
             onClick={handleOpen}
-            className="hover:shadow-lg cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed]"
+            className="hover:shadow-lg cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed] flex flex-col overflow-hidden group transition-all duration-300"
+            style={{ height: '280px' }}
         >
-            {isApiProduct ? (
-                <Image
-                    src={image || "/placeholder.svg"}
-                    alt={name}
-                    width={200}
-                    height={200}
-                    className="w-full h-[150px] sm:h-[180px] lg:h-[200px] object-cover rounded-t-[14px]"
-                />
-            ) : (
-                <Image
-                    src={image || "/placeholder.svg"}
-                    alt={"image"}
-                    className="w-full h-[150px] sm:h-[180px] lg:h-[200px] object-cover rounded-t-[14px]"
-                />
-            )}
-            <div className="mt-2 sm:mt-4 px-2 sm:px-4 flex-col gap-[2px]">
-                <p className="font-normal text-[#1E1E1E] text-sm sm:text-base truncate">{name}</p>
-                <p className="font-semibold text-[16px] sm:text-[20px] text-[#1E1E1E] mb-2 sm:mb-4 mt-1">₦{price}.00</p>
+            <div className="relative w-full overflow-hidden rounded-t-[14px]" style={{ height: '160px' }}>
+                {isApiProduct ? (
+                    <Image
+                        src={image || "/placeholder.svg"}
+                        alt={name}
+                        width={400}
+                        height={160}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                ) : (
+                    <Image
+                        src={image || "/placeholder.svg"}
+                        alt={"image"}
+                        width={400}
+                        height={160}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                )}
+            </div>
+            <div className="flex-1 p-3 flex flex-col justify-between" style={{ height: '120px' }}>
+                <div className="space-y-1">
+                    <p className="font-medium text-[#1E1E1E] text-sm line-clamp-2 leading-tight">{name}</p>
+                    <p className="font-bold text-[#1E1E1E] text-base">₦{price.toLocaleString()}</p>
+                </div>
             </div>
         </div>
     )
@@ -223,7 +275,6 @@ const StoreSection = () => {
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/get-promoted`
             )
             if (response.data && Array.isArray(response.data)) {
-                // Transform and take first 10 stores
                 const stores = response.data.slice(0, 10).map(shop => ({
                     id: shop.id,
                     name: shop.name,
@@ -251,7 +302,6 @@ const StoreSection = () => {
                 }}
                 className="w-full h-full rounded-[14px] overflow-hidden cursor-pointer flex flex-col group"
             >
-                {/* Image container with light grey background */}
                 <div className="w-full h-[120px] sm:h-[160px] lg:h-[200px] bg-gray-100 rounded-t-[14px] overflow-hidden flex items-center justify-center p-4">
                     {store.logoUrl ? (
                         <div className="relative w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] lg:w-[120px] lg:h-[120px]">
@@ -265,14 +315,12 @@ const StoreSection = () => {
                         </div>
                     ) : (
                         <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] lg:w-[120px] lg:h-[120px] bg-gray-200 rounded-full flex items-center justify-center">
-                        <span className="text-2xl font-bold text-gray-500">
-                            {store.name.charAt(0).toUpperCase()}
-                        </span>
+                            <span className="text-2xl font-bold text-gray-500">
+                                {store.name.charAt(0).toUpperCase()}
+                            </span>
                         </div>
                     )}
                 </div>
-
-                {/* Store name */}
                 <div className="p-2 bg-white rounded-b-[14px] border-t border-gray-200">
                     <p className="text-sm font-medium text-[#1E1E1E] text-center truncate">
                         {store.name}
@@ -282,13 +330,11 @@ const StoreSection = () => {
         )
     }
 
-    // Don't render if there's no API base URL or if no stores after loading
     if (!process.env.NEXT_PUBLIC_API_BASE_URL) return null
     if (loading) return null
     if (error) return null
     if (promotedStores.length === 0) return null
 
-    // Calculate container height based on number of stores
     const containerHeight = `min-h-[${Math.ceil(promotedStores.length / 5) * 240}px]`
 
     return (
@@ -345,7 +391,6 @@ const Dropdown = <T extends { id: number; name: string }>({
                     color="#707070"
                 />
             </div>
-
             {isOpen && (
                 <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed] max-h-[200px] overflow-y-auto">
                     <ul className="py-1">
@@ -445,15 +490,7 @@ const MarketPlace = () => {
     const [hoveredCategory, setHoveredCategory] = useState<CategoryResponse | null>(null)
     const [showSubcategories, setShowSubcategories] = useState<boolean>(false)
     const [isMobileCategoryOpen, setIsMobileCategoryOpen] = useState<boolean>(false)
-
-    // Floating products hook
-    const {
-        currentProduct,
-        showFloatingProduct,
-        hideCurrentProduct
-    } = useFloatingProducts()
-
-    // Promoted products state
+    const { currentProduct, showFloatingProduct, hideCurrentProduct } = useFloatingProducts()
     const [promotedProducts, setPromotedProducts] = useState<Product[]>([])
 
     const fetchProductsByCategory = async (categoryId: number) => {
@@ -480,27 +517,23 @@ const MarketPlace = () => {
 
     const leaveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
     const handleCategoryHover = (category: CategoryResponse) => {
-        // Clear any pending leave timeout
         if (leaveTimeoutRef.current) {
             clearTimeout(leaveTimeoutRef.current)
             leaveTimeoutRef.current = null
         }
-
         setHoveredCategory(category)
         setShowSubcategories(true)
         fetchSubCategories(category.name)
     }
 
     const handleCategoryLeave = () => {
-        // Set a timeout before hiding subcategories
         leaveTimeoutRef.current = setTimeout(() => {
             setShowSubcategories(false)
             setHoveredCategory(null)
-        }, 300) // 300ms delay
+        }, 300)
     }
 
     const handleSubcategoryLeave = () => {
-        // Same as category leave
         leaveTimeoutRef.current = setTimeout(() => {
             setShowSubcategories(false)
             setHoveredCategory(null)
@@ -552,14 +585,13 @@ const MarketPlace = () => {
         try {
             const [marketsData] = await Promise.all([fetchMarkets()])
             setMarkets(marketsData)
-
             if (marketsData.length > 0) {
                 setSelectedMarket(marketsData[0])
             }
-
         } catch (error) {
             console.error("Error fetching data:", error)
         }
+
     }
 
     useEffect(() => {
@@ -578,7 +610,6 @@ const MarketPlace = () => {
                 return prevCountdown - 1
             })
         }, 1000)
-
         return () => clearInterval(countdownInterval)
     }, [])
 
@@ -586,7 +617,6 @@ const MarketPlace = () => {
         try {
             setLoading(true)
             setError(null)
-
             let response
             try {
                 response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/all`, {
@@ -616,11 +646,9 @@ const MarketPlace = () => {
 
     const fetchPromotedProducts = async () => {
         try {
-
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/get-promoted`, {
                 headers: { "Content-Type": "application/json" },
             })
-
             if (response.data && Array.isArray(response.data)) {
                 setPromotedProducts(response.data)
                 console.log("Promoted Products: ", response.data)
@@ -639,16 +667,13 @@ const MarketPlace = () => {
             await fetchProducts()
             return
         }
-
         try {
             setLoading(true)
             setError(null)
             setIsSearching(true)
-
             const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/products/search-product?keyword=${encodeURIComponent(query)}`, {
                 headers: { "Content-Type": "application/json" },
             })
-
             if (response.data) {
                 setApiProducts(response.data)
             } else {
@@ -668,7 +693,6 @@ const MarketPlace = () => {
 
     const fetchCategories = async () => {
         try {
-
             let response
             try {
                 response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/categories/all`)
@@ -676,7 +700,6 @@ const MarketPlace = () => {
                 console.warn("Primary API failed, trying fallback...", primaryError)
                 response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/categories/all`)
             }
-
             if (response.data) {
                 setCategories(response.data)
             }
@@ -722,9 +745,7 @@ const MarketPlace = () => {
 
     const handleSubCategoryClick = (subCategory: SubCategoryResponse) => {
         cancelLeave()
-        // Find the parent category of this subcategory
         const parentCategory = categories.find((cat) => cat.name === hoveredCategory?.name)
-
         if (parentCategory) {
             setSelectedCategory(parentCategory)
         }
@@ -770,7 +791,6 @@ const MarketPlace = () => {
             <MarketPlaceHeader />
             <div className="flex-col w-full border-t-[0.5px] border-[#ededed]">
                 <div className="flex justify-between min-h-[400px] lg:h-[595px] pt-[10px] px-4 sm:px-6 lg:px-25">
-                    {/* Desktop Sidebar */}
                     {!isSearching && (
                         <div className="hidden lg:flex w-[20%] flex-col drop-shadow-sm h-full">
                             <div className="rounded-t-[8px] gap-[8px] h-[52px] px-[10px] font-medium text-[16px] flex items-center bg-[#022B23]">
@@ -801,7 +821,6 @@ const MarketPlace = () => {
                                         </li>
                                     ))}
                                 </ul>
-
                                 {showSubcategories && hoveredCategory && (
                                     <div
                                         className="absolute left-full top-0 ml-1 bg-white shadow-lg rounded-md z-50 min-w-[200px]"
@@ -836,9 +855,7 @@ const MarketPlace = () => {
                             </div>
                         </div>
                     )}
-
                     <div className={`flex flex-col h-full ${isSearching ? "w-full" : "w-full lg:w-[80%]"}`}>
-                        {/* Mobile Category Button */}
                         {!isSearching && (
                             <div className="lg:hidden mb-4">
                                 <button
@@ -850,7 +867,6 @@ const MarketPlace = () => {
                                 </button>
                             </div>
                         )}
-
                         <div className="flex flex-col sm:flex-row justify-between mb-[2px] items-stretch sm:items-center gap-2 sm:gap-4">
                             <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[40px] sm:h-[52px] px-[10px] rounded-[8px] flex-1 max-w-full sm:max-w-[540px]">
                                 <Image
@@ -882,7 +898,6 @@ const MarketPlace = () => {
                                 </div>
                             )}
                         </div>
-
                         {isSearching && (
                             <div className="mt-4">
                                 <div className="flex items-center w-full justify-between h-[50px] sm:h-[66px] px-2 sm:px-4 border-y border-[#ededed]">
@@ -906,7 +921,6 @@ const MarketPlace = () => {
                                 </div>
                             </div>
                         )}
-
                         {!isSearching && (
                             <div className="hidden sm:block">
                                 <BannerSection />
@@ -914,7 +928,6 @@ const MarketPlace = () => {
                         )}
                     </div>
                 </div>
-
                 {!isSearching && (
                     <div className="flex flex-col sm:flex-row items-start sm:items-center w-full justify-between min-h-[50px] sm:h-[66px] px-4 sm:px-6 lg:px-25 py-2 sm:py-0 border-y border-[#ededed] gap-2 sm:gap-4">
                         <div className="flex flex-col sm:flex-row gap-[2px] p-0.5 border border-[#ededed] w-full sm:w-[313px] rounded-[2px]">
@@ -943,8 +956,6 @@ const MarketPlace = () => {
                                 </p>
                             </div>
                         </div>
-
-                        {/* Show active filters */}
                         <div className="flex items-center gap-2 flex-wrap">
                             {selectedCategory && (
                                 <div className="bg-[#ECFDF6] px-2 sm:px-3 py-1 rounded-full flex items-center gap-1">
@@ -970,13 +981,11 @@ const MarketPlace = () => {
                         </div>
                     </div>
                 )}
-
                 {loading && (
                     <div className="flex justify-center items-center py-10">
                         <p className="text-[#1E1E1E] text-base sm:text-lg">Loading products...</p>
                     </div>
                 )}
-
                 {error && (
                     <div className="flex flex-col sm:flex-row justify-center items-center py-10 gap-2 sm:gap-4 px-4">
                         <p className="text-red-500 text-sm sm:text-lg text-center">Error: {error}</p>
@@ -988,14 +997,11 @@ const MarketPlace = () => {
                         </button>
                     </div>
                 )}
-
                 {!loading && !error && !isSearching && (
                     <>
-                        {/* Promoted Products Section - Only show if there are promoted products */}
                         {promotedProducts.length > 0 && (
                             <PromotedSection promotedProducts={promotedProducts} />
                         )}
-                        
                         <ProductGrid apiProducts={apiProducts} />
                         <div className="flex-col px-4 sm:px-6 lg:px-25">
                             <FlashSale countdown={countdown} apiProducts={apiProducts} />
@@ -1004,8 +1010,6 @@ const MarketPlace = () => {
                     </>
                 )}
             </div>
-
-            {/* Mobile Category odal */}
             <MobileCategoryModal
                 isOpen={isMobileCategoryOpen}
                 onClose={() => setIsMobileCategoryOpen(false)}
@@ -1014,15 +1018,12 @@ const MarketPlace = () => {
                 onCategorySelect={handleCategoryClick}
                 onAllCategoriesSelect={handleAllCategoriesSelect}
             />
-
-            {/* Floating Product Display */}
             {showFloatingProduct && currentProduct && (
                 <FloatingProduct
                     product={currentProduct}
                     onClose={hideCurrentProduct}
                 />
             )}
-
             <Footer />
         </>
     )

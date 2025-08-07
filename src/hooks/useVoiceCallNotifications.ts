@@ -23,16 +23,23 @@ export const useVoiceCallNotifications = () => {
 
     // Remove /api from the end of API_BASE_URL and add the WebSocket endpoint
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '');
-    const socket = new SockJS(`${baseUrl}/api/ws/voice-call`);
+    const wsUrl = `${baseUrl}/api/ws/voice-call`;
+    console.log('🎤 Attempting to connect to voice call WebSocket:', wsUrl);
+    console.log('🎤 Base URL:', baseUrl);
+    console.log('🎤 User email:', session.user.email);
+    
+    const socket = new SockJS(wsUrl);
     const client = Stomp.over(socket);
 
-    // Disable debug logging
-    client.debug = () => {};
+    // Enable debug logging for troubleshooting
+    client.debug = (str) => {
+      console.log('🎤 STOMP Debug:', str);
+    };
 
     client.connect({}, () => {
       console.log('✅ Connected to voice call WebSocket');
       console.log('📧 User email:', session.user.email);
-      console.log('🔗 WebSocket URL:', `${baseUrl}/api/ws/voice-call`);
+      console.log('🔗 WebSocket URL:', wsUrl);
       setIsConnected(true);
       setStompClient(client);
 

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@jitsi/react-sdk": "^1.4.4",
     "@stomp/stompjs": "^7.0.0",
     "agora-access-token": "^2.0.4",
     "agora-rtc-react": "^2.4.0",

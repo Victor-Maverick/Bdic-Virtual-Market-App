@@ -240,36 +240,18 @@ const Profile = () => {
 
                 // First check if address exists
                 const existsResponse = await axios.get(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/address-exists?email=${session.user.email}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${session.accessToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/address-exists?email=${session.user.email}`
                 );
 
                 // Fetch user profile
                 const profileResponse = await axios.get<UserProfile>(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-profile?email=${session.user.email}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${session.accessToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-profile?email=${session.user.email}`
                 );
 
                 setUserProfile(profileResponse.data);
                 if (existsResponse.data) {
                     const addressResponse = await axios.get<AddressResponse>(
-                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`,
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${session.accessToken}`,
-                                'Content-Type': 'application/json'
-                            }
-                        }
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`
                     );
                     setUserAddress(addressResponse.data);
                 }
@@ -297,10 +279,6 @@ const Profile = () => {
 
             const response = await axios(endpoint, {
                 method,
-                headers: {
-                    'Authorization': `Bearer ${session.accessToken}`,
-                    'Content-Type': 'application/json'
-                },
                 data: {
                     ...addressData,
                     email: session.user.email
@@ -310,13 +288,7 @@ const Profile = () => {
             if (response.status >= 200 && response.status < 300) {
                 // Fetch updated address
                 const addressResponse = await axios.get<AddressResponse>(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`,
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${session.accessToken}`,
-                            'Content-Type': 'application/json'
-                        }
-                    }
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`
                 );
                 setUserAddress(addressResponse.data);
             } else {
@@ -348,12 +320,6 @@ const Profile = () => {
                     email: session.user.email,
                     oldPassword: form.oldPassword,
                     newPassword: form.newPassword
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${session.accessToken}`,
-                        'Content-Type': 'application/json'
-                    }
                 }
             );
 

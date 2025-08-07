@@ -3,16 +3,11 @@ import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
 import marketIcon from "../../../../public/assets/images/market element.png";
 import React, {useState} from "react";
-import searchImg from "../../../../public/assets/images/search-normal.png";
+
 import limeArrow from '@/../public/assets/images/green arrow.png'
 import BackButton from "@/components/BackButton";
 
-const SearchBar = () => (
-    <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
-        <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-        <input placeholder="Search for items here" className="w-[413px] text-[#707070] text-[14px] focus:outline-none"/>
-    </div>
-);
+
 
 interface InputFieldProps {
     id: string;
@@ -90,7 +85,6 @@ const TrackOrder = () => {
                         {/*/!*<Dropdown options={[]} selectedOption={undefined} onSelect={function(option: unknown): void {*!/*/}
                         {/*    throw new Error("Function not implemented.");*/}
                         {/*} } placeholder={""}/>*/}
-                        <SearchBar/>
                     </div>
 
                     <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between border border-[#ededed] rounded-[4px]">

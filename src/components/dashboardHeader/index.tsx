@@ -2,53 +2,35 @@
 import profileImage from '../../../public/assets/images/profile-circle.png';
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import headerImg from "../../../public/assets/images/headerImg.png";
 import { useSession, signOut } from "next-auth/react";
 
-interface UserProfile {
-    firstName: string;
-    roles: string[];
-}
-
 const DashboardHeader = () => {
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const router = useRouter();
     const { data: session, status } = useSession();
 
+    const userProfile = session?.user ? {
+        firstName: session.user.firstName,
+        roles: session.user.roles || []
+    } : null;
+
+    // Close dropdown when clicking outside
     useEffect(() => {
-        const fetchUserProfile = async () => {
-            if (status === 'loading') return;
-            if (status === 'unauthenticated' || !session?.accessToken) {
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-                const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/profile`, {
-                    headers: {
-                        Authorization: `Bearer ${session.accessToken}`,
-                    },
-                });
-
-                if (response.status === 200) {
-                    setUserProfile({
-                        firstName: response.data.firstName,
-                        roles: response.data.roles || []
-                    });
-                }
-            } catch (error) {
-                console.log('Profile fetch failed:', error);
-            } finally {
-                setIsLoading(false);
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (isProfileDropdownOpen && !target.closest('.profile-dropdown-container')) {
+                setIsProfileDropdownOpen(false);
             }
         };
 
-        fetchUserProfile();
-    }, [status, session]);
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isProfileDropdownOpen]);
 
     const handleProfileClick = () => {
         setIsProfileDropdownOpen(!isProfileDropdownOpen);
@@ -56,7 +38,6 @@ const DashboardHeader = () => {
 
     const handleLogout = async () => {
         try {
-            // First call the backend logout endpoint
             await axios.post(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
                 {},
@@ -64,25 +45,15 @@ const DashboardHeader = () => {
                     headers: {
                         Authorization: `Bearer ${session?.accessToken}`,
                     },
-                    withCredentials: true // Ensure cookies are included if needed
                 }
             );
         } catch (error) {
-            console.error('Backend logout failed:', error);
-        }
-
-        try {
-            // Clear client-side authentication
+            console.error('Logout API call failed:', error);
+        } finally {
             await signOut({ redirect: false });
-            localStorage.removeItem("userEmail");
-
-            // Force a hard redirect to ensure complete logout
-            window.location.href = "/";
-        } catch (error) {
-            console.error('Client logout failed:', error);
-            // Fallback to router if window.location fails
-            router.push("/");
-            router.refresh(); // Ensure page state is cleared
+            localStorage.removeItem('BDICAuthToken');
+            localStorage.removeItem('userEmail');
+            router.push('/');
         }
     };
 
@@ -91,7 +62,7 @@ const DashboardHeader = () => {
     };
 
     return (
-        <div className="flex justify-between items-center h-[60px] sm:h-[70px] lg:h-[78px] px-4 sm:px-6 lg:px-[100px] py-3 sm:py-4 lg:py-[18px] bg-white shadow-sm relative">
+        <div className="flex justify-between items-center h-[60px] sm:h-[70px] lg:h-[78px] px-4 sm:px-6 lg:px-[100px] py-3 sm:py-4 lg:py-[18px] bg-white shadow-sm">
             <div onClick={handleLogoClick} className="flex items-center gap-1 sm:gap-2 cursor-pointer">
                 <Image
                     src={headerImg}
@@ -106,15 +77,15 @@ const DashboardHeader = () => {
                 </p>
             </div>
 
-            {!isLoading && userProfile && (
-                <div className="relative">
+            {status === 'authenticated' && userProfile && (
+                <div className="relative profile-dropdown-container">
                     <div
-                        className="flex gap-1 sm:gap-[6px] items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-1 sm:gap-2 cursor-pointer"
                         onClick={handleProfileClick}
                     >
                         <Image
                             src={profileImage}
-                            alt="User Profile"
+                            alt="Profile"
                             width={24}
                             height={24}
                             className="w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] lg:w-[28px] lg:h-[28px] rounded-full"

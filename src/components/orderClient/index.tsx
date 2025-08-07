@@ -997,19 +997,7 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
         return <div className="p-4 text-center">No orders found.</div>;
     }
 
-    if (filteredOrders.length === 0) {
-        return (
-            <div className="p-4 text-center">
-                No orders found for the selected filter.
-                <button
-                    onClick={() => setFilter('all')}
-                    className="mt-2 text-[#022B23] hover:underline"
-                >
-                    Clear filters
-                </button>
-            </div>
-        );
-    }
+
 
     return (
         <div className="flex flex-col gap-[50px]">
@@ -1054,13 +1042,17 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
                 <div className="flex flex-col">
                     {filteredOrders.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10">
-                            <p className="text-[#667085] text-[14px] mb-4">No orders</p>
-                            <button
-                                onClick={() => setFilter('all')}
-                                className="text-[#022B23] text-[14px] font-medium hover:underline"
-                            >
-                                Clear filters
-                            </button>
+                            <p className="text-[#667085] text-[14px] mb-4">
+                                {filter === 'all' ? 'No orders found' : 'No orders found for the selected filter'}
+                            </p>
+                            {filter !== 'all' && (
+                                <button
+                                    onClick={() => setFilter('all')}
+                                    className="text-[#022B23] text-[14px] font-medium hover:underline"
+                                >
+                                    Clear filters
+                                </button>
+                            )}
                         </div>
                     ) : (
                         currentOrders.map((order, index) => (

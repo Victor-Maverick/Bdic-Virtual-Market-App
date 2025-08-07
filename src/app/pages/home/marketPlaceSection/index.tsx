@@ -106,6 +106,8 @@ const MarketPlaceSection = () => {
                                         title={product.name}
                                         price={product.price}
                                         location={`${product.market}, ${product.city}`}
+                                        height={360}
+                                        imageHeight={240}
                                     />
                                 </div>
                             ))}
@@ -126,6 +128,8 @@ const MarketPlaceSection = () => {
                                         title={product.name}
                                         price={product.price}
                                         location={`${product.market}, ${product.city}`}
+                                        height={360}
+                                        imageHeight={240}
                                     />
                                 </div>
                             ))}
@@ -146,6 +150,8 @@ const MarketPlaceSection = () => {
                                         title={product.name}
                                         price={product.price}
                                         location={`${product.market}, ${product.city}`}
+                                        height={360}
+                                        imageHeight={240}
                                     />
                                 </div>
                             ))}
@@ -168,6 +174,8 @@ const MarketPlaceSection = () => {
                                             title={product.name}
                                             price={product.price}
                                             location={`${product.market}, ${product.city}`}
+                                            height={360}
+                                            imageHeight={240}
                                         />
                                     </div>
                                 ))}
@@ -189,6 +197,8 @@ const MarketPlaceSection = () => {
                                                 title={product.name}
                                                 price={product.price}
                                                 location={`${product.market}, ${product.city}`}
+                                                height={360}
+                                                imageHeight={240}
                                             />
                                         </div>
                                     ))}

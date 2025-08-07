@@ -83,17 +83,28 @@ const ProductCard = ({ product }: { product: Product }) => {
     }
 
     return (
-        <div onClick={handleOpen} className="cursor-pointer w-full rounded-[10px] sm:rounded-[14px] bg-[#FFFFFF] border border-[#ededed] hover:shadow-lg transition-shadow">
-            <Image 
-                src={product.mainImageUrl || "/placeholder.svg"} 
-                alt={product.name}
-                width={200}
-                height={200}
-                className="w-full h-[140px] sm:h-[180px] lg:h-[200px] object-cover rounded-t-[10px] sm:rounded-t-[14px]" 
-            />
-            <div className="mt-2 sm:mt-4 px-2 sm:px-4 flex-col gap-[2px] pb-2 sm:pb-4">
-                <p className="font-normal text-[#1E1E1E] truncate text-[12px] sm:text-[14px]">{product.name}</p>
-                <p className="font-semibold text-[16px] sm:text-[18px] lg:text-[20px] text-[#1E1E1E] mt-1">₦{product.price.toLocaleString()}</p>
+        <div 
+            onClick={handleOpen} 
+            className="cursor-pointer w-full rounded-[14px] bg-[#FFFFFF] border border-[#ededed] hover:shadow-lg transition-all duration-300 flex flex-col overflow-hidden group"
+            style={{ height: '280px' }}
+        >
+            {/* Image Container - Fixed height to match sponsored products */}
+            <div className="relative w-full overflow-hidden rounded-t-[14px]" style={{ height: '160px' }}>
+                <Image 
+                    src={product.mainImageUrl || "/placeholder.svg"} 
+                    alt={product.name}
+                    width={400}
+                    height={160}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" 
+                />
+            </div>
+            
+            {/* Content Container - Fixed height for consistency */}
+            <div className="flex-1 p-3 flex flex-col justify-between" style={{ height: '120px' }}>
+                <div className="space-y-1">
+                    <p className="font-medium text-[#1E1E1E] text-sm line-clamp-2 leading-tight">{product.name}</p>
+                    <p className="font-bold text-[#1E1E1E] text-base">₦{product.price.toLocaleString()}</p>
+                </div>
             </div>
         </div>
     )

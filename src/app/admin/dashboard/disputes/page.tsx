@@ -404,7 +404,7 @@ const Disputes = () => {
     const [disputes, setDisputes] = useState<DisputeResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [pendingCount, setPendingCount] = useState(0);
+
 
     // Statistics
     const [stats, setStats] = useState({
@@ -417,14 +417,10 @@ const Disputes = () => {
     const fetchDisputes = useCallback(async () => {
         try {
             setLoading(true);
-            const [disputesData, pendingCountData] = await Promise.all([
-                disputeService.getAllDisputes(),
-                disputeService.getPendingDisputesCount()
-            ]);
+            const disputesData = await disputeService.getAllDisputes();
 
             setDisputes(disputesData);
-            setPendingCount(pendingCountData);
-            console.log("Pending count::", pendingCount);
+            console.log("Disputes loaded:", disputesData.length);
 
             // Calculate statistics
             const totalClaimAmount = disputesData.reduce((sum, dispute) => sum + Number(dispute.orderItem.totalPrice), 0);

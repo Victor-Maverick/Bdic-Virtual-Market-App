@@ -38,6 +38,15 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
   const [isVideoCallOpen, setIsVideoCallOpen] = useState(false);
   const [currentCall, setCurrentCall] = useState<VideoCallResponse | null>(null);
 
+  // Test service connection on mount
+  React.useEffect(() => {
+    if (session?.user?.email) {
+      videoCallService.testConnection().then(isAvailable => {
+        console.log('📞 Video call service available:', isAvailable);
+      });
+    }
+  }, [session?.user?.email]);
+
   const {
     isConnected,
     incomingCall,

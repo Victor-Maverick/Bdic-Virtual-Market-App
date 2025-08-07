@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { connect, Room, LocalVideoTrack, LocalAudioTrack, RemoteParticipant, RemoteTrack } from 'twilio-video';
+import { connect, Room, LocalVideoTrack, LocalAudioTrack, RemoteParticipant, RemoteVideoTrack, RemoteAudioTrack } from 'twilio-video';
 import { videoCallService } from '@/services/videoCallService';
 
 export interface UseVideoCallProps {
   userEmail: string;
+  displayName: string;
   onCallEnd?: () => void;
   onError?: (error: string) => void;
 }
@@ -13,153 +14,203 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [participants, setParticipants] = useState<RemoteParticipant[]>([]);
-  const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
-  const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [localVideoTrack, setLocalVideoTrack] = useState<LocalVideoTrack | null>(null);
+  const [localAudioTrack, setLocalAudioTrack] = useState<LocalAudioTrack | null>(null);
 
-  const localVideoRef = useRef<HTMLDivElement>(null);
-  const remoteVideoRef = useRef<HTMLDivElement>(null);
+  const localVideoRef = useRef<HTMLVideoElement>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
   const joinRoom = async (roomName: string) => {
-    // Prevent multiple join attempts
     if (isConnecting || room) {
-      console.log('📞 Already connecting or connected, skipping join attempt');
+      console.log('🎥 Already connecting or connected, skipping join attempt');
       return;
     }
 
     try {
       setIsConnecting(true);
+      console.log('🎥 Joining video room:', roomName);
 
-      // Get Twilio access token
-      const tokenResponse = await videoCallService.joinCall(roomName, userEmail);
+      // Get access token from backend
+      const tokenResponse = await videoCallService.getAccessToken(roomName, userEmail);
+      console.log('🎥 Got access token for video call:', tokenResponse);
+      console.log('🎥 Token value:', tokenResponse.token);
+      console.log('🎥 Token type:', typeof tokenResponse.token);
 
-      // Connect to Twilio Video room
-      const connectedRoom = await connect(tokenResponse.token, {
+      // Validate token before using it
+      if (!tokenResponse.token || typeof tokenResponse.token !== 'string') {
+        throw new Error(`Invalid token received: ${tokenResponse.token} (type: ${typeof tokenResponse.token})`);
+      }
+
+      // Connect to Twilio room
+      const twilioRoom = await connect(tokenResponse.token, {
         name: roomName,
         audio: true,
-        video: { width: 640, height: 480 }
+        video: true,
+        dominantSpeaker: true,
+        networkQuality: true,
       });
 
-      setRoom(connectedRoom);
+      console.log('🎥 Connected to Twilio video room:', twilioRoom.name);
+      setRoom(twilioRoom);
       setIsConnected(true);
-      console.log('📞 Successfully connected to Twilio room:', roomName);
 
       // Handle local tracks
-      connectedRoom.localParticipant.videoTracks.forEach(publication => {
-        if (publication.track && localVideoRef.current) {
-          localVideoRef.current.innerHTML = '';
-          const videoElement = publication.track.attach();
-          videoElement.style.width = '100%';
-          videoElement.style.height = '100%';
-          videoElement.style.objectFit = 'cover';
-          localVideoRef.current.appendChild(videoElement);
-          setLocalVideoTrack(publication.track as LocalVideoTrack);
-          console.log('📹 Local video attached');
+      const videoTracks = Array.from(twilioRoom.localParticipant.videoTracks.values());
+      const audioTracks = Array.from(twilioRoom.localParticipant.audioTracks.values());
+
+      if (videoTracks.length > 0) {
+        const videoTrack = videoTracks[0].track as LocalVideoTrack;
+        setLocalVideoTrack(videoTrack);
+        setIsVideoEnabled(videoTrack.isEnabled);
+
+        // Attach local video
+        if (localVideoRef.current) {
+          videoTrack.attach(localVideoRef.current);
         }
+      }
+
+      if (audioTracks.length > 0) {
+        const audioTrack = audioTracks[0].track as LocalAudioTrack;
+        setLocalAudioTrack(audioTrack);
+        setIsAudioEnabled(audioTrack.isEnabled);
+      }
+
+      // Handle existing participants
+      twilioRoom.participants.forEach(participant => {
+        console.log('🎥 Existing participant in video room:', participant.identity);
+        setParticipants(prev => [...prev, participant]);
+        subscribeToParticipant(participant);
       });
 
-      connectedRoom.localParticipant.audioTracks.forEach(publication => {
-        if (publication.track) {
-          setLocalAudioTrack(publication.track as LocalAudioTrack);
-        }
+      // Handle new participants joining
+      twilioRoom.on('participantConnected', (participant: RemoteParticipant) => {
+        console.log('🎥 Participant joined video room:', participant.identity);
+        setParticipants(prev => [...prev, participant]);
+        subscribeToParticipant(participant);
       });
 
-      // Handle existing remote participants
-      connectedRoom.participants.forEach(participant => {
-        handleParticipantConnected(participant);
+      // Handle participants leaving
+      twilioRoom.on('participantDisconnected', (participant: RemoteParticipant) => {
+        console.log('🎥 Participant left video room:', participant.identity);
+        setParticipants(prev => prev.filter(p => p.identity !== participant.identity));
       });
-
-      // Handle new remote participants
-      connectedRoom.on('participantConnected', handleParticipantConnected);
-      connectedRoom.on('participantDisconnected', handleParticipantDisconnected);
 
       // Handle room disconnection
-      connectedRoom.on('disconnected', (room, error) => {
-        console.log('📞 Room disconnected:', room.name, error ? `Error: ${error.message}` : 'Normal disconnect');
-        setIsConnected(false);
+      twilioRoom.on('disconnected', (room: Room, error?: Error) => {
+        console.log('🎥 Disconnected from video room:', room.name);
+        if (error) {
+          console.error('🎥 Video room disconnection error:', error);
+        }
         setRoom(null);
+        setIsConnected(false);
         setParticipants([]);
-        
-        // Always call onCallEnd when room disconnects - this ensures both participants are notified
-        console.log('📞 Room disconnected - calling onCallEnd to ensure both participants are notified');
         onCallEnd?.();
       });
 
     } catch (error) {
-      console.error('Error joining room:', error);
-      onError?.('Failed to join video call');
+      console.error('🎥 Error joining video room:', error);
+      setIsConnecting(false);
+      setIsConnected(false);
+      onError?.(`Failed to join video call: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsConnecting(false);
     }
   };
 
-  const handleParticipantConnected = (participant: RemoteParticipant) => {
-    console.log('📞 Participant connected:', participant.identity);
-    setParticipants(prev => [...prev, participant]);
-
-    // Handle existing tracks
-    participant.tracks.forEach(publication => {
+  const subscribeToParticipant = (participant: RemoteParticipant) => {
+    // Subscribe to existing tracks
+    participant.videoTracks.forEach(publication => {
       if (publication.isSubscribed && publication.track) {
-        handleTrackSubscribed(publication.track);
+        attachVideoTrack(publication.track as RemoteVideoTrack);
       }
     });
 
-    participant.on('trackSubscribed', handleTrackSubscribed);
-    participant.on('trackUnsubscribed', handleTrackUnsubscribed);
+    participant.audioTracks.forEach(publication => {
+      if (publication.isSubscribed && publication.track) {
+        attachAudioTrack(publication.track as RemoteAudioTrack);
+      }
+    });
+
+    // Subscribe to new tracks
+    participant.on('trackSubscribed', (track) => {
+      if (track.kind === 'video') {
+        console.log('🎥 Subscribed to video track from:', participant.identity);
+        attachVideoTrack(track as RemoteVideoTrack);
+      } else if (track.kind === 'audio') {
+        console.log('🎥 Subscribed to audio track from:', participant.identity);
+        attachAudioTrack(track as RemoteAudioTrack);
+      }
+    });
+
+    // Handle track unsubscription
+    participant.on('trackUnsubscribed', (track) => {
+      if (track.kind === 'video') {
+        console.log('🎥 Unsubscribed from video track from:', participant.identity);
+        detachVideoTrack(track as RemoteVideoTrack);
+      } else if (track.kind === 'audio') {
+        console.log('🎥 Unsubscribed from audio track from:', participant.identity);
+        detachAudioTrack(track as RemoteAudioTrack);
+      }
+    });
   };
 
-  const handleParticipantDisconnected = (participant: RemoteParticipant) => {
-    setParticipants(prev => prev.filter(p => p.sid !== participant.sid));
-  };
-
-  const handleTrackSubscribed = (track: RemoteTrack) => {
-    console.log('📹 Track subscribed:', track.kind);
-    if (track.kind === 'video' && remoteVideoRef.current) {
-      remoteVideoRef.current.innerHTML = '';
-      const videoElement = track.attach();
-      videoElement.style.width = '100%';
-      videoElement.style.height = '100%';
-      videoElement.style.objectFit = 'cover';
-      remoteVideoRef.current.appendChild(videoElement);
-      console.log('📹 Remote video attached');
-    }
-    if (track.kind === 'audio') {
-      // Attach audio track to the DOM to enable sound
-      const audioElement = track.attach();
-      audioElement.autoplay = true;
-      audioElement.volume = 1.0;
-      // Append to document body (audio elements don't need to be visible)
-      document.body.appendChild(audioElement);
-      console.log('🔊 Remote audio attached and playing');
+  const attachVideoTrack = (track: RemoteVideoTrack) => {
+    if (remoteVideoRef.current) {
+      track.attach(remoteVideoRef.current);
+      console.log('🎥 Attached remote video track');
     }
   };
 
-  const handleTrackUnsubscribed = (track: RemoteTrack) => {
-    console.log('📹 Track unsubscribed:', track.kind);
-    if ('detach' in track && typeof track.detach === 'function') {
-      track.detach().forEach((element: HTMLElement) => {
-        // Stop audio/video playback before removing
-        if (element instanceof HTMLMediaElement) {
-          element.pause();
-          element.srcObject = null;
-        }
-        element.remove();
-        console.log(`🔇 ${track.kind} track detached and removed`);
-      });
-    }
+  const detachVideoTrack = (track: RemoteVideoTrack) => {
+    track.detach();
+    console.log('🎥 Detached remote video track');
+  };
+
+  const attachAudioTrack = (track: RemoteAudioTrack) => {
+    track.attach();
+    console.log('🎥 Attached remote audio track');
+  };
+
+  const detachAudioTrack = (track: RemoteAudioTrack) => {
+    track.detach();
+    console.log('🎥 Detached remote audio track');
   };
 
   const leaveRoom = async () => {
     if (room) {
       try {
-        console.log('📞 Ending call for room:', room.name);
+        console.log('🎥 Leaving video room:', room.name);
+
+        // Notify backend that call is ending
         await videoCallService.endCall(room.name, userEmail);
+
+        // Disconnect from Twilio room
         room.disconnect();
-        console.log('📞 Call ended and room disconnected');
+
+        // Clean up local tracks
+        if (localVideoTrack) {
+          localVideoTrack.stop();
+          setLocalVideoTrack(null);
+        }
+
+        if (localAudioTrack) {
+          localAudioTrack.stop();
+          setLocalAudioTrack(null);
+        }
+
+        setRoom(null);
+        setIsConnected(false);
+        setParticipants([]);
+        console.log('🎥 Successfully left video room');
       } catch (error) {
-        console.error('Error ending call:', error);
+        console.error('🎥 Error leaving video room:', error);
+        // Force cleanup even if backend call fails
         room.disconnect();
+        setRoom(null);
+        setIsConnected(false);
+        setParticipants([]);
       }
     }
   };
@@ -168,10 +219,13 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
     if (localVideoTrack) {
       if (isVideoEnabled) {
         localVideoTrack.disable();
+        setIsVideoEnabled(false);
+        console.log('🎥 Video disabled');
       } else {
         localVideoTrack.enable();
+        setIsVideoEnabled(true);
+        console.log('🎥 Video enabled');
       }
-      setIsVideoEnabled(!isVideoEnabled);
     }
   };
 
@@ -179,20 +233,30 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
     if (localAudioTrack) {
       if (isAudioEnabled) {
         localAudioTrack.disable();
+        setIsAudioEnabled(false);
+        console.log('🎥 Audio muted');
       } else {
         localAudioTrack.enable();
+        setIsAudioEnabled(true);
+        console.log('🎥 Audio unmuted');
       }
-      setIsAudioEnabled(!isAudioEnabled);
     }
   };
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (room) {
         room.disconnect();
       }
+      if (localVideoTrack) {
+        localVideoTrack.stop();
+      }
+      if (localAudioTrack) {
+        localAudioTrack.stop();
+      }
     };
-  }, [room]);
+  }, [room, localVideoTrack, localAudioTrack]);
 
   return {
     room,

@@ -114,11 +114,17 @@ const VendorChatsPage = () => {
         }
 
         fetchConversations();
-        // Set up polling for new messages every 10 seconds
-        const interval = setInterval(fetchConversations, 10000);
+        
+        // Only set up polling if there are conversations or this is the first load
+        let interval: NodeJS.Timeout | null = null;
+        if (conversations.length > 0) {
+            interval = setInterval(fetchConversations, 10000);
+        }
 
         return () => {
-            clearInterval(interval);
+            if (interval) {
+                clearInterval(interval);
+            }
             // Cleanup Pusher on unmount
             if (channelRef.current) {
                 channelRef.current.unbind_all();
@@ -128,7 +134,7 @@ const VendorChatsPage = () => {
                 pusherRef.current.disconnect();
             }
         };
-    }, [session, router, fetchConversations, conversationId]); // Added all dependencies
+    }, [session?.user?.email, router, fetchConversations, conversationId, conversations.length]);
 
 
 
@@ -422,12 +428,21 @@ const VendorChatsPage = () => {
                                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                                         {searchTerm ? 'No conversations found' : 'No customer chats yet'}
                                     </h3>
-                                    <p className="text-gray-600 text-sm">
+                                    <p className="text-gray-600 text-sm mb-4">
                                         {searchTerm
                                             ? 'Try adjusting your search terms'
                                             : 'When customers message you, they\'ll appear here'
                                         }
                                     </p>
+                                    {!searchTerm && (
+                                        <button
+                                            onClick={fetchConversations}
+                                            disabled={loading}
+                                            className="px-4 py-2 bg-[#022B23] text-white rounded-lg hover:bg-[#033d32] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                                        >
+                                            {loading ? 'Checking...' : 'Check for Messages'}
+                                        </button>
+                                    )}
                                 </div>
                             ) : (
                                 <div>

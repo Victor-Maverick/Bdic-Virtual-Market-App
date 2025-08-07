@@ -38,6 +38,15 @@ export const VoiceCallProvider: React.FC<VoiceCallProviderProps> = ({ children }
   const [isVoiceCallOpen, setIsVoiceCallOpen] = useState(false);
   const [currentCall, setCurrentCall] = useState<VoiceCallResponse | null>(null);
 
+  // Test service connection on mount
+  React.useEffect(() => {
+    if (session?.user?.email) {
+      voiceCallService.testConnection().then(isAvailable => {
+        console.log('🎤 Voice call service available:', isAvailable);
+      });
+    }
+  }, [session?.user?.email]);
+
   const {
     isConnected,
     incomingCall,
@@ -67,7 +76,7 @@ export const VoiceCallProvider: React.FC<VoiceCallProviderProps> = ({ children }
     if (incomingCall) {
       try {
         // Decline the call via API first
-        await voiceCallService.rejectCall(incomingCall.call.roomName);
+        await voiceCallService.declineCall(incomingCall.call.roomName, session?.user?.email || '');
         console.log('🎤 VoiceCallProvider: handleDeclineCall called - clearing incoming call');
         clearIncomingCall();
       } catch (error) {

@@ -3,7 +3,7 @@ import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
 import marketIcon from "../../../../public/assets/images/market element.png";
 import React, {useState, useEffect, useCallback} from "react";
-import searchImg from "../../../../public/assets/images/search-normal.png";
+
 import arrowRight from '@/../public/assets/images/greyforwardarrow.svg'
 import trashImg from "../../../../public/assets/images/trash.png";
 import {useRouter} from "next/navigation";
@@ -12,12 +12,7 @@ import { useSession } from "next-auth/react";
 import { useCart } from "@/context/CartContext";
 import toast from "react-hot-toast";
 
-const SearchBar = () => (
-    <div className="flex gap-2 items-center bg-[#F9F9F9] border-[0.5px] border-[#ededed] h-[52px] px-[10px] rounded-[8px]">
-        <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-        <input placeholder="Search for items here" className="w-[413px] text-[#707070] text-[14px] focus:outline-none"/>
-    </div>
-);
+
 
 interface WishlistItem {
     id: number;
@@ -149,9 +144,7 @@ const Wishlist = () => {
             <MarketPlaceHeader />
             <div className="h-[114px] w-full border-b-[0.5px] border-[#EDEDED]">
                 <div className="h-[66px] w-full flex justify-between items-center px-25 border-t-[0.5px] border-[#ededed]">
-                    <div className="flex gap-[20px]">
-                        <SearchBar/>
-                    </div>
+
 
                     <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between border border-[#ededed] rounded-[4px]">
                         <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px]">
