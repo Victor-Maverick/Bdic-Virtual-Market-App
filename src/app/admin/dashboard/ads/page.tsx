@@ -255,47 +255,88 @@ const AdsTableRow = ({ transaction, isLast }: { transaction: TransactionDetails;
     };
 
     return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex items-center pl-[15px] w-[20%] ">
-                <p className="text-[#101828] text-[14px] font-medium">{cleanPaymentType(transaction.paymentType)}</p>
-            </div>
+        <>
+            {/* Desktop Row */}
+            <div className={`hidden lg:flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+                <div className="flex items-center pl-[15px] w-[20%] ">
+                    <p className="text-[#101828] text-[14px] font-medium">{cleanPaymentType(transaction.paymentType)}</p>
+                </div>
 
-            <div className="flex flex-col justify-center w-[25%] px-[15px]">
-                <p className="text-[#101828] text-[14px] font-medium">{transaction.payerName}</p>
-                <p className="text-[#667085] text-[14px]">{transaction.email}</p>
-            </div>
+                <div className="flex flex-col justify-center w-[25%] px-[15px]">
+                    <p className="text-[#101828] text-[14px] font-medium">{transaction.payerName}</p>
+                    <p className="text-[#667085] text-[14px]">{transaction.email}</p>
+                </div>
 
-            <div className="flex items-center w-[20%] pl-[24px]">
-                <p className="text-[#101828] text-[14px]">{transaction.amount/100}</p>
-            </div>
+                <div className="flex items-center w-[20%] pl-[24px]">
+                    <p className="text-[#101828] text-[14px]">{transaction.amount/100}</p>
+                </div>
 
-            <div className="flex flex-col justify-center w-[15%] ">
-                <p className="text-[#101828] text-[14px] font-medium">{formatDate(transaction.createdAt)}</p>
-                <p className="text-[#667085] text-[14px]">{formatTime(transaction.createdAt)}</p>
-            </div>
+                <div className="flex flex-col justify-center w-[15%] ">
+                    <p className="text-[#101828] text-[14px] font-medium">{formatDate(transaction.createdAt)}</p>
+                    <p className="text-[#667085] text-[14px]">{formatTime(transaction.createdAt)}</p>
+                </div>
 
-            <div className={`flex items-center w-[19%] px-[10px]`}>
-                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    transaction.status === 'Successful' || transaction.status === '0'
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium">
-                        {transaction.status === '0' ? 'Successful' : transaction.status}
-                    </p>
+                <div className={`flex items-center w-[19%] px-[10px]`}>
+                    <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
+                        transaction.status === 'Successful' || transaction.status === '0'
+                            ? 'bg-[#ECFDF3] text-[#027A48]'
+                            : 'bg-[#FEF3F2] text-[#FF5050]'
+                    }`}>
+                        <p className="text-[12px] font-medium">
+                            {transaction.status === '0' ? 'Successful' : transaction.status}
+                        </p>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-center w-[3%]">
+                    <ActionsDropdown transactionId={transaction.id}>
+                        <div className="flex flex-col gap-1">
+                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                            <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        </div>
+                    </ActionsDropdown>
                 </div>
             </div>
 
-            <div className="flex items-center justify-center w-[3%]">
-                <ActionsDropdown transactionId={transaction.id}>
-                    <div className="flex flex-col gap-1">
-                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+            {/* Mobile Card */}
+            <div className={`lg:hidden p-[15px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+                <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                        <p className="text-[#101828] text-[13px] font-medium mb-1">{cleanPaymentType(transaction.paymentType)}</p>
+                        <p className="text-[#101828] text-[12px] font-medium">{transaction.payerName}</p>
+                        <p className="text-[#667085] text-[11px]">{transaction.email}</p>
                     </div>
-                </ActionsDropdown>
+                    <div className="flex items-center gap-2">
+                        <div className={`px-2 py-1 rounded-[6px] flex items-center justify-center ${
+                            transaction.status === 'Successful' || transaction.status === '0'
+                                ? 'bg-[#ECFDF3] text-[#027A48]'
+                                : 'bg-[#FEF3F2] text-[#FF5050]'
+                        }`}>
+                            <p className="text-[10px] font-medium">
+                                {transaction.status === '0' ? 'Successful' : transaction.status}
+                            </p>
+                        </div>
+                        <ActionsDropdown transactionId={transaction.id}>
+                            <div className="flex flex-col gap-1 p-1">
+                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                            </div>
+                        </ActionsDropdown>
+                    </div>
+                </div>
+                <div className="flex justify-between items-center">
+                    <div>
+                        <p className="text-[#101828] text-[12px] font-medium">₦{transaction.amount/100}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[#101828] text-[11px] font-medium">{formatDate(transaction.createdAt)}</p>
+                        <p className="text-[#667085] text-[10px]">{formatTime(transaction.createdAt)}</p>
+                    </div>
+                </div>
             </div>
-        </div>
+        </>
     );
 };
 
@@ -384,14 +425,14 @@ const Ads = () => {
             <div className="w-full flex border-b-[0.5px] border-[#ededed] text-[#1e1e1e] text-[14px] font-medium h-[49px] px-[20px] items-center">
                 <p>View all ads and promotions</p>
             </div>
-            <div className="p-[20px] ">
+            <div className="p-[15px] sm:p-[20px]">
                 {loading.tiers || loading.totalPromotionAmount ? (
-                    <div className="flex w-full gap-[20px] h-[86px] justify-between">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] sm:gap-[20px] h-auto">
                         {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] animate-pulse">
-                                <div className="w-full h-[34px] rounded-tl-[14px] rounded-tr-[14px] bg-gray-200"></div>
-                                <div className="h-[52px] flex justify-center flex-col p-[14px]">
-                                    <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
+                            <div key={i} className="flex flex-col rounded-[12px] sm:rounded-[14px] h-[70px] sm:h-[86px] border-[#EAEAEA] border-[0.5px] animate-pulse">
+                                <div className="w-full h-[28px] sm:h-[34px] rounded-tl-[12px] rounded-tr-[12px] sm:rounded-tl-[14px] sm:rounded-tr-[14px] bg-gray-200"></div>
+                                <div className="flex-1 flex justify-center flex-col p-[10px] sm:p-[14px]">
+                                    <div className="h-4 sm:h-6 w-3/4 bg-gray-200 rounded"></div>
                                 </div>
                             </div>
                         ))}
@@ -399,22 +440,22 @@ const Ads = () => {
                 ) : error.tiers || error.totalPromotionAmount ? (
                     <div className="text-red-500">{error.tiers || error.totalPromotionAmount}</div>
                 ) : (
-                    <div className="flex w-full gap-[20px] h-[86px] justify-between">
-                        <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                            <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-[#000000]">
-                                <p className="text-[#ffffff] text-[12px]">Total promotions earnings</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-[15px] sm:gap-[20px] h-auto">
+                        <div className="flex flex-col rounded-[12px] sm:rounded-[14px] h-[70px] sm:h-[86px] border-[#EAEAEA] border-[0.5px]">
+                            <div className="w-full px-[10px] sm:px-[14px] flex items-center rounded-tl-[12px] rounded-tr-[12px] sm:rounded-tl-[14px] sm:rounded-tr-[14px] h-[28px] sm:h-[34px] bg-[#000000]">
+                                <p className="text-[#ffffff] text-[10px] sm:text-[12px] truncate">Total promotions earnings</p>
                             </div>
-                            <div className="h-[52px] flex justify-center flex-col p-[14px]">
-                                <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(totalPromotionAmount/100)}</p>
+                            <div className="flex-1 flex justify-center flex-col p-[10px] sm:p-[14px]">
+                                <p className="text-[16px] sm:text-[20px] text-[#022B23] font-medium truncate">{formatCurrency(totalPromotionAmount/100)}</p>
                             </div>
                         </div>
                         {tiers.slice(0, 3).map((tier) => (
-                            <div key={tier.id} className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                                <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-[#000000]">
-                                    <p className="text-white text-[12px]">{tier.tier}</p>
+                            <div key={tier.id} className="flex flex-col rounded-[12px] sm:rounded-[14px] h-[70px] sm:h-[86px] border-[#EAEAEA] border-[0.5px]">
+                                <div className="w-full px-[10px] sm:px-[14px] flex items-center rounded-tl-[12px] rounded-tr-[12px] sm:rounded-tl-[14px] sm:rounded-tr-[14px] h-[28px] sm:h-[34px] bg-[#000000]">
+                                    <p className="text-white text-[10px] sm:text-[12px] truncate">{tier.tier}</p>
                                 </div>
-                                <div className="h-[52px] flex justify-center flex-col p-[14px]">
-                                    <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(tier.price)}</p>
+                                <div className="flex-1 flex justify-center flex-col p-[10px] sm:p-[14px]">
+                                    <p className="text-[16px] sm:text-[20px] text-[#022B23] font-medium truncate">{formatCurrency(tier.price)}</p>
                                 </div>
                             </div>
                         ))}
@@ -427,13 +468,13 @@ const Ads = () => {
                 </div>
 
                 {loading.tiers ? (
-                    <div className="flex w-full gap-[20px] mt-[10px] h-[86px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[15px] sm:gap-[20px] mt-[10px]">
                         {[1, 2, 3].map((i) => (
-                            <div key={i} className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] animate-pulse">
-                                <div className="w-full h-[34px] rounded-tl-[14px] rounded-tr-[14px] bg-gray-200"></div>
-                                <div className="h-[52px] flex items-center justify-between p-[14px]">
-                                    <div className="h-6 w-3/4 bg-gray-200 rounded"></div>
-                                    <div className="h-4 w-1/4 bg-gray-200 rounded"></div>
+                            <div key={i} className="flex flex-col rounded-[12px] sm:rounded-[14px] h-[70px] sm:h-[86px] border-[#EAEAEA] border-[0.5px] animate-pulse">
+                                <div className="w-full h-[28px] sm:h-[34px] rounded-tl-[12px] rounded-tr-[12px] sm:rounded-tl-[14px] sm:rounded-tr-[14px] bg-gray-200"></div>
+                                <div className="flex-1 flex items-center justify-between p-[10px] sm:p-[14px]">
+                                    <div className="h-4 sm:h-6 w-3/4 bg-gray-200 rounded"></div>
+                                    <div className="h-3 sm:h-4 w-1/4 bg-gray-200 rounded"></div>
                                 </div>
                             </div>
                         ))}
@@ -441,22 +482,22 @@ const Ads = () => {
                 ) : error.tiers ? (
                     <div className="text-red-500">{error.tiers}</div>
                 ) : (
-                    <div className="flex w-full gap-[20px] mt-[10px] h-[86px]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-[15px] sm:gap-[20px] mt-[10px]">
                         {tiers.map((tier, index) => (
                             <div
                                 key={tier.id}
-                                className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]"
+                                className="flex flex-col rounded-[12px] sm:rounded-[14px] h-[70px] sm:h-[86px] border-[#EAEAEA] border-[0.5px]"
                             >
                                 <div
-                                    className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px]"
+                                    className="w-full px-[10px] sm:px-[14px] flex items-center rounded-tl-[12px] rounded-tr-[12px] sm:rounded-tl-[14px] sm:rounded-tr-[14px] h-[28px] sm:h-[34px]"
                                     style={{ backgroundColor: index === 0 ? '#EBFF70' : index === 1 ? '#AA63ED' : '#A1FFCC' }}
                                 >
-                                    <p className="text-[#022B23] text-[12px] font-medium">{tier.tier}</p>
+                                    <p className="text-[#022B23] text-[10px] sm:text-[12px] font-medium truncate">{tier.tier}</p>
                                 </div>
-                                <div className="h-[52px] flex items-center justify-between p-[14px]">
-                                    <p className="text-[20px] text-[#022B23] font-medium">{formatCurrency(tier.price)}</p>
+                                <div className="flex-1 flex items-center justify-between p-[10px] sm:p-[14px]">
+                                    <p className="text-[16px] sm:text-[20px] text-[#022B23] font-medium truncate">{formatCurrency(tier.price)}</p>
                                     <p
-                                        className="underline text-[12px] text-[#022B23] font-medium cursor-pointer"
+                                        className="underline text-[10px] sm:text-[12px] text-[#022B23] font-medium cursor-pointer hover:text-[#033a30] transition-colors"
                                         onClick={() => setSelectedTier(tier)}
                                     >
                                         Edit tier
@@ -479,24 +520,24 @@ const Ads = () => {
                     />
                 )}
 
-                <div className="w-full flex mt-[50px] flex-col h-auto border-[#EAECF0] border rounded-[24px]">
-                    <div className="w-full h-[91px] flex items-center justify-between px-[24px] pt-[20px] pb-[19px]">
+                <div className="w-full flex mt-[30px] sm:mt-[50px] flex-col h-auto border-[#EAECF0] border rounded-[16px] sm:rounded-[24px]">
+                    <div className="w-full h-auto sm:h-[91px] flex flex-col sm:flex-row sm:items-center justify-between px-[15px] sm:px-[24px] pt-[15px] sm:pt-[20px] pb-[15px] sm:pb-[19px] gap-[15px] sm:gap-0">
                         <div className="flex flex-col gap-[4px]">
-                            <div className="h-[28px] flex items-center">
-                                <p className="text-[18px] font-medium text-[#101828]">Transactions ({transactions.length})</p>
+                            <div className="h-auto sm:h-[28px] flex items-center">
+                                <p className="text-[16px] sm:text-[18px] font-medium text-[#101828]">Transactions ({transactions.length})</p>
                             </div>
-                            <div className="flex h-[20px] items-center">
-                                <p className="text-[14px] text-[#667085]">View and manage all transactions here</p>
+                            <div className="flex h-auto sm:h-[20px] items-center">
+                                <p className="text-[12px] sm:text-[14px] text-[#667085]">View and manage all transactions here</p>
                             </div>
                         </div>
-                        <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                            <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
-                            <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none" />
+                        <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-3 sm:px-4 py-2 shadow-sm rounded-sm w-full sm:w-auto">
+                            <Image src={searchImg} alt="Search Icon" width={18} height={18} className="h-[18px] w-[18px] sm:h-[20px] sm:w-[20px]" />
+                            <input placeholder="Search" className="w-full sm:w-[175px] text-[#707070] text-[13px] sm:text-[14px] focus:outline-none" />
                         </div>
                     </div>
 
-                    <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
-
+                    {/* Desktop Table Header */}
+                    <div className="hidden lg:flex w-full h-[44px] bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
                         <div className="h-full w-[20%] gap-[4px] flex justify-center items-center font-medium text-[#667085] text-[12px]">
                             <p>Transaction type</p>
                             <Image src={arrowDown} alt={'image'} />
@@ -505,12 +546,10 @@ const Ads = () => {
                             <p>User</p>
                             <Image src={arrowDown} alt={'image'} />
                         </div>
-
                         <div className="h-full w-[20%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
                             <p>Amount (NGN)</p>
                             <Image src={arrowDown} alt={'image'} />
                         </div>
-
                         <div className="h-full w-[15%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
                             <p>Date and Time</p>
                             <Image src={arrowDown} alt={'image'} />
@@ -524,12 +563,36 @@ const Ads = () => {
                     <div className="flex flex-col">
                         {loading.transactions ? (
                             [1, 2, 3, 4, 5].map((i) => (
-                                <div key={i} className={`flex h-[72px] ${i !== 5 ? 'border-b border-[#EAECF0]' : ''} animate-pulse`}>
-                                    {[10, 12, 17, 15, 15, 15, 15, 3].map((width, idx) => (
-                                        <div key={idx} className={`flex items-center pl-[24px] w-[${width}%]`}>
-                                            <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                                <div key={i}>
+                                    {/* Desktop Loading */}
+                                    <div className={`hidden lg:flex h-[72px] ${i !== 5 ? 'border-b border-[#EAECF0]' : ''} animate-pulse`}>
+                                        {[20, 25, 20, 15, 19, 3].map((width, idx) => (
+                                            <div key={idx} className={`flex items-center pl-[15px] w-[${width}%]`}>
+                                                <div className="h-4 w-3/4 bg-gray-200 rounded"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Mobile Loading */}
+                                    <div className={`lg:hidden p-[15px] ${i !== 5 ? 'border-b border-[#EAECF0]' : ''} animate-pulse`}>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex-1">
+                                                <div className="h-3 w-3/4 bg-gray-200 rounded mb-2"></div>
+                                                <div className="h-3 w-1/2 bg-gray-200 rounded mb-1"></div>
+                                                <div className="h-2 w-2/3 bg-gray-200 rounded"></div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-6 w-16 bg-gray-200 rounded"></div>
+                                                <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                                            </div>
                                         </div>
-                                    ))}
+                                        <div className="flex justify-between items-center">
+                                            <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                                            <div className="text-right">
+                                                <div className="h-3 w-12 bg-gray-200 rounded mb-1"></div>
+                                                <div className="h-2 w-10 bg-gray-200 rounded"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             ))
                         ) : error.transactions ? (

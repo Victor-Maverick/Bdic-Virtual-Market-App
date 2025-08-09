@@ -227,66 +227,6 @@ const DashBoard = () => {
         }
     }, [searchParams, verifyPayment]);
 
-    // const initializePayment = async () => {
-    //     if (!session?.user?.email) {
-    //         showErrorToast('Error', 'User email not found');
-    //         return;
-    //     }
-
-    //     setActivating(true);
-    //     setPaymentError(null);
-
-    //     try {
-    //         const requestData = {
-    //             email: session.user.email,
-    //             amount: 500000,
-    //             currency: 'NGN',
-    //             callbackUrl: `${window.location.origin}/vendor/dashboard`,
-    //             paymentType: 'SHOP_ACTIVATION'
-    //         };
-
-    //         const response = await axios.post<InitializePaymentResponse>(
-    //             `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
-    //             requestData,
-    //             {
-    //                 headers: {'Content-Type': 'application/json'},
-    //                 timeout: 30000,
-    //             }
-    //         );
-
-    //         const paymentResponse = response.data;
-
-    //         if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
-    //             const authorizationUrl = paymentResponse.data?.authorizationUrl;
-
-    //             if (!authorizationUrl) {
-    //                 throw new Error('Authorization URL not found');
-    //             }
-
-    //             showSuccessToast('Payment Initialized', 'Redirecting to payment page...');
-    //             setTimeout(() => {
-    //                 window.location.href = authorizationUrl;
-    //             }, 2000);
-    //         } else {
-    //             throw new Error(paymentResponse.message || 'Payment initialization failed');
-    //         }
-    //     } catch (error) {
-    //         console.error('Payment initialization error:', error);
-    //         const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
-    //         setPaymentError(errorMessage);
-    //         showErrorToast('Payment Error', errorMessage);
-    //     }
-    //     finally {
-    //         setActivating(false);
-    //     }
-    // };
-
-    // const handleActivateShop = async () => {
-    //     await initializePayment();
-    // };
-
-
-
     // Calculate order percentages for the stats visualization
     const calculateOrderPercentage = (count: number) => {
         if (!shopStatistics?.totalOrderCount || shopStatistics.totalOrderCount === 0) return 0;

@@ -16,8 +16,8 @@ import {
     SettingsIcon,
 } from "./../icons";
 import { useSession } from "next-auth/react";
+import { useLogoutHandler } from "@/hooks/useLogoutHandler";
 import axios from "axios";
-import { signOut } from "next-auth/react";
 
 interface SidebarProps {
     className?: string;
@@ -125,37 +125,7 @@ export function Sidebar({ className }: SidebarProps) {
         };
     }, []);
 
-    const handleLogout = async () => {
-        try {
-            // First call the backend logout endpoint
-            await axios.post(
-                'https://digitalmarket.benuestate.gov.ng/api/auth/logout',
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${session?.accessToken}`,
-                    },
-                    withCredentials: true
-                }
-            );
-        } catch (error) {
-            console.error('Backend logout failed:', error);
-        }
-
-        try {
-            // Clear client-side authentication
-            await signOut({ redirect: false });
-            localStorage.removeItem("userEmail");
-
-            // Force a hard redirect to ensure complete logout
-            window.location.href = "/login";
-        } catch (error) {
-            console.error('Client logout failed:', error);
-            // Fallback to router if window.location fails
-            router.push("/");
-            router.refresh();
-        }
-    };
+    const { handleLogout } = useLogoutHandler();
 
     return (
         <div

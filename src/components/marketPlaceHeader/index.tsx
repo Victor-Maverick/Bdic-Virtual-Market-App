@@ -8,9 +8,10 @@ import wishListImg from '@/../public/assets/images/heart.png';
 import farmGoLogo from "../../../public/assets/images/farmGoLogo.png";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useCallback } from "react";
-import axios from "axios";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { useLogoutHandler } from "@/hooks/useLogoutHandler";
 import { FiMenu, FiX } from "react-icons/fi";
+import axios from "axios";
 
 interface HeaderItem {
     img: StaticImageData;
@@ -85,26 +86,7 @@ const MarketPlaceHeader = () => {
         setIsMobileMenuOpen(false);
     };
 
-    const handleLogout = async () => {
-        try {
-            await axios.post(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${session?.accessToken}`,
-                    },
-                }
-            );
-        } catch (error) {
-            console.error('Logout API call failed:', error);
-        } finally {
-            await signOut({ redirect: false });
-            localStorage.removeItem('BDICAuthToken');
-            localStorage.removeItem('userEmail');
-            router.push('/');
-        }
-    };
+    const { handleLogout } = useLogoutHandler();
 
     const handleNavigation = useCallback((path: string, isNotification?: boolean) => {
         if (isNotification) {

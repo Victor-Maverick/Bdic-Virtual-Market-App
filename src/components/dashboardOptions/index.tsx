@@ -1,8 +1,9 @@
 'use client';
 import { useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 import Image, { StaticImageData } from 'next/image';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useSmartNavigation } from '@/utils/navigationUtils';
 import axios from 'axios';
 import shadow from '../../../public/assets/images/shadow.png';
 import dashboardImage from '../../../public/assets/images/dashboardImage.png';
@@ -12,7 +13,9 @@ import transactionImg from '../../../public/assets/images/transactionImg.png';
 import chatImg from '../../../public/assets/images/chatImg.png';
 import notificationImg from '../../../public/assets/images/notification-bing.png';
 import settingImg from '../../../public/assets/images/settingImg.png';
-import star from '../../../public/assets/images/campaign star.svg'
+import star from '../../../public/assets/images/campaign star.svg';
+import menuIcon from '../../../public/assets/images/orderImg.png';
+import closeIcon from '../../../public/assets/images/settingImg.png';
 
 type MenuOption =
     | 'dashboard'
@@ -38,12 +41,25 @@ interface DashboardOptionsProps {
 }
 
 const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsProps) => {
-    const router = useRouter();
     const pathname = usePathname();
+    const { smartNavigate } = useSmartNavigation();
     const { data: session } = useSession();
     const [selectedOption, setSelectedOption] = useState<MenuOption>(initialSelected);
     const [indicatorPosition, setIndicatorPosition] = useState({ left: 0, width: 0 });
     const [notificationCount, setNotificationCount] = useState(0);
+    const [isMobile, setIsMobile] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    // Check if mobile view
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const fetchNotifications = useCallback(async () => {
         if (session?.user?.email) {
@@ -104,7 +120,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
     // Update selected option based on pathname
     useEffect(() => {
         const matchedOption = Object.entries(routeToOption)
-            .sort(([a], [b]) => b.length - a.length) // Prioritize longer routes for exact matching
+            .sort(([a], [b]) => b.length - a.length)
             .find(([route]) => pathname.startsWith(route))?.[1] || 'dashboard';
         setSelectedOption(matchedOption as MenuOption);
     }, [pathname, routeToOption]);
@@ -122,9 +138,12 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                 markNotificationsAsRead();
             }
             setSelectedOption(option);
-            router.push(optionToRoute[option]);
+            smartNavigate(optionToRoute[option]);
+            if (isMobile) {
+                setMobileMenuOpen(false);
+            }
         },
-        [markNotificationsAsRead, optionToRoute, router]
+        [markNotificationsAsRead, optionToRoute, smartNavigate, isMobile]
     );
 
     const menuItems: MenuItem[] = useMemo(
@@ -157,21 +176,95 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
         }
     }, []);
 
-    // Use useLayoutEffect to ensure DOM is ready before updating indicator
     useLayoutEffect(() => {
-        const selectedElement = document.getElementById(`menu-item-${selectedOption}`);
-        if (selectedElement) {
-            updateIndicatorPosition(selectedElement);
-        } else {
-            // Fallback: Retry after a short delay if element is not found
-            const timeout = setTimeout(() => {
-                const retryElement = document.getElementById(`menu-item-${selectedOption}`);
-                updateIndicatorPosition(retryElement);
-            }, 100);
-            return () => clearTimeout(timeout);
+        if (!isMobile) {
+            const selectedElement = document.getElementById(`menu-item-${selectedOption}`);
+            if (selectedElement) {
+                updateIndicatorPosition(selectedElement);
+            } else {
+                const timeout = setTimeout(() => {
+                    const retryElement = document.getElementById(`menu-item-${selectedOption}`);
+                    updateIndicatorPosition(retryElement);
+                }, 100);
+                return () => clearTimeout(timeout);
+            }
         }
-    }, [selectedOption, menuItems, updateIndicatorPosition]);
+    }, [selectedOption, menuItems, updateIndicatorPosition, isMobile]);
 
+    // Mobile menu toggle
+    const toggleMobileMenu = () => {
+        setMobileMenuOpen(!mobileMenuOpen);
+    };
+
+    if (isMobile) {
+        return (
+            <>
+                {/* Mobile Hamburger Button */}
+                <button
+                    onClick={toggleMobileMenu}
+                    className="fixed top-4 left-4 z-50 p-2 bg-white rounded-md shadow-md"
+                >
+                    <Image
+                        src={mobileMenuOpen ? closeIcon : menuIcon}
+                        alt="menu"
+                        width={24}
+                        height={24}
+                    />
+                </button>
+
+                {/* Mobile Menu Overlay */}
+                {mobileMenuOpen && (
+                    <div className="fixed inset-0 z-40 bg-white pt-16 pl-4">
+                        <div className="flex flex-col space-y-4">
+                            {menuItems.map((item) => (
+                                <button
+                                    key={item.id}
+                                    type="button"
+                                    className={`
+                    flex items-center gap-3 p-3 rounded-lg
+                    ${selectedOption === item.id ? 'bg-[#ECFDF6] font-medium' : ''}
+                  `}
+                                    onClick={() => handleOptionClick(item.id, item.isNotification)}
+                                >
+                                    <Image
+                                        src={item.icon}
+                                        alt={`${item.label} icon`}
+                                        width={20}
+                                        height={20}
+                                        className="w-5 h-5"
+                                    />
+                                    <span className="text-sm">{item.label}</span>
+                                    {item.notifications && (
+                                        <span className="ml-auto bg-[#FF5050] text-white text-xs px-2 py-1 rounded-full">
+                      {item.notifications}
+                    </span>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Mobile Top Bar (shows current selection) */}
+                <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-center z-30">
+                    <div className="flex items-center gap-2">
+                        <Image
+                            src={menuItems.find(item => item.id === selectedOption)?.icon || dashboardImage}
+                            alt=""
+                            width={20}
+                            height={20}
+                            className="w-5 h-5"
+                        />
+                        <span className="font-medium text-sm">
+              {menuItems.find(item => item.id === selectedOption)?.label}
+            </span>
+                    </div>
+                </div>
+            </>
+        );
+    }
+
+    // Desktop View
     return (
         <div className="relative w-full">
             <div
@@ -208,12 +301,12 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                         />
                         <span className="whitespace-nowrap hidden sm:inline">{item.label}</span>
                         <span className="whitespace-nowrap sm:hidden text-[10px]">
-                            {item.label === 'Reviews and Campaigns' ? 'Reviews' : item.label}
-                        </span>
+              {item.label === 'Reviews and Campaigns' ? 'Reviews' : item.label}
+            </span>
                         {item.notifications && (
                             <span className="text-[#ffffff] p-[2px] sm:p-[3px] bg-[#FF5050] flex justify-center items-center rounded-[8px] sm:rounded-[10px] w-[16px] h-[14px] sm:w-[22px] sm:h-[18px] text-[12px] sm:text-[14px]">
-                                <span className="text-[6px] sm:text-[8px] font-semibold">{item.notifications}</span>
-                            </span>
+                <span className="text-[6px] sm:text-[8px] font-semibold">{item.notifications}</span>
+              </span>
                         )}
                     </button>
                 ))}

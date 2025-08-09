@@ -1,14 +1,14 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { useSmartNavigation } from '@/utils/navigationUtils';
 import shadow from '../../../public/assets/images/shadow.png';
 import { userService } from '@/services/userService';
 import headerIcon from '../../../public/assets/images/headerImg.png';
 import emailIcon from '../../../public/assets/images/sms.svg';
 import eyeOpen from '../../../public/assets/images/eye.svg'; 
-import eyeClosed from '../../../public/assets/images/eye.svg'; // Fixed: separate icons
+import eyeClosed from '../../../public/assets/images/eye.svg';
 import loginImg from '@/../public/assets/images/loginImg.svg';
 import Toast from '@/components/Toast';
 import ReCAPTCHA from "react-google-recaptcha";
@@ -33,7 +33,7 @@ const formFields: FormField[] = [
 
 const Login = () => {
     const [form, setForm] = useState<FormData>({ email: '', password: '' });
-    const router = useRouter();
+    const { smartNavigate } = useSmartNavigation();
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showToast, setShowToast] = useState(false);
@@ -181,19 +181,19 @@ const Login = () => {
 
                 // Redirect to pre-auth URL if it exists, otherwise use role-based routing
                 if (preAuthUrl) {
-                    router.push(preAuthUrl);
+                    smartNavigate(preAuthUrl, 'Redirecting you...');
                 } else if (roles.includes('VENDOR')) {
-                    router.push('/vendor/dashboard');
+                    smartNavigate('/vendor/dashboard');
                 } else if (roles.includes('ADMIN')) {
-                    router.push('/admin/dashboard/main');
+                    smartNavigate('/admin/dashboard/main');
                 } else if (roles.includes('LOGISTICS')) {
-                    router.push('/logistics/dashboard');
+                    smartNavigate('/logistics/dashboard');
                 } else if (roles.includes('RIDER')) {
-                    router.push('/rider/dashboard');
+                    smartNavigate('/rider/dashboard');
                 } else if (roles.includes('BUYER')) {
-                    router.push('/marketPlace');
+                    smartNavigate('/marketPlace');
                 } else {
-                    router.push('/dashboard');
+                    smartNavigate('/dashboard');
                 }
             }
         } catch (error) {
@@ -218,7 +218,8 @@ const Login = () => {
     };
 
     const handleResendVerification = async () => {
-        const email = safeLocalStorage.getItem('unverifiedEmail') || form.email;
+        // Prioritize the current email input over cached email
+        const email = form.email || safeLocalStorage.getItem('unverifiedEmail');
         if (!email) {
             showToastMessage('error', 'Email required', 'Please enter your email address first');
             return;
@@ -226,16 +227,21 @@ const Login = () => {
 
         setIsResendingVerification(true);
         try {
-            const result = await userService.resendVerificationEmail(email);
+            const result = await userService.sendVerificationOTP(email);
             
             if (result.success) {
-                showToastMessage('success', 'Verification email sent', `A new verification email has been sent to ${email}`);
+                showToastMessage('success', 'Verification code sent', `A verification code has been sent to ${email}`);
+                // Store the email and redirect to verification flow
+                safeLocalStorage.setItem('verifyEmail', email);
+                setTimeout(() => {
+                    smartNavigate(`/verify-email/confirm?email=${encodeURIComponent(email)}`);
+                }, 2000);
             } else {
-                showToastMessage('error', 'Failed to send email', result.message);
+                showToastMessage('error', 'Failed to send code', result.message);
             }
         } catch (error) {
-            console.error('Resend verification error:', error);
-            showToastMessage('error', 'Resend failed', 'Unable to send verification email. Please try again.');
+            console.error('Send verification error:', error);
+            showToastMessage('error', 'Send failed', 'Unable to send verification code. Please try again.');
         } finally {
             setIsResendingVerification(false);
         }
@@ -330,6 +336,15 @@ const Login = () => {
                                     </div>
                                 </div>
                             ))}
+                            
+                            {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+                                <ReCAPTCHA
+                                    sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+                                    onChange={handleCaptchaChange}
+                                    className="mb-4"
+                                />
+                            )}
+                            
                             <button
                                 type="submit"
                                 className="flex items-center justify-center cursor-pointer bg-[#033228] rounded-xl sm:rounded-[12px] w-full h-12 sm:h-[52px] text-sm sm:text-[14px] font-semibold text-[#C6EB5F] disabled:opacity-70 disabled:cursor-not-allowed transition-all"
@@ -346,22 +361,31 @@ const Login = () => {
                         </form>
                     </div>
                     
-                    {/* Simplified verification prompt */}
+                    {/* Verification prompt */}
                     {showVerificationPrompt && (
                         <p className="mt-3 sm:mt-4 text-[#7C7C7C] text-sm sm:text-[14px]">
                             Account not verified?{' '}
                             <span 
                                 onClick={handleResendVerification}
-                                className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all"
+                                className={`text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all ${
+                                    isResendingVerification ? 'opacity-50 cursor-not-allowed' : ''
+                                }`}
                             >
-                                {isResendingVerification ? 'Sending...' : 'Resend verification email'}
+                                {isResendingVerification ? 'Sending verification code...' : 'Verify your email'}
                             </span>
                         </p>
                     )}
                     
+                    <p className="mt-3 sm:mt-4 text-[#7C7C7C] text-sm sm:text-[14px]">
+                        Forgot your password?{' '}
+                        <span onClick={() => smartNavigate('/forgot-password')} className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all">
+                            Reset it here
+                        </span>
+                    </p>
+                    
                     <p className="mt-4 sm:mt-6 md:mt-[-15px] text-[#7C7C7C] text-sm sm:text-[14px]">
                         Don&#39;t have an account?{' '}
-                        <span onClick={() => router.push('/register/getStarted')} className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all">
+                        <span onClick={() => smartNavigate('/register/getStarted')} className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all">
                             Register
                         </span>
                     </p>
@@ -377,13 +401,6 @@ const Login = () => {
                         >
                             Test Verification Prompt
                         </button>
-                    )}
-                    {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
-                        <ReCAPTCHA
-                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
-                            onChange={handleCaptchaChange}
-                            className="mt-4"
-                        />
                     )}
                 </div>
                 <div className="hidden lg:flex mt-[-90px] w-[51%] justify-between flex-col bg-[#f9f9f9] pt-[136px] min-h-[calc(100vh-90px)]">

@@ -3,9 +3,9 @@ import profileImage from '../../../public/assets/images/profile-circle.png';
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import axios from "axios";
 import headerImg from "../../../public/assets/images/headerImg.png";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { useLogoutHandler } from "@/hooks/useLogoutHandler";
 
 const ProductDetailHeader = () => {
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
@@ -63,26 +63,7 @@ const ProductDetailHeader = () => {
         setIsProfileDropdownOpen(false);
     };
 
-    const handleLogout = async () => {
-        try {
-            await axios.post(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${session?.accessToken}`,
-                    },
-                }
-            );
-        } catch (error) {
-            console.error('Logout API call failed:', error);
-        } finally {
-            await signOut({ redirect: false });
-            localStorage.removeItem('BDICAuthToken');
-            localStorage.removeItem('userEmail');
-            router.push('/');
-        }
-    };
+    const { handleLogout } = useLogoutHandler();
 
     return (
         <div className="flex justify-between items-center h-[78px] px-[100px] py-[18px] bg-white shadow-sm">

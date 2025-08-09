@@ -7,7 +7,21 @@ export interface VerificationResponse {
     message: string;
 }
 
+export interface OTPVerificationResponse {
+    success: boolean;
+    message: string;
+    remainingAttempts?: number;
+    isExpired?: boolean;
+}
 
+export interface OTPRequest {
+    email: string;
+    otp: string;
+}
+
+export interface ResendOTPRequest {
+    email: string;
+}
 
 export const userService = {
     // Verify user email with token
@@ -53,17 +67,164 @@ export const userService = {
         }
     },
 
-    // // Check if user is verified
-    // checkUserVerification: async (email: string): Promise<{ isVerified: boolean; message?: string }> => {
-    //     try {
-    //         // This would need to be implemented in the backend if needed
-    //         // For now, we'll rely on the login attempt to tell us verification status
-    //         return { isVerified: true };
-    //         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    //     } catch (error) {
-    //         return { isVerified: false, message: 'Failed to check verification status' };
-    //     }
-    // }
+    // Verify OTP
+    verifyOTP: async (email: string, otp: string): Promise<OTPVerificationResponse> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/auth/verify-otp`, {
+                email,
+                otp
+            });
+            return response.data.data || response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data?.data?.message || error.response?.data?.message || error.message,
+                    remainingAttempts: error.response?.data?.data?.remainingAttempts,
+                    isExpired: error.response?.data?.data?.isExpired
+                };
+            }
+            return {
+                success: false,
+                message: 'OTP verification failed'
+            };
+        }
+    },
+
+    // Resend OTP
+    resendOTP: async (email: string): Promise<OTPVerificationResponse> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/auth/resend-otp`, {
+                email
+            });
+            return response.data.data || response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data?.data?.message || error.response?.data?.message || error.message
+                };
+            }
+            return {
+                success: false,
+                message: 'Failed to resend OTP'
+            };
+        }
+    },
+
+    // Send verification OTP (from login page)
+    sendVerificationOTP: async (email: string): Promise<OTPVerificationResponse> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/auth/send-verification-otp`, {
+                email
+            });
+            return response.data.data || response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data?.data?.message || error.response?.data?.message || error.message
+                };
+            }
+            return {
+                success: false,
+                message: 'Failed to send verification OTP'
+            };
+        }
+    },
+
+    // Add role to user
+    addRoleToUser: async (email: string, roleName: string): Promise<{ success: boolean; message: string }> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/users/add-role`, {
+                email,
+                roleName
+            });
+            return {
+                success: response.status === 201,
+                message: response.data || 'Role added successfully'
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data || error.message
+                };
+            }
+            return {
+                success: false,
+                message: 'Failed to add role'
+            };
+        }
+    },
+
+    // Forgot password - send reset OTP
+    forgotPassword: async (email: string): Promise<OTPVerificationResponse> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/auth/forgot-password`, {
+                email
+            });
+            return response.data.data || response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data?.data?.message || error.response?.data?.message || error.message
+                };
+            }
+            return {
+                success: false,
+                message: 'Failed to send password reset code'
+            };
+        }
+    },
+
+    // Verify password reset OTP
+    verifyPasswordResetOTP: async (email: string, otp: string): Promise<OTPVerificationResponse> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/auth/verify-password-reset-otp`, {
+                email,
+                otp
+            });
+            return response.data.data || response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data?.data?.message || error.response?.data?.message || error.message,
+                    remainingAttempts: error.response?.data?.data?.remainingAttempts,
+                    isExpired: error.response?.data?.data?.isExpired
+                };
+            }
+            return {
+                success: false,
+                message: 'OTP verification failed'
+            };
+        }
+    },
+
+    // Reset password with OTP
+    resetPasswordWithOTP: async (email: string, otp: string, newPassword: string): Promise<OTPVerificationResponse> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/auth/reset-password-with-otp`, {
+                email,
+                otp,
+                newPassword
+            });
+            return response.data.data || response.data;
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data?.data?.message || error.response?.data?.message || error.message
+                };
+            }
+            return {
+                success: false,
+                message: 'Failed to reset password'
+            };
+        }
+    }
 };
 
 export default userService;

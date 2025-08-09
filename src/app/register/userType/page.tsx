@@ -40,7 +40,13 @@ const UserType = () => {
     }, [router]);
 
     const handleBack = () => {
-        router.push("/register/emailVerification");
+        // Get email from localStorage and redirect to verification
+        const email = localStorage.getItem('verifyEmail') || localStorage.getItem('userEmail') || '';
+        if (email) {
+            router.push(`/verify-email/confirm?email=${encodeURIComponent(email)}`);
+        } else {
+            router.push("/verify-email");
+        }
     };
 
     const handleUserTypeSelect = (type: UserTypeOption) => {
@@ -61,14 +67,14 @@ const UserType = () => {
                 roleName: roleName
             });
 
-            if (response.data.success) {
+            // The backend returns a simple string response, not a structured JSON
+            if (response.status === 201) {
                 setToast({
                     show: true,
                     type: "success",
                     message: "Role added successfully",
                     subMessage: "Redirecting to your dashboard"
                 });
-
             }
 
             // Redirect based on selected role

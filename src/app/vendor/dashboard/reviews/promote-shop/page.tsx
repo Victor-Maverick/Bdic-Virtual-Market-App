@@ -155,7 +155,7 @@ const PromoteShop = () => {
         }
     }, [session]);
 
-    const fetchTiers = async () => {
+    const fetchTiers = useCallback(async () => {
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/all-tiers`);
             if (!response.ok) {
@@ -169,7 +169,7 @@ const PromoteShop = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     const promoteShop = useCallback(async () => {
         if (!shopData?.id || !selectedTierInModal?.id) {
@@ -283,6 +283,28 @@ const PromoteShop = () => {
                 throw new Error('User authentication timed out');
             }
 
+            // Wait for shop data and tiers to be available
+            let dataAttempts = 0;
+            const maxDataAttempts = 20; // ~10 seconds with 500ms interval
+            while ((!shopData?.id || !tiers.length || !selectedTierInModal?.id) && dataAttempts < maxDataAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                dataAttempts++;
+            }
+
+            // If still no data, try to fetch it again
+            if (!shopData?.id || !tiers.length) {
+                await Promise.all([fetchShopData(), fetchTiers()]);
+                
+                // Wait a bit more for the data to be set
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            // Set selected tier if not already set
+            if (!selectedTierInModal?.id && tiers.length > 0) {
+                setSelectedTierInModal(tiers[0]);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
             const response = await axios.get<VerifyPaymentResponse>(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify/${transRef}`,
                 { timeout: 30000 }
@@ -316,7 +338,7 @@ const PromoteShop = () => {
         } finally {
             setIsVerifying(false);
         }
-    }, [session, fetchShopData, promoteShop, router]);
+    }, [session, fetchShopData, promoteShop, router, shopData, tiers, selectedTierInModal, fetchTiers]);
 
 
     const handleMakePayment = async () => {
@@ -334,7 +356,7 @@ const PromoteShop = () => {
     useEffect(() => {
         fetchTiers();
         fetchShopData();
-    }, [fetchShopData]);
+    }, [fetchTiers, fetchShopData]);
 
     useEffect(() => {
         const transRef = searchParams.get('transRef');
@@ -418,12 +440,16 @@ const PromoteShop = () => {
                     <div className="bg-white p-6 shadow-lg max-w-md w-full mx-4 text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
                         <h3 className="text-lg font-medium text-gray-900 mb-2">
-                            {session ? 'Verifying Payment' : 'Loading Session'}
+                            {!session ? 'Loading Session' : 
+                             !shopData?.id || !tiers.length ? 'Loading Shop Data' : 
+                             'Verifying Payment'}
                         </h3>
                         <p className="text-gray-600">
-                            {session
-                                ? 'Please wait while we verify your payment...'
-                                : 'Completing authentication, please wait...'}
+                            {!session
+                                ? 'Completing authentication, please wait...'
+                                : !shopData?.id || !tiers.length
+                                ? 'Loading shop and tier information...'
+                                : 'Please wait while we verify your payment...'}
                         </p>
                     </div>
                 </div>
@@ -449,53 +475,53 @@ const PromoteShop = () => {
             )}
 
             <VendorShopGuard showSubHeader={false}>
-            <div className="flex flex-col py-[10px] px-25 relative">
-                <div className="w-[359px] h-[52px] gap-[24px] flex items-end">
-                    <p className="py-2 text-[#11151F] cursor-pointer text-[14px] font-medium border-b-2 border-[#C6EB5F]">
+            <div className="flex flex-col py-[10px] px-4 sm:px-6 lg:px-25 relative">
+                <div className="w-full max-w-[359px] h-auto sm:h-[52px] gap-[16px] sm:gap-[24px] flex flex-col sm:flex-row items-start sm:items-end">
+                    <p className="py-2 text-[#11151F] cursor-pointer text-[13px] sm:text-[14px] font-medium border-b-2 border-[#C6EB5F]">
                         Reviews & campaigns
                     </p>
-                    <p className="py-2 cursor-pointer text-[14px] text-gray-500">
+                    <p className="py-2 cursor-pointer text-[13px] sm:text-[14px] text-gray-500">
                         Coupons
                     </p>
                 </div>
 
-                <div className="flex gap-[8px] mt-[15px] text-[#1E1E1E] text-[14px] font-medium items-center">
-                    <Image src={arrowBack} alt="Back arrow" width={18} height={18} className="cursor-pointer"/>
+                <div className="flex gap-[6px] sm:gap-[8px] mt-[12px] sm:mt-[15px] text-[#1E1E1E] text-[13px] sm:text-[14px] font-medium items-center">
+                    <Image src={arrowBack} alt="Back arrow" width={16} height={16} className="sm:w-[18px] sm:h-[18px] cursor-pointer"/>
                     <p className="cursor-pointer">Back to reviews and campaigns</p>
                 </div>
 
-                <div className="flex flex-col h-[92px] w-full mt-[20px] pb-[20px]">
-                    <p className="text-[#101828] text-[18px] font-medium">Promote shop</p>
-                    <p className="text-[#667085] text-[14px]">
-                        Boost your shop to the top and get more <br/>customers to visit and purchase from your shop
+                <div className="flex flex-col h-auto sm:h-[92px] w-full mt-[15px] sm:mt-[20px] pb-[15px] sm:pb-[20px]">
+                    <p className="text-[#101828] text-[16px] sm:text-[18px] font-medium">Promote shop</p>
+                    <p className="text-[#667085] text-[13px] sm:text-[14px] mt-1">
+                        Boost your shop to the top and get more customers to visit and purchase from your shop
                     </p>
                 </div>
 
                 {CURRENTLY_RUNNING_TIER ? (
-                    <div className="flex flex-col h-[290px] w-full rounded-[24px] border border-[#EDEDED] p-[20px]">
-                        <div className="flex justify-between items-center h-[92px] border-b-[0.5px] border-[#EDEDED]">
-                            <div className="flex flex-col text-[14px] gap-[4px]">
+                    <div className="flex flex-col h-auto sm:h-[290px] w-full rounded-[16px] sm:rounded-[24px] border border-[#EDEDED] p-[15px] sm:p-[20px]">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center h-auto sm:h-[92px] border-b-[0.5px] border-[#EDEDED] pb-[15px] sm:pb-0">
+                            <div className="flex flex-col text-[13px] sm:text-[14px] gap-[4px] mb-3 sm:mb-0">
                                 <p className="text-[#101828] font-medium">{CURRENTLY_RUNNING_TIER.tier}</p>
                                 <p className="text-[#667085] leading-tight">
                                     Your shop is currently promoted with this tier
                                 </p>
                             </div>
-                            <span className="w-[145px] text-[#07A341] text-[14px] font-medium flex items-center justify-center h-[44px] rounded-[100px] bg-[#ECFDF6] border border-[#22C55E]">
+                            <span className="w-full sm:w-[145px] text-[#07A341] text-[13px] sm:text-[14px] font-medium flex items-center justify-center h-[40px] sm:h-[44px] rounded-[50px] sm:rounded-[100px] bg-[#ECFDF6] border border-[#22C55E]">
                                 Currently running
                             </span>
                         </div>
                         <button
                             onClick={handleUpgradeClick}
-                            className="flex items-center justify-center gap-[9px] text-[14px] text-[#C6EB5F] font-semibold w-[174px] rounded-[12px] mt-[28px] bg-[#022B23] h-[52px]"
+                            className="flex items-center justify-center gap-[6px] sm:gap-[9px] text-[13px] sm:text-[14px] text-[#C6EB5F] font-semibold w-full sm:w-[174px] rounded-[10px] sm:rounded-[12px] mt-[20px] sm:mt-[28px] bg-[#022B23] h-[45px] sm:h-[52px]"
                         >
                             <p>Upgrade</p>
-                            <Image src={crownImg} alt="Crown icon"/>
+                            <Image src={crownImg} alt="Crown icon" width={16} height={16} className="sm:w-[20px] sm:h-[20px]"/>
                         </button>
                     </div>
                 ) : (
-                    <div className="flex flex-col h-[290px] w-full rounded-[24px] border border-[#EDEDED] p-[20px]">
-                        <div className="flex justify-between items-center h-[92px] border-b-[0.5px] border-[#EDEDED]">
-                            <div className="flex flex-col text-[14px] gap-[4px]">
+                    <div className="flex flex-col h-auto sm:h-[290px] w-full rounded-[16px] sm:rounded-[24px] border border-[#EDEDED] p-[15px] sm:p-[20px]">
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center h-auto sm:h-[92px] border-b-[0.5px] border-[#EDEDED] pb-[15px] sm:pb-0">
+                            <div className="flex flex-col text-[13px] sm:text-[14px] gap-[4px]">
                                 <p className="text-[#101828] font-medium">No active promotion</p>
                                 <p className="text-[#667085] leading-tight">
                                     Your shop is not currently promoted. Choose a tier to boost your visibility.
@@ -504,48 +530,48 @@ const PromoteShop = () => {
                         </div>
                         <button
                             onClick={handleUpgradeClick}
-                            className="flex items-center justify-center gap-[9px] text-[14px] text-[#C6EB5F] font-semibold w-[174px] rounded-[12px] mt-[28px] bg-[#022B23] h-[52px]"
+                            className="flex items-center justify-center gap-[6px] sm:gap-[9px] text-[13px] sm:text-[14px] text-[#C6EB5F] font-semibold w-full sm:w-[174px] rounded-[10px] sm:rounded-[12px] mt-[20px] sm:mt-[28px] bg-[#022B23] h-[45px] sm:h-[52px]"
                         >
                             <p>Promote Now</p>
-                            <Image src={crownImg} alt="Crown icon"/>
+                            <Image src={crownImg} alt="Crown icon" width={16} height={16} className="sm:w-[20px] sm:h-[20px]"/>
                         </button>
                     </div>
                 )}
 
-                <div className="flex flex-col h-[388px] mt-[30px] gap-[24px]">
-                    <p className="text-[#022B23] text-[16px] font-medium">Campaign Tiers ({tiers.length})</p>
-                    <div className="flex h-[345px] w-full justify-between">
+                <div className="flex flex-col h-auto mt-[20px] sm:mt-[30px] gap-[16px] sm:gap-[24px]">
+                    <p className="text-[#022B23] text-[15px] sm:text-[16px] font-medium">Campaign Tiers ({tiers.length})</p>
+                    <div className="flex flex-col sm:flex-row h-auto sm:h-[345px] w-full gap-[16px] sm:gap-[20px] sm:justify-between">
                         {tiers.map((tier, index) => (
-                            <div key={tier.id} className="h-full w-[380px] flex flex-col items-center border-[0.5px] rounded-[24px] border-[#EDEDED]">
+                            <div key={tier.id} className="h-auto sm:h-full w-full sm:w-[380px] flex flex-col items-center border-[0.5px] rounded-[16px] sm:rounded-[24px] border-[#EDEDED]">
                                 <Image
                                     src={getGradientImage(index)}
                                     alt={`${tier.tier} gradient`}
-                                    className="h-[112px] rounded-tr-[24px] rounded-tl-[24px] w-full"
+                                    className="h-[80px] sm:h-[112px] rounded-tr-[16px] rounded-tl-[16px] sm:rounded-tr-[24px] sm:rounded-tl-[24px] w-full"
                                 />
-                                <div className="w-[334px] h-[198px] mt-[10px] flex flex-col gap-[20px]">
-                                    <div className="flex flex-col gap-[8px]">
-                                        <div className="flex text-[16px] font-semibold text-[#101828] justify-between">
+                                <div className="w-full px-[15px] sm:w-[334px] h-auto sm:h-[198px] mt-[8px] sm:mt-[10px] flex flex-col gap-[15px] sm:gap-[20px] pb-[15px] sm:pb-0">
+                                    <div className="flex flex-col gap-[6px] sm:gap-[8px]">
+                                        <div className="flex text-[14px] sm:text-[16px] font-semibold text-[#101828] justify-between">
                                             <p>{tier.tier}</p>
                                             <p>{formatPrice(tier.price)}</p>
                                         </div>
-                                        <p className="text-[12px] font-medium text-[#667085]">
+                                        <p className="text-[11px] sm:text-[12px] font-medium text-[#667085]">
                                             Boost your shop to the top and get more customers to visit and purchase from your shop
                                         </p>
                                     </div>
 
                                     {/* Tier-specific details */}
-                                    <div className="flex flex-col gap-[14px]">
-                                        <div className="flex items-center gap-[4px] text-[12px] text-[#1E1E1E] font-medium">
-                                            <Image src={greenTick} alt="Green tick icon"/>
+                                    <div className="flex flex-col gap-[10px] sm:gap-[14px]">
+                                        <div className="flex items-center gap-[4px] text-[11px] sm:text-[12px] text-[#1E1E1E] font-medium">
+                                            <Image src={greenTick} alt="Green tick icon" width={12} height={12} className="sm:w-[14px] sm:h-[14px]"/>
                                             <p>Featured: {tier.featuredNumber} products</p>
                                         </div>
-                                        <div className="flex items-center gap-[4px] text-[12px] text-[#1E1E1E] font-medium">
-                                            <Image src={greenTick} alt="Green tick icon"/>
+                                        <div className="flex items-center gap-[4px] text-[11px] sm:text-[12px] text-[#1E1E1E] font-medium">
+                                            <Image src={greenTick} alt="Green tick icon" width={12} height={12} className="sm:w-[14px] sm:h-[14px]"/>
                                             <p>Promoted: {tier.promotedNumber} products</p>
                                         </div>
                                         {tier.tier !=='BASIC'&&(
-                                            <div className="flex items-center gap-[4px] text-[12px] text-[#1E1E1E] font-medium">
-                                                <Image src={greenTick} alt="Green tick icon"/>
+                                            <div className="flex items-center gap-[4px] text-[11px] sm:text-[12px] text-[#1E1E1E] font-medium">
+                                                <Image src={greenTick} alt="Green tick icon" width={12} height={12} className="sm:w-[14px] sm:h-[14px]"/>
                                                 <p>Floated: {tier.floatedNumber} products</p>
                                             </div>
                                         )}
@@ -558,50 +584,50 @@ const PromoteShop = () => {
                 </div>
 
                 {showUpgradeModal && selectedTierInModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-                        <div className="relative z-10 bg-white w-[1100px] mx-4 px-[60px] py-[30px] shadow-lg">
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20 p-4">
+                        <div className="relative z-10 bg-white w-full max-w-[1100px] max-h-[90vh] overflow-y-auto mx-4 px-[20px] sm:px-[40px] lg:px-[60px] py-[20px] sm:py-[30px] shadow-lg rounded-lg">
                             <div className="flex flex-col pb-2 border-b-[0.5px] border-[#EDEDED]">
-                                <p className="text-[#022B23] text-[16px] font-medium">Promote shop payment</p>
-                                <p className="text-[#707070] text-[14px] font-medium">Pay for your preferred tier to help your business rank better</p>
+                                <p className="text-[#022B23] text-[14px] sm:text-[16px] font-medium">Promote shop payment</p>
+                                <p className="text-[#707070] text-[12px] sm:text-[14px] font-medium">Pay for your preferred tier to help your business rank better</p>
                             </div>
 
-                            <div className="flex">
-                                <div className="w-[40%]">
-                                    <h3 className="text-[#101828] text-[16px] mt-[4px] font-medium mb-2">Campaign Tiers ({tiers.length})</h3>
-                                    <div className="w-[325px] max-h-[80vh] flex flex-col gap-[10px]">
+                            <div className="flex flex-col lg:flex-row gap-[20px] lg:gap-0">
+                                <div className="w-full lg:w-[40%]">
+                                    <h3 className="text-[#101828] text-[14px] sm:text-[16px] mt-[4px] font-medium mb-2">Campaign Tiers ({tiers.length})</h3>
+                                    <div className="w-full lg:w-[325px] max-h-[40vh] lg:max-h-[80vh] flex flex-col gap-[10px] overflow-y-auto">
                                         {tiers.map((tier) => (
                                             <div
                                                 key={tier.id}
-                                                className={`p-3 rounded-[24px] w-full h-[140px] cursor-pointer border ${
+                                                className={`p-2 sm:p-3 rounded-[16px] sm:rounded-[24px] w-full h-auto min-h-[120px] sm:min-h-[140px] cursor-pointer border ${
                                                     selectedTierInModal.id === tier.id
-                                                        ? 'border-[#C6EB5F] h-[170px] shadow-md relative'
-                                                        : 'border-[#EDEDED] h-[140px]'
+                                                        ? 'border-[#C6EB5F] shadow-md relative pb-[30px] sm:pb-[35px]'
+                                                        : 'border-[#EDEDED]'
                                                 }`}
                                                 onClick={() => handleTierSelectInModal(tier)}
                                             >
-                                                <div className="flex justify-between text-[12px] items-center mb-2">
+                                                <div className="flex justify-between text-[11px] sm:text-[12px] items-center mb-2">
                                                     <h4 className="text-[#101828] font-medium">{tier.tier}</h4>
                                                     <p className="text-[#101828] font-semibold">{formatPrice(tier.price)}</p>
                                                 </div>
-                                                <p className="text-[#667085] text-[12px] leading-tight mb-2">
+                                                <p className="text-[#667085] text-[10px] sm:text-[12px] leading-tight mb-2">
                                                     Boost your shop to the top and get more customers to visit and purchase from your shop
                                                 </p>
-                                                <div className="flex flex-col gap-[8px]">
-                                                    <div className="flex items-center gap-[4px] text-[12px] text-[#1E1E1E] font-medium">
-                                                        <Image src={greenTick} alt="Green tick icon"/>
+                                                <div className="flex flex-col gap-[6px] sm:gap-[8px]">
+                                                    <div className="flex items-center gap-[4px] text-[10px] sm:text-[12px] text-[#1E1E1E] font-medium">
+                                                        <Image src={greenTick} alt="Green tick icon" width={10} height={10} className="sm:w-[12px] sm:h-[12px]"/>
                                                         <p>Featured: {tier.featuredNumber} products</p>
                                                     </div>
-                                                    <div className="flex items-center gap-[4px] text-[12px] text-[#1E1E1E] font-medium">
-                                                        <Image src={greenTick} alt="Green tick icon"/>
+                                                    <div className="flex items-center gap-[4px] text-[10px] sm:text-[12px] text-[#1E1E1E] font-medium">
+                                                        <Image src={greenTick} alt="Green tick icon" width={10} height={10} className="sm:w-[12px] sm:h-[12px]"/>
                                                         <p>Promoted: {tier.promotedNumber} products</p>
                                                     </div>
-                                                    <div className="flex items-center gap-[4px] text-[12px] text-[#1E1E1E] font-medium">
-                                                        <Image src={greenTick} alt="Green tick icon"/>
+                                                    <div className="flex items-center gap-[4px] text-[10px] sm:text-[12px] text-[#1E1E1E] font-medium">
+                                                        <Image src={greenTick} alt="Green tick icon" width={10} height={10} className="sm:w-[12px] sm:h-[12px]"/>
                                                         <p>Floated: {tier.floatedNumber} products</p>
                                                     </div>
                                                 </div>
                                                 {selectedTierInModal.id === tier.id && (
-                                                    <div className="absolute bottom-0 left-0 right-0 text-center text-[#1E1E1E] font-medium text-[12px] bg-[#C6EB5F] rounded-b-[12px] h-[24px] flex items-center justify-center">
+                                                    <div className="absolute bottom-0 left-0 right-0 text-center text-[#1E1E1E] font-medium text-[10px] sm:text-[12px] bg-[#C6EB5F] rounded-b-[12px] h-[20px] sm:h-[24px] flex items-center justify-center">
                                                         Selected tier
                                                     </div>
                                                 )}
@@ -610,57 +636,48 @@ const PromoteShop = () => {
                                     </div>
                                 </div>
 
-                                <div className="w-[60%] flex flex-col gap-[20px] pl-[50px] pt-[24px] pb-[2px] border-l border-[#EDEDED]">
-                                    <p className="text-[#022B23] text-[16px] font-medium">Tier details</p>
+                                <div className="w-full lg:w-[60%] flex flex-col gap-[15px] sm:gap-[20px] lg:pl-[30px] xl:pl-[50px] pt-[20px] lg:pt-[24px] pb-[2px] lg:border-l border-[#EDEDED]">
+                                    <p className="text-[#022B23] text-[14px] sm:text-[16px] font-medium">Tier details</p>
 
-                                    <div className="flex flex-col gap-[8px] pb-[24px] border-b-[0.5px] border-[#ededed]">
+                                    <div className="flex flex-col gap-[6px] sm:gap-[8px] pb-[20px] sm:pb-[24px] border-b-[0.5px] border-[#ededed]">
                                         <div className="flex justify-between items-center">
-                                            <p className="text-[14px] text-[#707070] font-medium">Order amount</p>
-                                            <p className="text-[14px] text-[#000000] font-medium">{formatPrice(selectedTierInModal.price)}</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#707070] font-medium">Order amount</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#000000] font-medium">{formatPrice(selectedTierInModal.price)}</p>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <p className="text-[14px] text-[#707070] font-medium">Tier</p>
-                                            <p className="text-[14px] text-[#000000] font-medium">{selectedTierInModal.tier}</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#707070] font-medium">Tier</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#000000] font-medium">{selectedTierInModal.tier}</p>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <p className="text-[14px] text-[#707070] font-medium">Featured Products</p>
-                                            <p className="text-[14px] text-[#000000] font-medium">{selectedTierInModal.featuredNumber}</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#707070] font-medium">Featured Products</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#000000] font-medium">{selectedTierInModal.featuredNumber}</p>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <p className="text-[14px] text-[#707070] font-medium">Promoted Products</p>
-                                            <p className="text-[14px] text-[#000000] font-medium">{selectedTierInModal.promotedNumber}</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#707070] font-medium">Promoted Products</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#000000] font-medium">{selectedTierInModal.promotedNumber}</p>
                                         </div>
                                         <div className="flex justify-between items-center">
-                                            <p className="text-[14px] text-[#707070] font-medium">Floated Products</p>
-                                            <p className="text-[14px] text-[#000000] font-medium">{selectedTierInModal.floatedNumber}</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#707070] font-medium">Floated Products</p>
+                                            <p className="text-[12px] sm:text-[14px] text-[#000000] font-medium">{selectedTierInModal.floatedNumber}</p>
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-[10px] justify-end mt-8">
+                                    <div className="flex flex-col sm:flex-row gap-[10px] sm:gap-[15px] mt-[15px] sm:mt-[20px]">
                                         <button
                                             onClick={closeModal}
-                                            className="justify-center w-[116px] h-[52px] text-[#707070] flex items-center text-[16px] font-medium border border-[#707070] rounded-[12px] cursor-pointer"
+                                            className="flex-1 h-[45px] sm:h-[52px] border border-[#D1D1D1] rounded-[10px] sm:rounded-[12px] text-[#666] text-[13px] sm:text-[14px] font-medium hover:bg-gray-50 transition-colors"
                                         >
                                             Cancel
                                         </button>
                                         <button
-                                            onClick={!isProcessingPayment ? handleMakePayment : undefined}
+                                            onClick={handleMakePayment}
                                             disabled={isProcessingPayment}
-                                            className={`flex items-center justify-center gap-[8px] w-[179px] h-[52px] bg-[#022B23] text-[#C6EB5F] rounded-[12px] text-[14px] font-semibold ${
-                                                isProcessingPayment ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'
-                                            }`}
+                                            className="flex-1 flex gap-[6px] sm:gap-[9px] justify-center items-center bg-[#022B23] rounded-[10px] sm:rounded-[12px] h-[45px] sm:h-[52px] cursor-pointer hover:bg-[#033a30] transition-colors disabled:opacity-50"
                                         >
-                                            {isProcessingPayment ? (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                                                    <p>Processing...</p>
-                                                </div>
-                                            ) : (
-                                                <>
-                                                    <p>Make payment</p>
-                                                    <Image src={limeArrow} alt="Arrow icon"/>
-                                                </>
-                                            )}
+                                            <span className="text-[#C6EB5F] font-semibold text-[13px] sm:text-[14px]">
+                                                {isProcessingPayment ? "Processing..." : "Make Payment"}
+                                            </span>
+                                            {!isProcessingPayment && <Image src={limeArrow} alt="Continue arrow" width={16} height={16} className="sm:w-[18px] sm:h-[18px]" />}
                                         </button>
                                     </div>
                                 </div>
@@ -668,6 +685,7 @@ const PromoteShop = () => {
                         </div>
                     </div>
                 )}
+
             </div>
             </VendorShopGuard>
         </>

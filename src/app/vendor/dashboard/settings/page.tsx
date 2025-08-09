@@ -134,18 +134,18 @@ const AddressModal = ({ isOpen, onClose, onSubmit, email, initialData, isUpdate 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-            <div className="bg-white px-10 py-8 w-[600px] rounded-[24px] gap-[30px] flex flex-col items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20 p-4">
+            <div className="bg-white px-6 sm:px-8 lg:px-10 py-6 sm:py-8 w-full max-w-[600px] rounded-[16px] sm:rounded-[24px] gap-[20px] sm:gap-[30px] flex flex-col items-center max-h-[90vh] overflow-y-auto">
                 <div className="w-full text-left">
-                    <h2 className="text-[16px] font-medium text-[#022B23]">{isUpdate ? 'Update' : 'Add'} Address</h2>
-                    <p className="text-[14px] font-medium leading-tight text-[#707070]">
+                    <h2 className="text-[14px] sm:text-[16px] font-medium text-[#022B23]">{isUpdate ? 'Update' : 'Add'} Address</h2>
+                    <p className="text-[12px] sm:text-[14px] font-medium leading-tight text-[#707070]">
                         Please provide your complete address details
                     </p>
                 </div>
 
-                <div className="flex flex-col w-full gap-4">
+                <div className="flex flex-col w-full gap-3 sm:gap-4">
                     <div className="relative flex flex-col w-full">
-                        <label htmlFor="address" className="text-[#6D6D6D] text-[12px] font-medium mb-1">
+                        <label htmlFor="address" className="text-[#6D6D6D] text-[11px] sm:text-[12px] font-medium mb-1">
                             Address
                         </label>
                         <input
@@ -154,13 +154,13 @@ const AddressModal = ({ isOpen, onClose, onSubmit, email, initialData, isUpdate 
                             type="text"
                             value={formData.address}
                             onChange={handleChange}
-                            className="px-4 w-full h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[14px] font-medium"
+                            className="px-3 sm:px-4 w-full h-[50px] sm:h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[12px] sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[13px] sm:text-[14px] font-medium"
                             placeholder="Enter your full address"
                         />
                     </div>
 
                     <div className="relative flex flex-col w-full">
-                        <label htmlFor="state" className="text-[#6D6D6D] text-[12px] font-medium mb-1">
+                        <label htmlFor="state" className="text-[#6D6D6D] text-[11px] sm:text-[12px] font-medium mb-1">
                             State
                         </label>
                         <select
@@ -168,14 +168,14 @@ const AddressModal = ({ isOpen, onClose, onSubmit, email, initialData, isUpdate 
                             name="state"
                             value={formData.state}
                             onChange={handleChange}
-                            className="px-4 w-full h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[14px] font-medium appearance-none"
+                            className="px-3 sm:px-4 w-full h-[50px] sm:h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[12px] sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[13px] sm:text-[14px] font-medium appearance-none"
                         >
                             <option value="Benue">Benue</option>
                         </select>
                     </div>
 
                     <div className="relative flex flex-col w-full">
-                        <label htmlFor="lga" className="text-[#6D6D6D] text-[12px] font-medium mb-1">
+                        <label htmlFor="lga" className="text-[#6D6D6D] text-[11px] sm:text-[12px] font-medium mb-1">
                             LGA
                         </label>
                         <input
@@ -184,22 +184,22 @@ const AddressModal = ({ isOpen, onClose, onSubmit, email, initialData, isUpdate 
                             type="text"
                             value={formData.lga}
                             onChange={handleChange}
-                            className="px-4 w-full h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[14px] font-medium"
+                            className="px-3 sm:px-4 w-full h-[50px] sm:h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[12px] sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[13px] sm:text-[14px] font-medium"
                             placeholder="Enter your Local Government Area"
                         />
                     </div>
                 </div>
 
-                <div className="flex w-full gap-4 justify-end">
+                <div className="flex flex-col sm:flex-row w-full gap-3 sm:gap-4 sm:justify-end">
                     <button
                         onClick={onClose}
-                        className="px-6 py-3 border border-[#D0D5DD] rounded-[8px] text-[#022B23] font-medium"
+                        className="px-4 sm:px-6 py-2 sm:py-3 border border-[#D0D5DD] rounded-[6px] sm:rounded-[8px] text-[#022B23] font-medium text-[13px] sm:text-[14px] order-2 sm:order-1"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleSubmit}
-                        className="px-6 py-3 bg-[#022B23] rounded-[8px] text-white font-medium hover:bg-[#033a30] transition-colors"
+                        className="px-4 sm:px-6 py-2 sm:py-3 bg-[#022B23] rounded-[6px] sm:rounded-[8px] text-white font-medium hover:bg-[#033a30] transition-colors text-[13px] sm:text-[14px] order-1 sm:order-2"
                     >
                         {isUpdate ? 'Update' : 'Save'} Address
                     </button>
@@ -570,66 +570,66 @@ const Settings = () => {
     }
     return (
         <VendorShopGuard showSubHeader={false}>
-            <div className="flex flex-col pl-25 mt-[30px] gap-[40px]">
+            <div className="flex flex-col px-4 sm:px-6 lg:px-25 mt-[20px] sm:mt-[30px] gap-[30px] sm:gap-[40px]">
                 <div className="flex flex-col">
-                    <p className="text-[18px] font-medium text-[#101828]">Settings</p>
-                    <p className="text-[#667085] text-[14px]">Manage your account here</p>
+                    <p className="text-[16px] sm:text-[18px] font-medium text-[#101828]">Settings</p>
+                    <p className="text-[#667085] text-[12px] sm:text-[14px]">Manage your account here</p>
                 </div>
-                <div className="flex gap-[30px] mt-[-10px]">
-                    <div className="flex flex-col gap-[14px]">
-                        <div className="border border-[#ededed] w-[380px] rounded-[24px] h-[180px] ">
-                            <div className="flex items-center border-b border-[#ededed] px-[20px] pt-[10px] justify-between">
-                                <div className="flex gap-[8px] pb-[10px] items-center">
-                                    <Image src={vendorImg} alt={'image'} width={40} height={40}/>
+                <div className="flex flex-col lg:flex-row gap-[20px] lg:gap-[30px] mt-[-10px]">
+                    <div className="flex flex-col gap-[14px] w-full lg:w-auto">
+                        <div className="border border-[#ededed] w-full lg:w-[380px] rounded-[16px] sm:rounded-[24px] h-auto lg:h-[180px] p-4 lg:p-0">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center border-b border-[#ededed] px-[15px] lg:px-[20px] pt-[10px] justify-between gap-3 sm:gap-0 pb-3 sm:pb-0">
+                                <div className="flex gap-[6px] sm:gap-[8px] pb-[10px] items-center">
+                                    <Image src={vendorImg} alt={'image'} width={32} height={32} className="sm:w-[40px] sm:h-[40px]"/>
                                     <div className="flex flex-col">
-                                        <p className="text-[#707070] text-[12px]">Shop</p>
-                                        <p className="text-[16px] font-normal mt-[-4px]">{shopData.name}</p>
+                                        <p className="text-[#707070] text-[10px] sm:text-[12px]">Shop</p>
+                                        <p className="text-[14px] sm:text-[16px] font-normal mt-[-2px] sm:mt-[-4px]">{shopData.name}</p>
                                     </div>
                                 </div>
-                                <div className="w-[74px] p-[6px] gap-[4px] h-[30px] bg-[#C6EB5F] rounded-[8px] flex items-center">
-                                    <Image src={verify} alt={'image'}/>
-                                    <p className="text-[12px]">{shopData.status === 'VERIFIED' ? 'verified' : 'pending'}</p>
+                                <div className="w-[70px] sm:w-[74px] p-[4px] sm:p-[6px] gap-[3px] sm:gap-[4px] h-[26px] sm:h-[30px] bg-[#C6EB5F] rounded-[6px] sm:rounded-[8px] flex items-center">
+                                    <Image src={verify} alt={'image'} width={12} height={12} className="sm:w-[14px] sm:h-[14px]"/>
+                                    <p className="text-[10px] sm:text-[12px]">{shopData.status === 'VERIFIED' ? 'verified' : 'pending'}</p>
                                 </div>
                             </div>
-                            <div className="px-[20px] flex items-center gap-[4px] mt-[20px]">
-                                <Image src={locationImg} alt={'image'} width={18} height={18}/>
-                                <p className="text-[14px] font-light">
+                            <div className="px-[15px] lg:px-[20px] flex items-center gap-[4px] mt-[15px] sm:mt-[20px]">
+                                <Image src={locationImg} alt={'image'} width={16} height={16} className="sm:w-[18px] sm:h-[18px] flex-shrink-0"/>
+                                <p className="text-[12px] sm:text-[14px] font-light">
                                     {shopData.market || 'Market not specified'}, {shopData.marketSection || 'Section not specified'}
                                 </p>
                             </div>
-                            <div className="flex px-[20px] mt-[15px] gap-[18px]">
+                            <div className="flex flex-col sm:flex-row px-[15px] lg:px-[20px] mt-[12px] sm:mt-[15px] gap-[8px] sm:gap-[18px]">
                                 <div className="flex items-center gap-[4px]">
-                                    <Image src={shopImg} alt={'image'} width={18} height={18}/>
-                                    <p className="text-[14px] font-light">{shopData.shopNumber || 'Shop number not specified'}</p>
+                                    <Image src={shopImg} alt={'image'} width={16} height={16} className="sm:w-[18px] sm:h-[18px]"/>
+                                    <p className="text-[12px] sm:text-[14px] font-light">{shopData.shopNumber || 'Shop number not specified'}</p>
                                 </div>
                                 <div className="flex items-center gap-[4px]">
-                                    <Image src={barCodeImg} alt={'image'} width={18} height={18}/>
-                                    <p className="text-[14px] font-light">{shopData.streetName || 'Street not specified'}</p>
+                                    <Image src={barCodeImg} alt={'image'} width={16} height={16} className="sm:w-[18px] sm:h-[18px]"/>
+                                    <p className="text-[12px] sm:text-[14px] font-light">{shopData.streetName || 'Street not specified'}</p>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex flex-col w-[380px] h-[120px] rounded-[12px] border-[1px] border-[#EDEDED]">
+                        <div className="flex lg:flex-col w-full lg:w-[380px] h-auto lg:h-[120px] rounded-[12px] border-[1px] border-[#EDEDED] overflow-x-auto lg:overflow-x-visible">
                         <span
-                            className={`text-[#022B23] ${activeSection === 'general' ? 'bg-[#F8F8F8]' : ''} rounded-tr-[12px] rounded-tl-[12px] text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
+                            className={`text-[#022B23] ${activeSection === 'general' ? 'bg-[#F8F8F8]' : ''} rounded-tl-[12px] lg:rounded-tr-[12px] text-[11px] sm:text-[12px] py-[8px] sm:py-[10px] px-[6px] sm:px-[8px] h-[36px] sm:h-[40px] cursor-pointer whitespace-nowrap flex-shrink-0 lg:flex-shrink lg:whitespace-normal`}
                             onClick={() => handleNavClick('general')}
                         >
                             General settings
                         </span>
                             <span
-                                className={`text-[#022B23] ${activeSection === 'security' ? 'bg-[#F8F8F8]' : ''} text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
+                                className={`text-[#022B23] ${activeSection === 'security' ? 'bg-[#F8F8F8]' : ''} text-[11px] sm:text-[12px] py-[8px] sm:py-[10px] px-[6px] sm:px-[8px] h-[36px] sm:h-[40px] cursor-pointer whitespace-nowrap flex-shrink-0 lg:flex-shrink lg:whitespace-normal`}
                                 onClick={() => handleNavClick('security')}
                             >
                             Security
                         </span>
                             <span
-                                className={`text-[#022B23] ${activeSection === 'notifications' ? 'bg-[#F8F8F8]' : ''} rounded-br-[12px] rounded-bl-[12px] text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
+                                className={`text-[#022B23] ${activeSection === 'notifications' ? 'bg-[#F8F8F8]' : ''} rounded-tr-[12px] lg:rounded-br-[12px] lg:rounded-bl-[12px] lg:rounded-tr-[0px] text-[11px] sm:text-[12px] py-[8px] sm:py-[10px] px-[6px] sm:px-[8px] h-[36px] sm:h-[40px] cursor-pointer whitespace-nowrap flex-shrink-0 lg:flex-shrink lg:whitespace-normal`}
                                 onClick={() => handleNavClick('notifications')}
                             >
                             Notifications
                         </span>
                         </div>
                     </div>
-                    <div className="flex flex-col gap-[24px] mb-10 w-[820px]">
+                    <div className="flex flex-col gap-[20px] sm:gap-[24px] mb-10 w-full lg:w-[820px]">
                         <div
                             ref={generalSettingsRef}
                             id="general-settings"

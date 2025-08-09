@@ -38,36 +38,42 @@ const SetupShop = () => {
                 image={dashSlideImg}
                 textColor={'#05966F'}
             />
-            <div className="px-25 py-4">
+            <div className="px-4 sm:px-6 lg:px-25 py-3 sm:py-4">
                 <BackButton variant="default" text="Back to Dashboard" />
             </div>
-            <div className="h-[65px] bg-[#1E1E1E] px-25 flex items-center justify-between py-[12px]">
+            <div className="h-auto sm:h-[65px] bg-[#1E1E1E] px-4 sm:px-6 lg:px-25 flex flex-col sm:flex-row items-start sm:items-center justify-between py-[12px] gap-2 sm:gap-0">
                 <div className="flex-col">
-                    <p className="text-[16px] text-[#FFFFFF] font-medium">KYC</p>
-                    <p className="text-[14px] font-normal text-[#FFFFFF]">Vendor and shop KYC</p>
+                    <p className="text-[14px] sm:text-[16px] text-[#FFFFFF] font-medium">KYC</p>
+                    <p className="text-[12px] sm:text-[14px] font-normal text-[#FFFFFF]">Vendor and shop KYC</p>
                 </div>
-                <div className="flex gap-[8px] items-center">
-                    <p className="text-[#FFEEBE] text-[14px]">Complete KYC</p>
-                    <Image src={arrow} alt={'arrow'} />
+                <div className="flex gap-[6px] sm:gap-[8px] items-center">
+                    <p className="text-[#FFEEBE] text-[12px] sm:text-[14px]">Complete KYC</p>
+                    <Image src={arrow} alt={'arrow'} width={16} height={16} className="sm:w-[18px] sm:h-[18px]" />
                 </div>
             </div>
-            <div className="flex flex-col justify-start items-center">
-                <div className="mt-[120px] w-[268px] flex-col flex items-center text-center justify-center">
-                    <Image src={vendorStarterPack} alt={'pack'} />
-                    <div>
-                        <p className="mb-[10px] text-[16px] text-[#022B23] font-medium">
+            <div className="flex flex-col justify-start items-center px-4 sm:px-6">
+                <div className="mt-[60px] sm:mt-[80px] lg:mt-[120px] w-full max-w-[268px] flex-col flex items-center text-center justify-center">
+                    <Image 
+                        src={vendorStarterPack} 
+                        alt={'pack'} 
+                        width={200}
+                        height={200}
+                        className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] lg:w-[240px] lg:h-[240px]"
+                    />
+                    <div className="mt-4 sm:mt-6">
+                        <p className="mb-[8px] sm:mb-[10px] text-[14px] sm:text-[16px] text-[#022B23] font-medium">
                             Setup shop and complete KYC
                         </p>
-                        <p className="font-medium text-[#707070] text-[14px]">
-                            Provide information about your shop <br /> and yourself to complete setup
+                        <p className="font-medium text-[#707070] text-[12px] sm:text-[14px] leading-relaxed">
+                            Provide information about your shop and yourself to complete setup
                         </p>
                     </div>
                     <div
                         onClick={handleContinue}
-                        className="flex cursor-pointer mt-[35px] gap-[9px] w-[268px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px]"
+                        className="flex cursor-pointer mt-[25px] sm:mt-[35px] gap-[6px] sm:gap-[9px] w-full max-w-[268px] justify-center items-center bg-[#022B23] rounded-[10px] sm:rounded-[12px] h-[45px] sm:h-[52px] hover:bg-[#033a30] transition-colors"
                     >
-                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Setup shop</p>
-                        <Image src={limeArrow} alt={'image'} className="h-[18px] w-[18px]" />
+                        <p className="text-[#C6EB5F] font-semibold text-[13px] sm:text-[14px]">Setup shop</p>
+                        <Image src={limeArrow} alt={'image'} width={16} height={16} className="sm:w-[18px] sm:h-[18px]" />
                     </div>
                 </div>
             </div>

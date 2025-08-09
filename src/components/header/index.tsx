@@ -3,10 +3,10 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Menu, X } from 'lucide-react';
-import { useSession, signOut } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { useLogoutHandler } from '@/hooks/useLogoutHandler';
 import headerImg from '../../../public/assets/images/headerImg.png';
 import profileImage from '../../../public/assets/images/profile-circle.png';
-import axios from 'axios';
 
 // interface UserProfile {
 //     firstName: string;
@@ -46,26 +46,7 @@ const Header = () => {
         setIsProfileDropdownOpen(false);
     };
 
-    const handleLogout = async () => {
-        try {
-            await axios.post(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`,
-                {},
-                {
-                    headers: {
-                        Authorization: `Bearer ${session?.accessToken}`,
-                    },
-                }
-            );
-        } catch (error) {
-            console.error('Logout API call failed:', error);
-        } finally {
-            await signOut({ redirect: false });
-            localStorage.removeItem('BDICAuthToken');
-            localStorage.removeItem('userEmail');
-            router.push('/login');
-        }
-    };
+    const { handleLogout } = useLogoutHandler();
 
     return (
         <div className="fixed w-full h-[70px] md:h-[80px] lg:h-[90px] bg-white z-50 flex items-center border-b border-gray-300 shadow-md px-4 sm:px-6 md:px-10 lg:px-20 justify-between max-w-screen">
