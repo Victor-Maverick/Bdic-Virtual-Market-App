@@ -22,7 +22,10 @@ const VirtualMarketPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
     const [conversationState, setConversationState] = useState('INITIAL');
+    const [productSuggestions, setProductSuggestions] = useState<string[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
     const scrollToBottom = () => {
@@ -32,6 +35,18 @@ const VirtualMarketPage = () => {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Close suggestions when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+                setShowSuggestions(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
 
     const initializeChat = useCallback(async () => {
@@ -125,8 +140,45 @@ const VirtualMarketPage = () => {
         router.push(`/marketPlace/store/${shop.shopId}`);
     };
 
+    const fetchProductSuggestions = async (query: string) => {
+        if (query.length < 2 || conversationState !== 'PRODUCT_SEARCH') {
+            setProductSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        try {
+            const suggestions = await aiAssistantService.getProductSuggestions(query);
+            setProductSuggestions(suggestions);
+            setShowSuggestions(suggestions.length > 0);
+        } catch (error) {
+            console.error('Error fetching product suggestions:', error);
+            setProductSuggestions([]);
+            setShowSuggestions(false);
+        }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setInputMessage(value);
+        
+        // Debounce the suggestion fetching
+        const timeoutId = setTimeout(() => {
+            fetchProductSuggestions(value);
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    };
+
+    const handleSuggestionSelect = (suggestion: string) => {
+        setInputMessage(suggestion);
+        setShowSuggestions(false);
+        sendMessage(suggestion);
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setShowSuggestions(false);
         sendMessage(inputMessage);
     };
 
@@ -255,14 +307,37 @@ const VirtualMarketPage = () => {
                     {/* Input */}
                     <div className="border-t p-4">
                         <form onSubmit={handleSubmit} className="flex gap-2">
-                            <input
-                                type="text"
-                                value={inputMessage}
-                                onChange={(e) => setInputMessage(e.target.value)}
-                                placeholder="Type your message..."
-                                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#022B23] focus:border-transparent"
-                                disabled={isLoading}
-                            />
+                            <div className="flex-1 relative">
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    value={inputMessage}
+                                    onChange={handleInputChange}
+                                    placeholder={conversationState === 'PRODUCT_SEARCH' ? "Type a product name..." : "Type your message..."}
+                                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#022B23] focus:border-transparent"
+                                    disabled={isLoading}
+                                    onFocus={() => {
+                                        if (conversationState === 'PRODUCT_SEARCH' && productSuggestions.length > 0) {
+                                            setShowSuggestions(true);
+                                        }
+                                    }}
+                                />
+                                
+                                {/* Product Suggestions Dropdown */}
+                                {showSuggestions && productSuggestions.length > 0 && (
+                                    <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                                        {productSuggestions.map((suggestion, index) => (
+                                            <div
+                                                key={index}
+                                                onClick={() => handleSuggestionSelect(suggestion)}
+                                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                                            >
+                                                {suggestion}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                             <button
                                 type="submit"
                                 disabled={isLoading || !inputMessage.trim()}

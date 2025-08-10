@@ -361,10 +361,10 @@ const Login = () => {
                         </form>
                     </div>
                     
-                    {/* Verification prompt */}
-                    {showVerificationPrompt && (
-                        <p className="mt-3 sm:mt-4 text-[#7C7C7C] text-sm sm:text-[14px]">
-                            Account not verified?{' '}
+                    {/* Links arranged in 2x2 grid */}
+                    <div className="mt-5 grid grid-cols-2 gap-3">
+                        {/* Verification prompt */}
+                        {showVerificationPrompt && (
                             <span 
                                 onClick={handleResendVerification}
                                 className={`text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all ${
@@ -373,35 +373,19 @@ const Login = () => {
                             >
                                 {isResendingVerification ? 'Sending verification code...' : 'Verify your email'}
                             </span>
-                        </p>
-                    )}
-                    
-                    <p className="mt-3 sm:mt-4 text-[#7C7C7C] text-sm sm:text-[14px]">
-                        Forgot your password?{' '}
+                        )}
+                        
                         <span onClick={() => smartNavigate('/forgot-password')} className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all">
-                            Reset it here
+                            Reset password
                         </span>
-                    </p>
-                    
-                    <p className="mt-4 sm:mt-6 md:mt-[-15px] text-[#7C7C7C] text-sm sm:text-[14px]">
-                        Don&#39;t have an account?{' '}
-                        <span onClick={() => smartNavigate('/register/getStarted')} className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all">
-                            Register
-                        </span>
-                    </p>
-                    
-                    {/* Test button - remove in production */}
-                    {process.env.NODE_ENV === 'development' && (
-                        <button
-                            onClick={() => {
-                                setShowVerificationPrompt(true);
-                                safeLocalStorage.setItem('unverifiedEmail', form.email || 'test@example.com');
-                            }}
-                            className="mt-2 text-[12px] text-gray-500 underline"
-                        >
-                            Test Verification Prompt
-                        </button>
-                    )}
+                        
+                        <p className="text-[#7C7C7C] text-sm sm:text-[14px]">
+                            Not a user?{' '}
+                            <span onClick={() => smartNavigate('/register/getStarted')} className="text-[#001234] text-sm sm:text-[16px] cursor-pointer hover:underline transition-all">
+                                Register
+                            </span>
+                        </p>
+                    </div>
                 </div>
                 <div className="hidden lg:flex mt-[-90px] w-[51%] justify-between flex-col bg-[#f9f9f9] pt-[136px] min-h-[calc(100vh-90px)]">
                     <p className="ml-[60px] xl:ml-[100px] text-[#000000] leading-tight text-[28px] xl:text-[40px] italic font-['Instrument_Serif']">

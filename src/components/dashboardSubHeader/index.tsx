@@ -1,6 +1,4 @@
 import Image from "next/image";
-
-
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 const DashboardSubHeader =({welcomeText, description, background, image, textColor})=>{

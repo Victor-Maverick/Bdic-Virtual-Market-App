@@ -103,7 +103,7 @@ const MarketPlaceHeader = () => {
         { img: wishListImg, text: "Wishlist", path: "/buyer/wishlist" },
         { img: routing, text: "Order", path: "/buyer/orders" },
         { img: bag, text: "Cart", path: "/cart" },
-        { img: profileImg, text: "AI Assistant", path: "/virtual-market" },
+        // { img: profileImg, text: "AI Assistant", path: "/virtual-market" },
         {
             img: notificationImg,
             text: "Notifications",

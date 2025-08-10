@@ -136,6 +136,25 @@ class ChatService {
     }
   }
 
+  async getUnreadMessagesCount(userEmail: string): Promise<number> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/chat/unread-count/${userEmail}`);
+      return response.data.unreadCount;
+    } catch (error) {
+      console.error('Error getting unread messages count:', error);
+      return 0;
+    }
+  }
+
+  async markAllMessagesAsRead(userEmail: string): Promise<void> {
+    try {
+      await axios.put(`${API_BASE_URL}/chat/mark-all-read/${userEmail}`);
+    } catch (error) {
+      console.error('Error marking all messages as read:', error);
+      throw error;
+    }
+  }
+
   async connect(userEmail: string): Promise<void> {
     // This would be implemented if we need WebSocket connection from frontend
     // For now, we'll use HTTP API calls

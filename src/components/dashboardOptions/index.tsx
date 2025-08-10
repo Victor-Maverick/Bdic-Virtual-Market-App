@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useSmartNavigation } from '@/utils/navigationUtils';
 import axios from 'axios';
+import { useChatUnreadCount } from '@/hooks/useChatUnreadCount';
 import shadow from '../../../public/assets/images/shadow.png';
 import dashboardImage from '../../../public/assets/images/dashboardImage.png';
 import shopImg from '../../../public/assets/images/shop-image.svg';
@@ -34,6 +35,7 @@ interface MenuItem {
     widthClass: string;
     notifications?: string;
     isNotification?: boolean;
+    isChat?: boolean;
 }
 
 interface DashboardOptionsProps {
@@ -49,6 +51,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
     const [notificationCount, setNotificationCount] = useState(0);
     const [isMobile, setIsMobile] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const { unreadCount: chatUnreadCount, markAllAsRead: markAllChatAsRead, refreshCount: refreshChatCount } = useChatUnreadCount();
 
     // Check if mobile view
     useEffect(() => {
@@ -75,6 +78,8 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
             }
         }
     }, [session?.user?.email]);
+
+
 
     const markNotificationsAsRead = useCallback(async () => {
         if (session?.user?.email) {
@@ -125,17 +130,27 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
         setSelectedOption(matchedOption as MenuOption);
     }, [pathname, routeToOption]);
 
-    // Fetch notifications periodically
+    // Fetch notifications periodically and refresh chat count
     useEffect(() => {
         fetchNotifications();
-        const interval = setInterval(fetchNotifications, 5000);
+        const interval = setInterval(() => {
+            fetchNotifications();
+            refreshChatCount();
+        }, 5000);
         return () => clearInterval(interval);
-    }, [fetchNotifications]);
+    }, [fetchNotifications, refreshChatCount]);
 
     const handleOptionClick = useCallback(
-        (option: MenuOption, isNotification?: boolean) => {
+        async (option: MenuOption, isNotification?: boolean, isChat?: boolean) => {
             if (isNotification) {
                 markNotificationsAsRead();
+            }
+            if (isChat) {
+                try {
+                    await markAllChatAsRead();
+                } catch (error) {
+                    console.error('Error marking chat messages as read:', error);
+                }
             }
             setSelectedOption(option);
             smartNavigate(optionToRoute[option]);
@@ -143,7 +158,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                 setMobileMenuOpen(false);
             }
         },
-        [markNotificationsAsRead, optionToRoute, smartNavigate, isMobile]
+        [markNotificationsAsRead, markAllChatAsRead, optionToRoute, smartNavigate, isMobile]
     );
 
     const menuItems: MenuItem[] = useMemo(
@@ -152,7 +167,14 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
             { id: 'shop', icon: shopImg, label: 'Shop', widthClass: 'w-[77px]' },
             { id: 'order', icon: orderImg, label: 'Order', widthClass: 'w-[88px]' },
             { id: 'transactions', icon: transactionImg, label: 'Transactions', widthClass: 'w-[127px]' },
-            { id: 'chats', icon: chatImg, label: 'Chats', widthClass: 'w-[81px]' },
+            { 
+                id: 'chats', 
+                icon: chatImg, 
+                label: 'Chats', 
+                widthClass: 'w-[81px]',
+                notifications: chatUnreadCount > 0 ? (chatUnreadCount > 9 ? '9+' : chatUnreadCount.toString()) : undefined,
+                isChat: true
+            },
             { id: 'reviews', icon: star, label: 'Reviews and Campaigns', widthClass: 'w-[188px]' },
             {
                 id: 'notifications',
@@ -164,7 +186,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
             },
             { id: 'settings', icon: settingImg, label: 'Settings', widthClass: 'w-[97px]' },
         ],
-        [notificationCount]
+        [notificationCount, chatUnreadCount]
     );
 
     const updateIndicatorPosition = useCallback((element: HTMLElement | null) => {
@@ -224,7 +246,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                     flex items-center gap-3 p-3 rounded-lg
                     ${selectedOption === item.id ? 'bg-[#ECFDF6] font-medium' : ''}
                   `}
-                                    onClick={() => handleOptionClick(item.id, item.isNotification)}
+                                    onClick={() => handleOptionClick(item.id, item.isNotification, item.isChat)}
                                 >
                                     <Image
                                         src={item.icon}
@@ -288,7 +310,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
               ${selectedOption === item.id ? 'font-bold bg-gray-50' : ''}
             `}
                         onClick={(e) => {
-                            handleOptionClick(item.id, item.isNotification);
+                            handleOptionClick(item.id, item.isNotification, item.isChat);
                             updateIndicatorPosition(e.currentTarget);
                         }}
                     >

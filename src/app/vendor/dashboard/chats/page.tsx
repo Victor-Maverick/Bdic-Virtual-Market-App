@@ -185,6 +185,11 @@ const VendorChatsPage = () => {
             // Mark messages as read
             await chatService.markMessagesAsRead(conversation.buyerEmail, session.user.email);
             
+            // Update the conversation's unread count locally
+            setConversations(prev => prev.map(conv => 
+                conv.id === conversation.id ? { ...conv, unreadCount: 0 } : conv
+            ));
+            
             // Setup Pusher for real-time messages
             setupPusherForChat(convId);
             
