@@ -8,6 +8,7 @@ import { VideoCallProvider } from '@/providers/VideoCallProvider';
 import { VoiceCallProvider } from '@/providers/VoiceCallProvider';
 import { UserPresenceProvider } from '@/providers/UserPresenceProvider';
 import { EmailVerificationProvider } from '@/providers/EmailVerificationProvider';
+import { CallProvider } from '@/contexts/CallContext';
 import { LogoutProvider } from '@/contexts/LogoutContext';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import DraggableCartIndicator from "@/components/cartIndicator";
@@ -22,22 +23,24 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <LogoutProvider>
                 <NavigationProvider>
                     <EmailVerificationProvider>
-                        <OnboardingProvider>
-                            <CartProvider>
-                                <VideoCallProvider>
-                                    <VoiceCallProvider>
-                                        <UserPresenceProvider>
+                        <CallProvider>
+                            <OnboardingProvider>
+                                <CartProvider>
+                                    <VideoCallProvider>
+                                        <VoiceCallProvider>
+                                            <UserPresenceProvider>
                                             {children}
                                             <DraggableCartIndicator />
                                             <VendorCallNotifications />
                                             <VoiceCallNotifications />
                                             <LogoutSpinner />
                                             <NavigationSpinner />
-                                        </UserPresenceProvider>
-                                    </VoiceCallProvider>
-                                </VideoCallProvider>
-                            </CartProvider>
-                        </OnboardingProvider>
+                                            </UserPresenceProvider>
+                                        </VoiceCallProvider>
+                                    </VideoCallProvider>
+                                </CartProvider>
+                            </OnboardingProvider>
+                        </CallProvider>
                     </EmailVerificationProvider>
                 </NavigationProvider>
             </LogoutProvider>

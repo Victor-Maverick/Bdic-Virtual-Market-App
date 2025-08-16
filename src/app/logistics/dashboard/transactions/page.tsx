@@ -1,6 +1,5 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
-import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
 import Image, { StaticImageData } from "next/image";
 import biArrows from "../../../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../../../public/assets/images/arrow-up.svg";
@@ -110,9 +109,7 @@ const Transactions = () => {
     const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
     return (
-        <>
-            <DashboardHeader />
-            <LogisticsDashboardOptions />
+        <LogisticsCompanyGuard>
 
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col gap-[12px]">
@@ -362,7 +359,7 @@ const Transactions = () => {
                 isOpen={isSuccessModalOpen}
                 onClose={handleCloseSuccessModal}
             />
-        </>
+        </LogisticsCompanyGuard>
     );
 };
 

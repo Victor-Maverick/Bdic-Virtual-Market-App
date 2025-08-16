@@ -1,6 +1,5 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
-import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
 import Image from "next/image";
 import verifiedImg from '@/../public/assets/images/verify.svg'
 import blueGradient from '@/../public/assets/images/blueGreenCircle.png'
@@ -205,9 +204,7 @@ const Settings = () => {
     const secondRowCriteria = passwordCriteria.slice(2);
 
     return (
-        <>
-            <DashboardHeader />
-            <LogisticsDashboardOptions />
+        <LogisticsCompanyGuard>
             <div className="flex flex-col pl-25 mt-[30px] gap-[40px]">
                 <div className="flex flex-col">
                     <p className="text-[18px] font-medium text-[#101828]">Settings</p>
@@ -561,7 +558,7 @@ const Settings = () => {
                 isOpen={isSuccessModalOpen}
                 onClose={handleCloseSuccessModal}
             />
-        </>
+        </LogisticsCompanyGuard>
     )
 }
 

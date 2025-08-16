@@ -6,6 +6,9 @@ import {useRouter} from "next/navigation";
 import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
+import { logisticsService, LogisticsStats } from "@/services/logisticsService";
+import LogisticsPartnerModal from "@/components/LogisticsPartnerModal";
+import Toast from "@/components/Toast";
 
 interface Partner {
     id: number;
@@ -15,16 +18,6 @@ interface Partner {
     partnerId: string;
     status: "Active" | "Inactive" | "Pending";
 }
-
-const partners:Partner[] = [
-    {id:1, name: "Fele express", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Pending"},
-    {id:2, name: "Speedax Logistics", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Active"},
-    {id:3, name: "Arabian Logistics", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Inactive"},
-    {id:4, name: "Fele express", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Pending"},
-    {id:5, name: "Speedax Logistics", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Inactive"},
-    {id:6, name: "Arabian Logistics", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Active"},
-    {id:7, name: "Fele express", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Inactive"},
-]
 
 const PartnerActionsDropdown = ({ children, marketId, status }: { marketId: string; children: React.ReactNode; status: Partner['status'] }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -58,23 +51,44 @@ const PartnerActionsDropdown = ({ children, marketId, status }: { marketId: stri
         setIsRejectModalOpen(false);
     };
 
-    const handleDelete = () => {
-        console.log(`Deleting vendor with ID: ${marketId}`);
+    const handleDelete = async () => {
+        try {
+            await logisticsService.deletePartner(parseInt(marketId));
+            console.log(`Deleted partner with ID: ${marketId}`);
+            // Refresh the page or update the partners list
+            window.location.reload();
+        } catch (error) {
+            console.error('Error deleting partner:', error);
+        }
         setIsDeleteModalOpen(false);
     };
 
-    const handleReject = () => {
-        console.log(`Rejecting vendor with ID: ${marketId}`);
+    const handleReject = async () => {
+        try {
+            await logisticsService.rejectPartner(parseInt(marketId));
+            console.log(`Rejected partner with ID: ${marketId}`);
+            // Refresh the page or update the partners list
+            window.location.reload();
+        } catch (error) {
+            console.error('Error rejecting partner:', error);
+        }
         setIsRejectModalOpen(false);
     };
 
-    const handleApprove = () => {
-        console.log(`Approving vendor with ID: ${marketId}`);
+    const handleApprove = async () => {
+        try {
+            await logisticsService.approvePartner(parseInt(marketId));
+            console.log(`Approved partner with ID: ${marketId}`);
+            // Refresh the page or update the partners list
+            window.location.reload();
+        } catch (error) {
+            console.error('Error approving partner:', error);
+        }
         setIsOpen(false);
     };
 
     const handleViewVendor = () => {
-        router.push("/admin/dashboard/logistics/view-partner");
+        router.push(`/admin/dashboard/logistics/view-partner?id=${marketId}`);
         setIsOpen(false);
     };
 
@@ -106,7 +120,7 @@ const PartnerActionsDropdown = ({ children, marketId, status }: { marketId: stri
 
     const renderPendingOptions = () => (
         <>
-            <li onClick={()=>{router.push("/admin/dashboard/logistics/view-pending")}} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View partner</li>
+            <li onClick={()=>{router.push(`/admin/dashboard/logistics/view-pending?id=${marketId}`)}} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View partner</li>
             <li onClick={handleApprove} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">Approve partner</li>
             <li onClick={handleOpenRejectModal} className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
                 Reject
@@ -197,6 +211,100 @@ const PartnerTableRow = ({ partner, isLast }: { partner: Partner; isLast: boolea
 
 
 const Logistics = ()=>{
+    const [stats, setStats] = useState<LogisticsStats>({
+        totalPartners: 0,
+        activePartners: 0,
+        inactivePartners: 0,
+        pendingPartners: 0,
+        totalVehicles: 0,
+        totalRiders: 0
+    });
+    const [partners, setPartners] = useState<Partner[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [toastType, setToastType] = useState<'success' | 'error'>('success');
+    const [toastMessage, setToastMessage] = useState('');
+    const [toastSubMessage, setToastSubMessage] = useState('');
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const showToastMessage = (type: 'success' | 'error', message: string, subMessage: string = '') => {
+        setToastType(type);
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+    };
+
+    const handleModalSuccess = (message: string) => {
+        showToastMessage('success', 'Success', message);
+        // Refresh the data
+        fetchData();
+    };
+
+    const handleModalError = (message: string) => {
+        showToastMessage('error', 'Error', message);
+    };
+
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const [statsData, companiesData] = await Promise.all([
+                logisticsService.getLogisticsStats(),
+                logisticsService.getAllCompanies().catch(() => []) // Fallback to empty array if endpoint fails
+            ]);
+            
+            setStats(statsData);
+            
+            // Convert companies data to partners format
+            if (companiesData.length > 0) {
+                const partnersData: Partner[] = companiesData.map(company => ({
+                    id: company.id,
+                    name: company.companyName,
+                    routeState: company.companyAddress.split(',')[0] || "N/A",
+                    routeLga: company.companyAddress.split(',')[1] || "N/A",
+                    partnerId: company.id.toString(),
+                    status: company.status || "Pending"
+                }));
+                setPartners(partnersData);
+            } else {
+                // Fallback to mock data if no companies found
+                const mockPartners: Partner[] = [
+                    {id:1, name: "Fele express", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12345", status: "Pending"},
+                    {id:2, name: "Speedax Logistics", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12346", status: "Active"},
+                    {id:3, name: "Arabian Logistics", routeState: "Benue State", routeLga: "Makurdi", partnerId: "12347", status: "Inactive"},
+                    {id:4, name: "Swift Delivery", routeState: "Lagos State", routeLga: "Ikeja", partnerId: "12348", status: "Pending"},
+                    {id:5, name: "Express Logistics", routeState: "Abuja", routeLga: "Garki", partnerId: "12349", status: "Active"},
+                ];
+                setPartners(mockPartners);
+            }
+        } catch (err) {
+            setError('Failed to fetch logistics data');
+            console.error('Error fetching logistics data:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-[#022B23]">Loading logistics data...</div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <div className="text-red-500">{error}</div>
+            </div>
+        );
+    }
+
     return(
         <>
             <div className="text-[#022B23] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
@@ -206,10 +314,10 @@ const Logistics = ()=>{
                 <div className="flex w-full  gap-[20px] h-[110px] justify-between">
                     <div className="flex flex-col  w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px] ">
                         <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                            <p className="text-[#707070] text-[12px]">Total partners</p>
+                            <p className="text-[#707070] text-[12px]">Total partners admins</p>
                         </div>
                         <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">82</p>
+                            <p className="text-[20px] text-[#022B23] font-medium">{stats.totalPartners}</p>
                             <div className="flex items-center">
                                 <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
                                 <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
@@ -221,7 +329,7 @@ const Logistics = ()=>{
                             <p className="text-[#707070] text-[12px]">Active partners</p>
                         </div>
                         <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">82</p>
+                            <p className="text-[20px] text-[#022B23] font-medium">{stats.activePartners}</p>
                             <div className="flex items-center">
                                 <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
                                 <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
@@ -233,7 +341,7 @@ const Logistics = ()=>{
                             <p className="text-[#707070] text-[12px]">Inactive partners</p>
                         </div>
                         <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">82</p>
+                            <p className="text-[20px] text-[#022B23] font-medium">{stats.inactivePartners}</p>
                             <div className="flex items-center">
                                 <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
                                 <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
@@ -245,7 +353,7 @@ const Logistics = ()=>{
                             <p className="text-[#000000] font-medium text-[12px]">Partners pending approval</p>
                         </div>
                         <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">20</p>
+                            <p className="text-[20px] text-[#022B23] font-medium">{stats.pendingPartners}</p>
                             <div className="flex items-center">
                                 <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
                                 <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">+1.41</span> from yesterday</p>
@@ -254,15 +362,27 @@ const Logistics = ()=>{
                     </div>
                 </div>
 
+                <div className="mt-[30px] flex cursor-pointer">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="px-[24px] py-[12px] cursor-pointer bg-[#022B23] text-white rounded-[8px] font-medium hover:bg-[#033228] transition-colors flex items-center gap-[8px]"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Add Logistics Partner Admin
+                    </button>
+                </div>
+
                 <div className="mt-[50px]">
                     <div className="w-full flex flex-col h-auto border-[#EAECF0] border rounded-[24px]">
                         <div className="w-full h-[91px] flex items-center justify-between px-[24px] pt-[20px] pb-[19px]">
                             <div className="flex flex-col gap-[4px]">
                                 <div className="h-[28px] flex items-center">
-                                    <p className="text-[18px] font-medium text-[#101828]">Vendors</p>
+                                    <p className="text-[18px] font-medium text-[#101828]">Logistics company</p>
                                 </div>
                                 <div className="flex h-[20px] items-center">
-                                    <p className="text-[14px] text-[#667085]">View and manage vendors here</p>
+                                    <p className="text-[14px] text-[#667085]">View and manage Logistics company</p>
                                 </div>
                             </div>
                             <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
@@ -273,15 +393,14 @@ const Logistics = ()=>{
 
                         <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
                             <div className="h-full w-[40%] gap-[4px] flex px-[24px] items-center font-medium text-[#667085] text-[12px]">
-                                <p>Vendor</p>
+                                <p>Logistic company</p>
                                 <Image src={arrowDown} alt={'image'} />
                             </div>
                             <div className="h-full w-[27%] gap-[4px] flex px-[24px] items-center font-medium text-[#667085] text-[12px]">
-                                <p>Markets</p>
-                                <Image src={arrowDown} alt={'image'} />
+                                <p>Number of trucks</p>
                             </div>
                             <div className="flex w-[15%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
-                                Vendor ID
+                                Number of bikes
                             </div>
                             <div className="flex w-[15%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
                                 Status
@@ -301,6 +420,22 @@ const Logistics = ()=>{
                     </div>
                 </div>
             </div>
+
+            <LogisticsPartnerModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onSuccess={handleModalSuccess}
+                onError={handleModalError}
+            />
+
+            {showToast && (
+                <Toast
+                    type={toastType}
+                    message={toastMessage}
+                    subMessage={toastSubMessage}
+                    onClose={() => setShowToast(false)}
+                />
+            )}
         </>
     )
 }

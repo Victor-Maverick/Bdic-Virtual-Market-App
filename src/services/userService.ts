@@ -224,7 +224,58 @@ export const userService = {
                 message: 'Failed to reset password'
             };
         }
-    }
+    },
+
+    // Delete user
+    deleteUser: async (userId: number): Promise<{ success: boolean; message: string }> => {
+        try {
+            const response = await axios.delete(`${API_BASE_URL}/users/delete-user?id=${userId}`);
+            return {
+                success: true,
+                message: response.data || 'User deleted successfully'
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data || error.message
+                };
+            }
+            return {
+                success: false,
+                message: 'Failed to delete user'
+            };
+        }
+    },
+
+    // Register logistics partner admin
+    registerLogisticsPartner: async (userData: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        password: string;
+    }): Promise<{ success: boolean; message: string }> => {
+        try {
+            const response = await axios.post(`${API_BASE_URL}/users/register-logistics`, userData);
+            return {
+                success: true,
+                message: response.data || 'Logistics partner registered successfully'
+            };
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                return {
+                    success: false,
+                    message: error.response?.data || error.message
+                };
+            }
+            return {
+                success: false,
+                message: 'Failed to register logistics partner'
+            };
+        }
+    },
+
+
 };
 
 export default userService;

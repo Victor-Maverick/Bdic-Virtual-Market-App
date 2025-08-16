@@ -1,6 +1,5 @@
 'use client'
-import DashboardHeader from "@/components/dashboardHeader";
-import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
 import bike from "../../../../../public/assets/images/bike.svg";
 import truckIcon from "../../../../../public/assets/images/truckIcon.svg";
 import Image from "next/image";
@@ -104,9 +103,7 @@ const Reviews = ()=>{
     const currentItems = products.slice(startIndex, startIndex + itemsPerPage);
 
     return(
-        <>
-            <DashboardHeader />
-            <LogisticsDashboardOptions />
+        <LogisticsCompanyGuard>
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col mt-[10px] rounded-[24px] border-[1px] border-[#EAECF0]">
                     <div className="flex flex-col py-[20px] px-[24px]">
@@ -173,7 +170,7 @@ const Reviews = ()=>{
                     </div>
                 </div>
             </div>
-        </>
+        </LogisticsCompanyGuard>
     )
 }
 

@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { logisticsService, LogisticsCompany } from '@/services/logisticsService';
 import Image from 'next/image';
 
-const ViewPartner = () => {
+const ViewPendingPartner = () => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const partnerId = searchParams.get('id');
@@ -22,19 +22,19 @@ const ViewPartner = () => {
             }
 
             try {
-                // For now, we'll use mock data since the specific partner endpoint doesn't exist
+                // Mock data for pending partner
                 const mockPartner: LogisticsCompany = {
                     id: parseInt(partnerId),
-                    companyName: "Fele Express",
-                    companyAddress: "123 Main Street, Makurdi, Benue State",
-                    ownerEmail: "owner@feleexpress.com",
-                    ownerName: "John Doe",
-                    fleetNumber: 25,
+                    companyName: "Swift Logistics",
+                    companyAddress: "456 Business Avenue, Lagos, Lagos State",
+                    ownerEmail: "admin@swiftlogistics.com",
+                    ownerName: "Jane Smith",
+                    fleetNumber: 15,
                     logoUrl: "/assets/images/company-logo.png",
                     cacImageUrl: "/assets/images/cac-document.pdf",
-                    cacNumber: "RC123456",
-                    tin: "TIN987654321",
-                    status: "Active"
+                    cacNumber: "RC789012",
+                    tin: "TIN123456789",
+                    status: "Pending"
                 };
                 
                 setPartner(mockPartner);
@@ -48,6 +48,32 @@ const ViewPartner = () => {
 
         fetchPartner();
     }, [partnerId]);
+
+    const handleApprove = async () => {
+        if (!partner) return;
+        
+        try {
+            await logisticsService.approvePartner(partner.id);
+            alert('Partner approved successfully');
+            router.push('/admin/dashboard/logistics');
+        } catch (error) {
+            console.error('Error approving partner:', error);
+            alert('Failed to approve partner');
+        }
+    };
+
+    const handleReject = async () => {
+        if (!partner) return;
+        
+        try {
+            await logisticsService.rejectPartner(partner.id);
+            alert('Partner rejected successfully');
+            router.push('/admin/dashboard/logistics');
+        } catch (error) {
+            console.error('Error rejecting partner:', error);
+            alert('Failed to reject partner');
+        }
+    };
 
     if (loading) {
         return (
@@ -94,16 +120,22 @@ const ViewPartner = () => {
                         <p className="text-[#667085]">Partner ID: {partner.id}</p>
                     </div>
                     <div className="ml-auto">
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                            partner.status === 'Active' 
-                                ? 'bg-[#ECFDF3] text-[#027A48]'
-                                : partner.status === 'Pending'
-                                ? 'bg-[#FFFAEB] text-[#FF5050]'
-                                : 'bg-[#FEF3F2] text-[#FF5050]'
-                        }`}>
-                            {partner.status}
+                        <div className="px-3 py-1 rounded-full text-sm font-medium bg-[#FFFAEB] text-[#FF5050]">
+                            Pending Approval
                         </div>
                     </div>
+                </div>
+
+                <div className="bg-[#FFFAEB] border border-[#FFD700] rounded-lg p-4 mb-6">
+                    <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 bg-[#FFB320] rounded-full flex items-center justify-center">
+                            <span className="text-white text-xs">!</span>
+                        </div>
+                        <p className="text-[#B45309] font-medium">This partner is awaiting approval</p>
+                    </div>
+                    <p className="text-[#92400E] text-sm mt-1">
+                        Please review all information and documents before making a decision.
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -159,52 +191,38 @@ const ViewPartner = () => {
                                         rel="noopener noreferrer"
                                         className="block text-[#0066CC] hover:underline"
                                     >
-                                        CAC Document
+                                        📄 CAC Document
                                     </a>
                                 )}
+                                <p className="text-sm text-[#667085]">Click to view and verify documents</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div className="mt-8 flex gap-4">
-                    {partner.status === 'Pending' && (
-                        <>
-                            <button 
-                                className="px-4 py-2 bg-[#027A48] text-white rounded-lg hover:bg-[#025A35]"
-                                onClick={() => {
-                                    // Handle approve
-                                    logisticsService.approvePartner(partner.id);
-                                }}
-                            >
-                                Approve Partner
-                            </button>
-                            <button 
-                                className="px-4 py-2 bg-[#FF5050] text-white rounded-lg hover:bg-[#E04545]"
-                                onClick={() => {
-                                    // Handle reject
-                                    logisticsService.rejectPartner(partner.id);
-                                }}
-                            >
-                                Reject Partner
-                            </button>
-                        </>
-                    )}
-                    {partner.status === 'Active' && (
-                        <button 
-                            className="px-4 py-2 bg-[#667085] text-white rounded-lg hover:bg-[#525866]"
-                            onClick={() => {
-                                // Handle deactivate
-                                console.log('Deactivate partner');
-                            }}
-                        >
-                            Deactivate Partner
-                        </button>
-                    )}
+                    <button 
+                        className="px-6 py-3 bg-[#027A48] text-white rounded-lg hover:bg-[#025A35] font-medium"
+                        onClick={handleApprove}
+                    >
+                        ✓ Approve Partner
+                    </button>
+                    <button 
+                        className="px-6 py-3 bg-[#FF5050] text-white rounded-lg hover:bg-[#E04545] font-medium"
+                        onClick={handleReject}
+                    >
+                        ✗ Reject Partner
+                    </button>
+                    <button 
+                        className="px-6 py-3 bg-[#F9FAFB] text-[#344054] border border-[#D0D5DD] rounded-lg hover:bg-[#F3F4F6] font-medium"
+                        onClick={() => router.back()}
+                    >
+                        Cancel
+                    </button>
                 </div>
             </div>
         </div>
     );
 };
 
-export default ViewPartner;
+export default ViewPendingPartner;

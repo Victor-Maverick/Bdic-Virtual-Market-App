@@ -1,7 +1,6 @@
 'use client'
 import {Suspense, useEffect, useRef} from 'react'
-import DashboardHeader from "@/components/dashboardHeader"
-import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions"
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import orderImg from '../../../../../public/assets/images/archive.svg'
@@ -204,9 +203,7 @@ function DashboardContent() {
     const deliveredCount = products.filter(p => p.status === 'Delivered').length
 
     return (
-        <>
-            <DashboardHeader />
-            <LogisticsDashboardOptions />
+        <LogisticsCompanyGuard>
 
             <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
                 <div className="w-[328px] h-[52px] gap-[24px] flex items-end">
@@ -335,7 +332,7 @@ function DashboardContent() {
                     </div>
                 )}
             </div>
-        </>
+        </LogisticsCompanyGuard>
     )
 }
 

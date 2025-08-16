@@ -1,6 +1,5 @@
 'use client';
-import DashboardHeader from "@/components/dashboardHeader";
-import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
 import flag from '@/../public/assets/images/flag-2.svg'
 import Image, {StaticImageData} from "next/image";
 import arrowUp from '@/../public/assets/images/arrow-up.svg'
@@ -21,6 +20,9 @@ import FleetOnboardSuccessModal from "@/components/fleetOnboardSuccessModal";
 import OnboardRiderModal from "@/components/onboardRiderModal";
 import axios from "axios";
 import { FullVehicle, NewVehicleData } from "@/types/vehicle";
+import { useSession } from "next-auth/react";
+import { logisticsService } from "@/services/logisticsService";
+import { useEffect } from "react";
 
 
 interface Vehicle {
@@ -127,6 +129,7 @@ const mapToBackendType = (frontendType: "Bike" | "Truck"): BackendVehicleType =>
 };
 
 const Fleet = () => {
+    const { data: session } = useSession();
     const [isFleetModalOpen, setIsFleetModalOpen] = useState(false);
     const [isRiderModalOpen, setIsRiderModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
@@ -135,10 +138,32 @@ const Fleet = () => {
     const itemsPerPage = 8;
     const totalPages = Math.ceil(fleetData.length / itemsPerPage);
     const [newVehiclesCount, setNewVehiclesCount] = useState(0);
+    const [companyData, setCompanyData] = useState<{ id: number; fleetNumber: number } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch company data and fleet information
+    useEffect(() => {
+        const fetchCompanyData = async () => {
+            if (session?.user?.email) {
+                try {
+                    const company = await logisticsService.getCompanyByOwnerEmail(session.user.email);
+                    setCompanyData(company);
+                } catch (error) {
+                    console.error('Error fetching company data:', error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchCompanyData();
+    }, [session]);
 
     const handleSubmitVehicles = async (vehicles: NewVehicleData[]) => {
+        if (!session?.user?.email) return;
+        
         try {
-            const ownerEmail = "awua@gmail.com"; // Get from auth context or props
+            const ownerEmail = session.user.email;
 
             // 1. Onboard all vehicles
             const onboardPromises = vehicles.map(vehicle =>
@@ -236,9 +261,7 @@ const Fleet = () => {
     const currentItems = fleetData.slice(startIndex, startIndex + itemsPerPage);
 
     return (
-        <>
-            <DashboardHeader />
-            <LogisticsDashboardOptions />
+        <LogisticsCompanyGuard>
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col gap-[12px]">
                     <p className="text-[#022B23] text-[16px] font-medium">Fleet management</p>
@@ -250,7 +273,7 @@ const Fleet = () => {
                                     <p>Total Fleet</p>
                                 </div>
                                 <div className="flex justify-between">
-                                    <p className="text-[#18181B] text-[16px] font-medium">{fleetData.length}</p>
+                                    <p className="text-[#18181B] text-[16px] font-medium">{loading ? '...' : (companyData?.fleetNumber || fleetData.length)}</p>
                                     <div className="flex gap-[4px] items-center">
                                         <Image src={arrowUp} alt={'image'} />
                                         <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
@@ -392,7 +415,7 @@ const Fleet = () => {
                 isOpen={isSuccessModalOpen}
                 onClose={handleSuccessModalClose}
             />
-        </>
+        </LogisticsCompanyGuard>
     );
 };
 

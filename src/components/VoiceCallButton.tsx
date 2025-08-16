@@ -3,13 +3,12 @@
 import React, { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { Phone } from 'lucide-react';
-import { voiceCallService, VoiceCallRequest, VoiceCallResponse } from '@/services/voiceCallService';
-import VoiceCallModal from './VoiceCallModal';
+import SimpleVoiceCallModal from './SimpleVoiceCallModal';
 
 interface VoiceCallButtonProps {
   vendorEmail: string;
-  shopId: number; // Required - the shop being called
-  shopName: string; // Required - the shop name
+  shopId?: number; // Optional - the shop being called
+  shopName?: string; // Optional - the shop name
   productId?: number; // Optional - for product-specific calls
   productName?: string; // Optional - for product-specific calls
   className?: string;
@@ -26,108 +25,59 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
   variant = 'primary'
 }) => {
   const { data: session } = useSession();
-  const [isCallModalOpen, setIsCallModalOpen] = useState(false);
-  const [currentCall, setCurrentCall] = useState<VoiceCallResponse | null>(null);
-  const [isInitiating, setIsInitiating] = useState(false);
+  const [showCallManager, setShowCallManager] = useState(false);
 
-  const handleInitiateCall = async (): Promise<void> => {
-    if (!session?.user?.email) {
-      alert('Please log in to make a voice call');
-      return;
-    }
+  // Don't show call button if user is calling themselves
+  if (session?.user?.email === vendorEmail) {
+    return null;
+  }
 
-    if (session.user.email === vendorEmail) {
-      alert('You cannot call yourself');
-      return;
-    }
 
-    if (shopId <= 0) {
-      alert('Shop information is required to make a call');
-      return;
-    }
 
-    try {
-      setIsInitiating(true);
-      
-      const request: VoiceCallRequest = {
-        buyerEmail: session.user.email,
-        vendorEmail,
-        productId,
-        shopId,
-        productName,
-        shopName
-      };
-
-      console.log('Buyer initiating voice call:', {
-        from: session.user.email,
-        to: vendorEmail,
-        shopId: shopId
-      });
-
-      const call = await voiceCallService.initiateCall(request);
-      setCurrentCall(call);
-      setIsCallModalOpen(true);
-    } catch (error) {
-      console.error('Error initiating voice call:', error);
-      alert('Failed to initiate voice call. Please try again.');
-    } finally {
-      setIsInitiating(false);
-    }
+  const handleVoiceCall = () => {
+    setShowCallManager(true);
   };
 
-  const handleCloseCall = (): void => {
-    setIsCallModalOpen(false);
-    setCurrentCall(null);
-  };
-
-  const getButtonContent = (): React.ReactNode => {
-    if (variant === 'icon') {
-      return <Phone className="w-5 h-5" />;
-    }
-
-    return (
-      <>
-        <Phone className="w-4 h-4 mr-2" />
-        {isInitiating ? 'Calling...' : 'Voice Call'}
-      </>
-    );
-  };
-
-  const getButtonClasses = (): string => {
-    const baseClasses = 'inline-flex items-center justify-center font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-    
-    switch (variant) {
-      case 'primary':
-        return `${baseClasses} px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg`;
-      case 'secondary':
-        return `${baseClasses} px-4 py-2 bg-white border-2 border-green-600 text-green-600 hover:bg-green-600 hover:text-white rounded-lg`;
-      case 'icon':
-        return `${baseClasses} p-2 bg-green-600 hover:bg-green-700 text-white rounded-full`;
-      default:
-        return baseClasses;
-    }
-  };
+  const buttonClassName = getButtonClassName(variant);
 
   return (
     <>
       <button
-        onClick={handleInitiateCall}
-        disabled={isInitiating}
-        className={`${getButtonClasses()} ${className}`}
-        title="Start voice call with vendor"
+        onClick={handleVoiceCall}
+        className={`${buttonClassName} ${className}`}
+        title="Start Voice Call"
       >
-        {getButtonContent()}
+        <Phone size={variant === 'icon' ? 20 : 16} />
+        {variant !== 'icon' && <span>Voice Call</span>}
       </button>
 
-      <VoiceCallModal
-        isOpen={isCallModalOpen}
-        onClose={handleCloseCall}
-        call={currentCall}
-        userEmail={session?.user?.email || ''}
-        userType="buyer"
-      />
+      {showCallManager && (
+        <SimpleVoiceCallModal
+          isOpen={showCallManager}
+          onClose={() => setShowCallManager(false)}
+          vendorEmail={vendorEmail}
+          buyerEmail={session?.user?.email || ''}
+          productId={productId}
+          productName={productName}
+          shopId={shopId}
+          shopName={shopName}
+        />
+      )}
     </>
   );
+};
+
+const getButtonClassName = (variant: 'primary' | 'secondary' | 'icon'): string => {
+  switch (variant) {
+    case 'primary':
+      return 'bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors';
+    case 'secondary':
+      return 'bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 transition-colors';
+    case 'icon':
+      return 'p-2 hover:bg-gray-100 rounded-lg border border-gray-200 bg-white text-green-600 transition-colors';
+    default:
+      return 'bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors';
+  }
 };
 
 export default VoiceCallButton;

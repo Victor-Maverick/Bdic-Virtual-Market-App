@@ -1,6 +1,8 @@
 'use client'
 
 import { createContext, useContext, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { logisticsService } from '@/services/logisticsService'
 
 interface CompanyInfo {
     companyName: string
@@ -32,12 +34,15 @@ interface OnboardingContextType {
     updateCompanyInfo: (data: Partial<CompanyInfo>) => void
     updateDocuments: (data: Partial<Documents>) => void
     updateBankInfo: (data: Partial<BankInfo>) => void
-    submitOnboarding: (ownerEmail: string) => Promise<void>
+    submitOnboarding: () => Promise<{ success: boolean; message: string }>
+    addOtherDocument: (file: File) => void
+    removeOtherDocument: (index: number) => void
 }
 
 const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined)
 
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
+    const { data: session } = useSession()
     const [onboardingData, setOnboardingData] = useState<OnboardingData>({
         companyInfo: {
             companyName: '',
@@ -78,49 +83,79 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
         }))
     }
 
-    const submitOnboarding = async (ownerEmail: string) => {
+    const addOtherDocument = (file: File) => {
+        setOnboardingData(prev => ({
+            ...prev,
+            documents: {
+                ...prev.documents,
+                otherDocuments: [...(prev.documents.otherDocuments || []), file]
+            }
+        }))
+    }
+
+    const removeOtherDocument = (index: number) => {
+        setOnboardingData(prev => ({
+            ...prev,
+            documents: {
+                ...prev.documents,
+                otherDocuments: prev.documents.otherDocuments?.filter((_, i) => i !== index) || []
+            }
+        }))
+    }
+
+    const submitOnboarding = async () => {
+        if (!session?.user?.email) {
+            throw new Error('User email not found. Please log in again.')
+        }
+
+        // Validate required fields
+        const { companyInfo, documents, bankInfo } = onboardingData
+        
+        if (!companyInfo.companyName) throw new Error('Company name is required')
+        if (!companyInfo.ownerName) throw new Error('Owner name is required')
+        if (!companyInfo.companyAddress) throw new Error('Company address is required')
+        if (!companyInfo.taxIdNumber) throw new Error('Tax ID number is required')
+        if (!documents.cacNumber) throw new Error('CAC number is required')
+        if (!documents.cacImage) throw new Error('CAC document is required')
+        if (!bankInfo.bankName) throw new Error('Bank name is required')
+        if (!bankInfo.accountNumber) throw new Error('Account number is required')
+
         const formData = new FormData()
 
-        // Add all fields from companyInfo
-        formData.append('ownerEmail', ownerEmail)
-        formData.append('companyName', onboardingData.companyInfo.companyName)
-        formData.append('ownerName', onboardingData.companyInfo.ownerName)
-        formData.append('companyAddress', onboardingData.companyInfo.companyAddress)
-        formData.append('tin', onboardingData.companyInfo.taxIdNumber)
-        if (onboardingData.companyInfo.logo) {
-            formData.append('logo', onboardingData.companyInfo.logo)
+        // Add all required fields
+        formData.append('ownerEmail', session.user.email)
+        formData.append('companyName', companyInfo.companyName)
+        formData.append('ownerName', companyInfo.ownerName)
+        formData.append('companyAddress', companyInfo.companyAddress)
+        formData.append('tin', companyInfo.taxIdNumber)
+        formData.append('cacNumber', documents.cacNumber)
+        formData.append('bankName', bankInfo.bankName)
+        formData.append('accountNumber', bankInfo.accountNumber)
+
+        // Add optional logo
+        if (companyInfo.logo) {
+            formData.append('logo', companyInfo.logo)
         }
 
-        // Add documents
-        formData.append('cacNumber', onboardingData.documents.cacNumber)
-        if (onboardingData.documents.cacImage) {
-            formData.append('cacImage', onboardingData.documents.cacImage)
+        // Add required CAC image
+        if (documents.cacImage) {
+            formData.append('cacImage', documents.cacImage)
         }
-        if (onboardingData.documents.otherDocuments) {
-            onboardingData.documents.otherDocuments.forEach((file) => {
-                formData.append(`otherDocuments`, file)
+
+        // Add optional other documents
+        if (documents.otherDocuments && documents.otherDocuments.length > 0) {
+            documents.otherDocuments.forEach((file) => {
+                formData.append('otherDocuments', file)
             })
         }
 
-        // Add bank info
-        formData.append('bankName', onboardingData.bankInfo.bankName)
-        formData.append('accountNumber', onboardingData.bankInfo.accountNumber)
-
-        try {
-            const response = await fetch('https://api.digitalmarke.bdic.ng/api/logistics/onboardCompany', {
-                method: 'POST',
-                body: formData,
-            })
-
-            if (!response.ok) {
-                throw new Error('Failed to submit onboarding data')
-            }
-
-            return await response.json()
-        } catch (error) {
-            console.error('Error submitting onboarding:', error)
-            throw error
+        const result = await logisticsService.onboardCompany(formData)
+        
+        if (!result.success) {
+            throw new Error(result.message)
         }
+
+        return result
     }
 
     return (
@@ -131,6 +166,8 @@ export function OnboardingProvider({ children }: { children: React.ReactNode }) 
                 updateDocuments,
                 updateBankInfo,
                 submitOnboarding,
+                addOtherDocument,
+                removeOtherDocument,
             }}
         >
             {children}

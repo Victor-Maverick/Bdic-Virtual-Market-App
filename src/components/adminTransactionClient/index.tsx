@@ -1,7 +1,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useCallback } from "react";
 import Image from "next/image";
-import searchImg from "../../../public/assets/images/search-normal.png";
+
 import arrowDown from "../../../public/assets/images/arrow-down.svg";
 import { paymentService } from "../../services/paymentService";
 
@@ -66,7 +66,7 @@ const PayoutDetailsModal = ({
     };
 
     const handleMarkAsPaid = async () => {
-        if (!payout || payout.isPaid) return;
+        if (!payout || payout.paid) return;
 
         try {
             setMarkingAsPaid(true);
@@ -117,11 +117,11 @@ const PayoutDetailsModal = ({
                         <p className={`text-[#022B23] text-[16px] font-medium`}>Payout details</p>
                         <p className="text-[#707070] text-[14px] font-medium">View details of payout request</p>
                     </div>
-                    <span className={`w-[77px] text-[12px] font-medium flex justify-center items-center h-[32px] rounded-[8px] border ${payout.isPaid
+                    <span className={`w-[77px] text-[12px] font-medium flex justify-center items-center h-[32px] rounded-[8px] border ${payout.paid
                         ? 'text-[#027A48] bg-[#ECFDF3] border-[#027A48]'
                         : 'text-[#DD6A02] bg-[#fffaeb] border-[#DD6A02]'
                         }`}>
-                        {payout.isPaid ? 'Paid' : 'Pending'}
+                        {payout.paid ? 'paid' : 'Pending'}
                     </span>
                 </div>
 
@@ -141,7 +141,7 @@ const PayoutDetailsModal = ({
                             </div>
                             <div className="flex justify-between items-center">
                                 <p className="text-[14px] text-[#707070] font-medium">Status</p>
-                                <p className="text-[14px] text-[#1E1E1E] font-medium">{payout.isPaid ? 'Paid' : 'Pending'}</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">{payout.paid ? 'Paid' : 'Pending'}</p>
                             </div>
                             <div className="flex justify-between items-center">
                                 <p className="text-[14px] text-[#707070] font-medium">Request Date</p>
@@ -151,7 +151,7 @@ const PayoutDetailsModal = ({
                                 <p className="text-[14px] text-[#707070] font-medium">Request Time</p>
                                 <p className="text-[14px] text-[#1E1E1E] font-medium">{formatTime(payout.requestedAt)}</p>
                             </div>
-                            {payout.isPaid && payout.paidAt && (
+                            {payout.paid && payout.paidAt && (
                                 <>
                                     <div className="flex justify-between items-center">
                                         <p className="text-[14px] text-[#707070] font-medium">Paid Date</p>
@@ -171,13 +171,13 @@ const PayoutDetailsModal = ({
                         <div className="flex flex-col gap-[5px]">
                             <p className="text-[14px] text-[#707070]">PAYOUT ID: #{payout.id}</p>
                             <p className="text-[14px] text-[#707070]">VENDOR: {payout.vendorName || 'Unknown Vendor'}</p>
-                            <p className="text-[14px] text-[#707070]">STATUS: {payout.isPaid ? 'PAID' : 'PENDING'}</p>
+                            <p className="text-[14px] text-[#707070]">STATUS: {payout.paid ? 'PAID' : 'PENDING'}</p>
                         </div>
                     </div>
                 </div>
 
                 <div className="flex justify-end mt-3 h-[46px] gap-[6px]">
-                    {!payout.isPaid && (
+                    {!payout.paid && (
                         <button
                             onClick={handleMarkAsPaid}
                             disabled={markingAsPaid}
@@ -346,7 +346,7 @@ const ActionsDropdown = ({
 }: {
     children: React.ReactNode;
     transactionId: number;
-    type?: 'transaction' | 'payout';
+    type?: 'transaction' | 'payout' | 'refund';
     onPayoutUpdated?: () => void;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -409,6 +409,14 @@ const ActionsDropdown = ({
                     payoutId={transactionId}
                     onClose={handleCloseModal}
                     onPayoutUpdated={onPayoutUpdated}
+                />
+            )}
+
+            {showModal && type === 'refund' && (
+                <RefundDetailsModal
+                    refundId={transactionId}
+                    onClose={handleCloseModal}
+                    onRefundUpdated={onPayoutUpdated}
                 />
             )}
         </div>
@@ -513,10 +521,7 @@ const TransactionsTable = ({
                         <p className="text-[14px] text-[#667085]">View and manage all transactions here</p>
                     </div>
                 </div>
-                <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                    <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
-                    <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none" />
-                </div>
+
             </div>
 
             <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
@@ -697,6 +702,7 @@ const TransactionsTable = ({
 const OverviewTab = () => {
     const [totalAmount, setTotalAmount] = useState<number>(0);
     const [totalPayoutAmount, setTotalPayoutAmount] = useState<number>(0);
+    const [totalRefundAmount, setTotalRefundAmount] = useState<number>(0);
     const [transactions, setTransactions] = useState<PaymentTransactionResponse[]>([]);
     const [allTransactions, setAllTransactions] = useState<PaymentTransactionResponse[]>([]);
     const [loading, setLoading] = useState(true);
@@ -716,6 +722,17 @@ const OverviewTab = () => {
                 setTotalAmount(amountData);
                 setTotalPayoutAmount(payoutAmountData);
                 setAllTransactions(transactionsData);
+
+                // Fetch total refund amount
+                try {
+                    const refundResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/refund/total-processed-amount`);
+                    if (refundResponse.ok) {
+                        const refundAmount = await refundResponse.json();
+                        setTotalRefundAmount(refundAmount);
+                    }
+                } catch (refundError) {
+                    console.error('Error fetching refund amount:', refundError);
+                }
 
                 // Set initial page transactions
                 const startIndex = (currentPage - 1) * itemsPerPage;
@@ -774,7 +791,11 @@ const OverviewTab = () => {
                         <p className="text-white text-[12px]">Total refunds processed</p>
                     </div>
                     <div className="h-[52px] w-[239px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">N0.00</p>
+                        {loading ? (
+                            <StatsCardSkeleton width="w-32" />
+                        ) : (
+                            <p className="text-[20px] text-[#022B23] font-medium">N{totalRefundAmount.toLocaleString()}.00</p>
+                        )}
                     </div>
                 </div>
                 <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#C6EB5F] border-[0.5px]">
@@ -854,11 +875,11 @@ const PayoutTableRow = ({
             </div>
 
             <div className="flex items-center w-[13%] px-[24px]">
-                <div className={`w-[70px] h-[22px] rounded-[8px] flex items-center justify-center ${payout.isPaid
+                <div className={`w-[70px] h-[22px] rounded-[8px] flex items-center justify-center ${payout.paid
                     ? 'bg-[#ECFDF3] text-[#027A48]'
                     : 'bg-[#fffaeb] text-[#DD6A02]'
                     }`}>
-                    <p className="text-[12px] font-medium">{payout.isPaid ? 'Paid' : 'Pending'}</p>
+                    <p className="text-[12px] font-medium">{payout.paid ? 'Paid' : 'Pending'}</p>
                 </div>
             </div>
 
@@ -885,9 +906,7 @@ const PayoutsTable = ({
     currentPage,
     totalPayouts,
     onPageChange,
-    onPayoutUpdated,
-    searchTerm,
-    onSearchChange
+    onPayoutUpdated
 }: {
     payouts: PayoutResponse[];
     loading: boolean;
@@ -895,8 +914,6 @@ const PayoutsTable = ({
     totalPayouts: number;
     onPageChange: (page: number) => void;
     onPayoutUpdated?: () => void;
-    searchTerm?: string;
-    onSearchChange?: (term: string) => void;
 }) => {
     const itemsPerPage = 8;
     const totalPages = Math.ceil(totalPayouts / itemsPerPage);
@@ -912,15 +929,7 @@ const PayoutsTable = ({
                         <p className="text-[14px] text-[#667085]">View and manage all payouts here</p>
                     </div>
                 </div>
-                <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                    <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
-                    <input
-                        placeholder="Search by vendor name or ID"
-                        value={searchTerm || ''}
-                        onChange={(e) => onSearchChange?.(e.target.value)}
-                        className="w-[175px] text-[#707070] text-[14px] focus:outline-none"
-                    />
-                </div>
+
             </div>
 
             <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
@@ -1123,7 +1132,6 @@ const PayoutsTab = () => {
     const [allPayouts, setAllPayouts] = useState<PayoutResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
-    const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 8;
 
     const fetchPayouts = useCallback(async () => {
@@ -1148,17 +1156,11 @@ const PayoutsTab = () => {
     }, [fetchPayouts]);
 
     useEffect(() => {
-        // Filter payouts based on search term
-        const filteredPayouts = allPayouts.filter(payout =>
-            payout.vendorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            payout.id.toString().includes(searchTerm)
-        );
-
-        // Update displayed payouts when page changes or search term changes
+        // Update displayed payouts when page changes
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        setPayouts(filteredPayouts.slice(startIndex, endIndex));
-    }, [currentPage, allPayouts, searchTerm]);
+        setPayouts(allPayouts.slice(startIndex, endIndex));
+    }, [currentPage, allPayouts]);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -1168,16 +1170,11 @@ const PayoutsTab = () => {
         fetchPayouts();
     };
 
-    const handleSearchChange = (term: string) => {
-        setSearchTerm(term);
-        setCurrentPage(1); // Reset to first page when searching
-    };
-
     // Calculate statistics
     const totalPayoutAmount = allPayouts.reduce((sum, payout) => sum + payout.paidAmount, 0);
-    const pendingPayouts = allPayouts.filter(payout => !payout.isPaid);
+    const pendingPayouts = allPayouts.filter(payout => !payout.paid);
     const pendingAmount = pendingPayouts.reduce((sum, payout) => sum + payout.paidAmount, 0);
-    const paidPayouts = allPayouts.filter(payout => payout.isPaid);
+    const paidPayouts = allPayouts.filter(payout => payout.paid);
     const paidAmount = paidPayouts.reduce((sum, payout) => sum + payout.paidAmount, 0);
 
     return (
@@ -1225,65 +1222,650 @@ const PayoutsTab = () => {
                     payouts={payouts}
                     loading={loading}
                     currentPage={currentPage}
-                    totalPayouts={allPayouts.filter(payout =>
-                        payout.vendorName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        payout.id.toString().includes(searchTerm)
-                    ).length}
+                    totalPayouts={allPayouts.length}
                     onPageChange={handlePageChange}
                     onPayoutUpdated={handlePayoutUpdated}
-                    searchTerm={searchTerm}
-                    onSearchChange={handleSearchChange}
                 />
             </div>
         </>
     );
 };
 
-const RefundsTab = () => {
-    const [transactions, setTransactions] = useState<PaymentTransactionResponse[]>([]);
-    const [allTransactions, setAllTransactions] = useState<PaymentTransactionResponse[]>([]);
+
+
+// Refund interfaces
+interface RefundResponse {
+    id: number;
+    orderNumber: string;
+    buyerEmail: string;
+    buyerName: string;
+    vendorEmail: string;
+    vendorName: string;
+    shopName: string;
+    refundAmount: number;
+    reason: string;
+    description: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PROCESSED' | 'COMPLETED';
+    processedBy?: string;
+    refundReference?: string;
+    adminNotes?: string;
+    createdAt: string;
+    processedAt?: string;
+}
+
+const RefundDetailsModal = ({
+    refundId,
+    onClose,
+    onRefundUpdated,
+}: {
+    refundId: number;
+    onClose: () => void;
+    onRefundUpdated?: () => void;
+}) => {
+    const [refund, setRefund] = useState<RefundResponse | null>(null);
     const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
+    const [error, setError] = useState<string | null>(null);
+    const [processing, setProcessing] = useState(false);
 
     useEffect(() => {
-        const fetchTransactions = async () => {
+        const fetchRefundDetails = async () => {
             try {
                 setLoading(true);
-                const data = await paymentService.getAllTransactions();
-                const refunds = data.filter(transaction =>
-                    transaction.paymentType &&
-                    transaction.paymentType !== null &&
-                    transaction.paymentType !== undefined &&
-                    transaction.paymentType.toLowerCase().includes("refund")
-                );
-
-                setAllTransactions(refunds);
-
-                // Set initial page transactions
-                const startIndex = (currentPage - 1) * itemsPerPage;
-                const endIndex = startIndex + itemsPerPage;
-                setTransactions(refunds.slice(startIndex, endIndex));
-            } catch (error) {
-                console.error('Error fetching refunds:', error);
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/refund/getById?id=${refundId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch refund details');
+                }
+                const data = await response.json();
+                setRefund(data);
+            } catch (err) {
+                console.error('Error fetching refund details:', err);
+                setError(err instanceof Error ? err.message : 'Failed to fetch refund details');
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchTransactions();
+        fetchRefundDetails();
+    }, [refundId]);
+
+    const formatDate = (dateString: string | null) => {
+        if (!dateString) return 'Not available';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const formatTime = (dateString: string | null) => {
+        if (!dateString) return 'Not available';
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-US', {
+            hour12: true,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
+    const handleProcessRefund = async () => {
+        if (!refund || refund.status !== 'PENDING') return;
+
+        try {
+            setProcessing(true);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/refund/process?id=${refund.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to process refund');
+            }
+
+            const result = await response.text();
+            toast.success(result);
+            
+            // Refresh refund details
+            const updatedResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/refund/getById?id=${refund.id}`);
+            if (updatedResponse.ok) {
+                const updatedRefund = await updatedResponse.json();
+                setRefund(updatedRefund);
+            }
+            
+            if (onRefundUpdated) {
+                onRefundUpdated();
+            }
+        } catch (err) {
+            console.error('Error processing refund:', err);
+            const errorMessage = err instanceof Error ? err.message : 'Failed to process refund';
+            setError(errorMessage);
+            toast.error(errorMessage);
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
+                <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative flex items-center justify-center">
+                    <p>Loading refund details...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error || !refund) {
+        return (
+            <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
+                <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative flex items-center justify-center">
+                    <div className="text-center">
+                        <p className="text-red-500 mb-4">{error || 'Refund not found'}</p>
+                        <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Close</button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'PENDING':
+                return 'text-[#DD6A02] bg-[#fffaeb] border-[#DD6A02]';
+            case 'APPROVED':
+                return 'text-[#027A48] bg-[#ECFDF3] border-[#027A48]';
+            case 'REJECTED':
+                return 'text-[#FF5050] bg-[#FEF3F2] border-[#FF5050]';
+            case 'PROCESSED':
+                return 'text-[#0277BD] bg-[#E1F5FE] border-[#0277BD]';
+            case 'COMPLETED':
+                return 'text-[#027A48] bg-[#ECFDF3] border-[#027A48]';
+            default:
+                return 'text-[#DD6A02] bg-[#fffaeb] border-[#DD6A02]';
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
+            <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative">
+                <div className="w-full flex justify-between h-[60px] border-b-[0.5px] border-[#D9D9D9]">
+                    <div className={`flex flex-col`}>
+                        <p className={`text-[#022B23] text-[16px] font-medium`}>Refund details</p>
+                        <p className="text-[#707070] text-[14px] font-medium">View details of refund request</p>
+                    </div>
+                    <span className={`w-[77px] text-[12px] font-medium flex justify-center items-center h-[32px] rounded-[8px] border ${getStatusColor(refund.status)}`}>
+                        {refund.status}
+                    </span>
+                </div>
+
+                <div className="w-full flex flex-col h-[430px] pt-[20px] pb-[2px] gap-[30px]">
+                    <div className="flex flex-col h-[79px] gap-[6px]">
+                        <p className="text-[16px] font-semibold text-[#022B23]">ID: <span>#{refund.id}</span></p>
+                        <p className="text-[14px] font-medium text-[#707070]">Order: <span className="text-[#000000] underline">{refund.orderNumber}</span></p>
+                        <p className="text-[14px] font-medium text-[#707070]">Buyer: <span className="text-[#000000] underline">{refund.buyerName}</span></p>
+                    </div>
+
+                    <div className="flex flex-col w-full pr-[30px]">
+                        <p className="text-[14px] text-[#022B23] font-medium">Refund details</p>
+                        <div className="flex flex-col w-full">
+                            <div className="flex justify-between items-center">
+                                <p className="text-[14px] text-[#707070] font-medium">Amount</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">₦{refund.refundAmount.toLocaleString()}</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <p className="text-[14px] text-[#707070] font-medium">Reason</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">{refund.reason}</p>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <p className="text-[14px] text-[#707070] font-medium">Request Date</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">{formatDate(refund.createdAt)}</p>
+                            </div>
+                            <div className="flex text-start justify-between items-center">
+                                <p className="text-[14px] text-[#707070] font-medium">Request Time</p>
+                                <p className="text-[14px] text-[#1E1E1E] font-medium">{formatTime(refund.createdAt)}</p>
+                            </div>
+                            {refund.processedAt && (
+                                <>
+                                    <div className="flex justify-between items-center">
+                                        <p className="text-[14px] text-[#707070] font-medium">Processed Date</p>
+                                        <p className="text-[14px] text-[#1E1E1E] font-medium">{formatDate(refund.processedAt)}</p>
+                                    </div>
+                                    <div className="flex text-start justify-between items-center">
+                                        <p className="text-[14px] text-[#707070] font-medium">Processed Time</p>
+                                        <p className="text-[14px] text-[#1E1E1E] font-medium">{formatTime(refund.processedAt)}</p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="w-[97%] px-[22px] flex flex-col gap-[9px] py-[14px] h-[130px] rounded-[24px] border-[1px] border-[#ededed]">
+                        <p className="text-[16px] text-[#000000] font-medium">Refund Information</p>
+                        <div className="flex flex-col gap-[5px]">
+                            <p className="text-[14px] text-[#707070]">REFUND ID: #{refund.id}</p>
+                            <p className="text-[14px] text-[#707070]">SHOP: {refund.shopName}</p>
+                            <p className="text-[14px] text-[#707070]">STATUS: {refund.status}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end mt-3 h-[46px] gap-[6px]">
+                    {refund.status === 'PENDING' && (
+                        <button
+                            onClick={handleProcessRefund}
+                            disabled={processing}
+                            className={`justify-center text-[16px] font-medium flex items-center w-[120px] border rounded-[12px] ${processing
+                                ? 'text-gray-400 border-gray-300 cursor-not-allowed'
+                                : 'text-[#027A48] border-[#027A48] hover:bg-[#027A48] hover:text-white'
+                                }`}
+                        >
+                            {processing ? 'Processing...' : 'Process Refund'}
+                        </button>
+                    )}
+                    <button onClick={onClose} className="justify-center text-[16px] font-medium flex items-center text-[#022B23] w-[87px] border border-[#022B23] rounded-[12px]">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const RefundTableRow = ({
+    refund,
+    isLast,
+    onRefundUpdated
+}: {
+    refund: RefundResponse;
+    isLast: boolean;
+    onRefundUpdated?: () => void;
+}) => {
+    const formatDate = (dateString: string | null) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        });
+    };
+
+    const formatTime = (dateString: string | null) => {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleTimeString('en-US', {
+            hour12: true,
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'PENDING':
+                return 'bg-[#fffaeb] text-[#DD6A02]';
+            case 'APPROVED':
+                return 'bg-[#ECFDF3] text-[#027A48]';
+            case 'REJECTED':
+                return 'bg-[#FEF3F2] text-[#FF5050]';
+            case 'PROCESSED':
+                return 'bg-[#E1F5FE] text-[#0277BD]';
+            case 'COMPLETED':
+                return 'bg-[#ECFDF3] text-[#027A48]';
+            default:
+                return 'bg-[#fffaeb] text-[#DD6A02]';
+        }
+    };
+
+    return (
+        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+            <div className="flex items-center w-[12%] pl-[24px]">
+                <p className="text-[#101828] text-[14px] font-medium">#{refund.id}</p>
+            </div>
+
+            <div className="flex items-center w-[18%] px-[24px]">
+                <p className="text-[#101828] text-[14px] font-medium">{refund.orderNumber}</p>
+            </div>
+
+            <div className="flex items-center w-[20%] px-[24px]">
+                <p className="text-[#101828] text-[14px] font-medium">{refund.buyerName}</p>
+            </div>
+
+            <div className="flex items-center w-[15%] px-[20px]">
+                <p className="text-[#101828] text-[14px]">₦{refund.refundAmount.toLocaleString()}</p>
+            </div>
+
+            <div className="flex flex-col justify-center w-[15%] px-[20px]">
+                <p className="text-[#101828] text-[14px] font-medium">{formatDate(refund.createdAt)}</p>
+                <p className="text-[#667085] text-[14px]">{formatTime(refund.createdAt)}</p>
+            </div>
+
+            <div className="flex items-center w-[13%] px-[24px]">
+                <div className={`w-[80px] h-[22px] rounded-[8px] flex items-center justify-center ${getStatusColor(refund.status)}`}>
+                    <p className="text-[12px] font-medium">{refund.status}</p>
+                </div>
+            </div>
+
+            <div className="flex items-center justify-center w-[3%]">
+                <ActionsDropdown
+                    transactionId={refund.id}
+                    type="refund"
+                    onPayoutUpdated={onRefundUpdated}
+                >
+                    <div className="flex flex-col gap-1">
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                    </div>
+                </ActionsDropdown>
+            </div>
+        </div>
+    );
+};
+
+const RefundsTable = ({
+    refunds,
+    loading,
+    currentPage,
+    totalRefunds,
+    onPageChange,
+    onRefundUpdated
+}: {
+    refunds: RefundResponse[];
+    loading: boolean;
+    currentPage: number;
+    totalRefunds: number;
+    onPageChange: (page: number) => void;
+    onRefundUpdated?: () => void;
+}) => {
+    const itemsPerPage = 8;
+    const totalPages = Math.ceil(totalRefunds / itemsPerPage);
+
+    return (
+        <div className="w-full flex flex-col h-auto border-[#EAECF0] border rounded-[24px]">
+            <div className="w-full h-[91px] flex items-center justify-between px-[24px] pt-[20px] pb-[19px]">
+                <div className="flex flex-col gap-[4px]">
+                    <div className="h-[28px] flex items-center">
+                        <p className="text-[18px] font-medium text-[#101828]">Refunds ({totalRefunds})</p>
+                    </div>
+                    <div className="flex h-[20px] items-center">
+                        <p className="text-[14px] text-[#667085]">View and manage all refund requests here</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
+                <div className="h-full w-[12%] flex justify-center items-center font-medium text-[#667085] text-[12px]">
+                    <p>Refund ID</p>
+                </div>
+                <div className="h-full w-[18%] gap-[4px] flex px-[24px] items-center font-medium text-[#667085] text-[12px]">
+                    <p>Order Number</p>
+                    <Image src={arrowDown} alt={'image'} />
+                </div>
+                <div className="h-full w-[20%] gap-[4px] flex px-[24px] items-center font-medium text-[#667085] text-[12px]">
+                    <p>Buyer</p>
+                    <Image src={arrowDown} alt={'image'} />
+                </div>
+                <div className="h-full w-[15%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
+                    <p>Amount (NGN)</p>
+                    <Image src={arrowDown} alt={'image'} />
+                </div>
+                <div className="h-full w-[15%] gap-[4px] flex px-[20px] items-center font-medium text-[#667085] text-[12px]">
+                    <p>Request Date</p>
+                    <Image src={arrowDown} alt={'image'} />
+                </div>
+                <div className="flex w-[13%] items-center px-[24px] font-medium text-[#667085] text-[12px]">
+                    Status
+                </div>
+                <div className="w-[3%]"></div>
+            </div>
+
+            <div className="flex flex-col">
+                {loading ? (
+                    // Loading skeleton
+                    [1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                        <div key={i} className={`flex h-[72px] ${i !== 8 ? 'border-b border-[#EAECF0]' : ''} animate-pulse`}>
+                            <div className="flex items-center w-[12%] pl-[24px]">
+                                <div className="bg-gray-200 h-4 w-20 rounded"></div>
+                            </div>
+                            <div className="flex items-center w-[18%] px-[24px]">
+                                <div className="bg-gray-200 h-4 w-24 rounded"></div>
+                            </div>
+                            <div className="flex items-center w-[20%] px-[24px]">
+                                <div className="bg-gray-200 h-4 w-24 rounded"></div>
+                            </div>
+                            <div className="flex items-center w-[15%] px-[20px]">
+                                <div className="bg-gray-200 h-4 w-16 rounded"></div>
+                            </div>
+                            <div className="flex flex-col justify-center w-[15%] px-[20px] gap-1">
+                                <div className="bg-gray-200 h-4 w-20 rounded"></div>
+                                <div className="bg-gray-200 h-3 w-16 rounded"></div>
+                            </div>
+                            <div className="flex items-center w-[13%] px-[24px]">
+                                <div className="bg-gray-200 h-5 w-16 rounded"></div>
+                            </div>
+                            <div className="flex items-center justify-center w-[3%]">
+                                <div className="bg-gray-200 h-4 w-4 rounded"></div>
+                            </div>
+                        </div>
+                    ))
+                ) : refunds.length > 0 ? (
+                    refunds.map((refund, index) => (
+                        <RefundTableRow
+                            key={refund.id}
+                            refund={refund}
+                            isLast={index === refunds.length - 1}
+                            onRefundUpdated={onRefundUpdated}
+                        />
+                    ))
+                ) : (
+                    <div className="p-8 text-center text-gray-500">
+                        <p>No refunds found</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Pagination */}
+            {!loading && totalPages > 1 && (
+                <div className="flex items-center justify-between px-[24px] py-[16px] border-t border-[#EAECF0]">
+                    <div className="text-[14px] text-[#667085]">
+                        Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalRefunds)} of {totalRefunds} refunds
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => onPageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded border ${currentPage === 1
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                        >
+                            Previous
+                        </button>
+
+                        {(() => {
+                            const pages = [];
+                            const maxVisiblePages = 5;
+
+                            if (totalPages <= maxVisiblePages) {
+                                for (let i = 1; i <= totalPages; i++) {
+                                    pages.push(
+                                        <button
+                                            key={i}
+                                            onClick={() => onPageChange(i)}
+                                            className={`px-3 py-1 rounded border ${currentPage === i
+                                                ? 'bg-[#022B23] text-white'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {i}
+                                        </button>
+                                    );
+                                }
+                            } else {
+                                pages.push(
+                                    <button
+                                        key={1}
+                                        onClick={() => onPageChange(1)}
+                                        className={`px-3 py-1 rounded border ${currentPage === 1
+                                            ? 'bg-[#022B23] text-white'
+                                            : 'bg-white text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                    >
+                                        1
+                                    </button>
+                                );
+
+                                if (currentPage > 3) {
+                                    pages.push(
+                                        <span key="ellipsis-start" className="px-2 py-1 text-gray-500">
+                                            ...
+                                        </span>
+                                    );
+                                }
+
+                                const startPage = Math.max(2, currentPage - 1);
+                                const endPage = Math.min(totalPages - 1, currentPage + 1);
+
+                                for (let i = startPage; i <= endPage; i++) {
+                                    if (i !== 1 && i !== totalPages) {
+                                        pages.push(
+                                            <button
+                                                key={i}
+                                                onClick={() => onPageChange(i)}
+                                                className={`px-3 py-1 rounded border ${currentPage === i
+                                                    ? 'bg-[#022B23] text-white'
+                                                    : 'bg-white text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                            >
+                                                {i}
+                                            </button>
+                                        );
+                                    }
+                                }
+
+                                if (currentPage < totalPages - 2) {
+                                    pages.push(
+                                        <span key="ellipsis-end" className="px-2 py-1 text-gray-500">
+                                            ...
+                                        </span>
+                                    );
+                                }
+
+                                if (totalPages > 1) {
+                                    pages.push(
+                                        <button
+                                            key={totalPages}
+                                            onClick={() => onPageChange(totalPages)}
+                                            className={`px-3 py-1 rounded border ${currentPage === totalPages
+                                                ? 'bg-[#022B23] text-white'
+                                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                                }`}
+                                        >
+                                            {totalPages}
+                                        </button>
+                                    );
+                                }
+                            }
+
+                            return pages;
+                        })()}
+
+                        <button
+                            onClick={() => onPageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded border ${currentPage === totalPages
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                : 'bg-white text-gray-700 hover:bg-gray-50'
+                                }`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const RefundsTab = () => {
+    const [refunds, setRefunds] = useState<RefundResponse[]>([]);
+    const [allRefunds, setAllRefunds] = useState<RefundResponse[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalProcessedAmount, setTotalProcessedAmount] = useState<number>(0);
+    const itemsPerPage = 8;
+
+    const fetchRefunds = useCallback(async () => {
+        try {
+            setLoading(true);
+            // Fetch all refunds using the backend endpoint
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/refund/all`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch refunds');
+            }
+            const refundData = await response.json();
+            setAllRefunds(refundData);
+
+            // Set initial page refunds
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            setRefunds(refundData.slice(startIndex, endIndex));
+        } catch (error) {
+            console.error('Error fetching refunds:', error);
+            toast.error('Failed to fetch refunds');
+        } finally {
+            setLoading(false);
+        }
     }, [currentPage, itemsPerPage]);
 
+    const fetchTotalProcessedAmount = useCallback(async () => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/refund/total-processed-amount`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch total processed amount');
+            }
+            const amount = await response.json();
+            setTotalProcessedAmount(amount);
+        } catch (error) {
+            console.error('Error fetching total processed amount:', error);
+        }
+    }, []);
+
     useEffect(() => {
-        // Update displayed transactions when page changes
+        fetchRefunds();
+        fetchTotalProcessedAmount();
+    }, [fetchRefunds, fetchTotalProcessedAmount]);
+
+    useEffect(() => {
+        // Update displayed refunds when page changes
         const startIndex = (currentPage - 1) * itemsPerPage;
         const endIndex = startIndex + itemsPerPage;
-        setTransactions(allTransactions.slice(startIndex, endIndex));
-    }, [currentPage, allTransactions, itemsPerPage]);
+        setRefunds(allRefunds.slice(startIndex, endIndex));
+    }, [currentPage, allRefunds]);
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
     };
+
+    const handleRefundUpdated = () => {
+        fetchRefunds();
+        fetchTotalProcessedAmount();
+    };
+
+    // Calculate statistics
+    const totalRefundAmount = allRefunds.reduce((sum, refund) => sum + refund.refundAmount, 0);
+    const pendingRefunds = allRefunds.filter(refund => refund.status === 'PENDING');
+    const pendingAmount = pendingRefunds.reduce((sum, refund) => sum + refund.refundAmount, 0);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const approvedRefunds = allRefunds.filter(refund => refund.status === 'APPROVED');
+    const completedRefunds = allRefunds.filter(refund => refund.status === 'COMPLETED');
+    const completedAmount = completedRefunds.reduce((sum, refund) => sum + refund.refundAmount, 0);
 
     return (
         <>
@@ -1293,7 +1875,11 @@ const RefundsTab = () => {
                         <p className="text-[#ffffff] text-[12px]">Total refunds</p>
                     </div>
                     <div className="h-[52px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">N0.00</p>
+                        {loading ? (
+                            <div className="animate-pulse bg-gray-200 h-6 w-32 rounded"></div>
+                        ) : (
+                            <p className="text-[20px] text-[#022B23] font-medium">₦{totalRefundAmount.toLocaleString()}</p>
+                        )}
                     </div>
                 </div>
                 <div className="flex flex-col w-[270px] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
@@ -1301,30 +1887,49 @@ const RefundsTab = () => {
                         <p className="text-white text-[12px]">Pending</p>
                     </div>
                     <div className="h-[52px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">N0.00</p>
+                        {loading ? (
+                            <div className="animate-pulse bg-gray-200 h-6 w-32 rounded"></div>
+                        ) : (
+                            <p className="text-[20px] text-[#022B23] font-medium">₦{pendingAmount.toLocaleString()}</p>
+                        )}
                     </div>
                 </div>
-                <div className="flex flex-col w-[270px] rounded-[14px] h-full border-[#FF2121] border-[0.5px]">
-                    <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-[#FFE8E8]">
-                        <p className="text-[#FF2121] text-[12px]">Declined</p>
+                <div className="flex flex-col w-[270px] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                    <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-[#000000]">
+                        <p className="text-white text-[12px]">Total Processed</p>
                     </div>
-                    <div className="h-[52px] w-[239px] flex justify-center flex-col p-[14px]">
-                        <p className="text-[20px] text-[#022B23] font-medium">N0.00</p>
+                    <div className="h-[52px] flex justify-center flex-col p-[14px]">
+                        {loading ? (
+                            <div className="animate-pulse bg-gray-200 h-6 w-32 rounded"></div>
+                        ) : (
+                            <p className="text-[20px] text-[#022B23] font-medium">₦{totalProcessedAmount.toLocaleString()}</p>
+                        )}
                     </div>
                 </div>
-
+                <div className="flex flex-col w-[270px] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                    <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-[#000000]">
+                        <p className="text-white text-[12px]">Completed</p>
+                    </div>
+                    <div className="h-[52px] flex justify-center flex-col p-[14px]">
+                        {loading ? (
+                            <div className="animate-pulse bg-gray-200 h-6 w-32 rounded"></div>
+                        ) : (
+                            <p className="text-[20px] text-[#022B23] font-medium">₦{completedAmount.toLocaleString()}</p>
+                        )}
+                    </div>
+                </div>
             </div>
             <div className="mt-[50px]">
-                <TransactionsTable
-                    transactions={transactions}
+                <RefundsTable
+                    refunds={refunds}
                     loading={loading}
                     currentPage={currentPage}
-                    totalTransactions={allTransactions.length}
+                    totalRefunds={allRefunds.length}
                     onPageChange={handlePageChange}
+                    onRefundUpdated={handleRefundUpdated}
                 />
             </div>
         </>
-
     );
 };
 

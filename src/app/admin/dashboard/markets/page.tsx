@@ -2,7 +2,7 @@
 import Image from "next/image";
 import arrowUp from "../../../../../public/assets/images/green arrow up.png";
 import redArrow from "../../../../../public/assets/images/red arrow.svg";
-import searchImg from "../../../../../public/assets/images/search-normal.png";
+// import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from '@/../public/assets/images/arrow-down.svg'
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
@@ -218,7 +218,6 @@ const Markets = () => {
                 </div>
                 <div className="flex flex-col justify-center w-[22%] pl-[24px] ">
                     <p className="text-[#101828] text-[14px]">{market.numberOfShops}</p>
-                    <p className="underline text-[12px] font-medium text-[#667085]">View shop</p>
                 </div>
                 <div className="flex items-center justify-center w-[3%]">
                     <ProductActionsDropdown
@@ -382,10 +381,10 @@ const Markets = () => {
                                 <p className="text-[14px] text-[#667085]">View and manage markets here</p>
                             </div>
                         </div>
-                        <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                            <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-                            <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none"/>
-                        </div>
+                        {/*<div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">*/}
+                        {/*    <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>*/}
+                        {/*    <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none"/>*/}
+                        {/*</div>*/}
                     </div>
 
                     <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">

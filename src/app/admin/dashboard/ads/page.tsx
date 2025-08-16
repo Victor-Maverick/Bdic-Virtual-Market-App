@@ -345,6 +345,9 @@ const Ads = () => {
     const [tiers, setTiers] = useState<Tier[]>([]);
     const [transactions, setTransactions] = useState<TransactionDetails[]>([]);
     const [totalPromotionAmount, setTotalPromotionAmount] = useState<number>(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const transactionsPerPage = 5;
     const [loading, setLoading] = useState({
         tiers: true,
         transactions: true,
@@ -415,6 +418,30 @@ const Ads = () => {
             currency: 'NGN',
             minimumFractionDigits: 2
         }).format(amount);
+    };
+
+    // Filter transactions based on search term
+    const filteredTransactions = transactions.filter(transaction =>
+        transaction.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transaction.payerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        transaction.credoReference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        cleanPaymentType(transaction.paymentType).toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredTransactions.length / transactionsPerPage);
+    const startIndex = (currentPage - 1) * transactionsPerPage;
+    const endIndex = startIndex + transactionsPerPage;
+    const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+    // Reset to first page when search term changes
+    const handleSearchChange = (value: string) => {
+        setSearchTerm(value);
+        setCurrentPage(1);
+    };
+
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
     };
 
     return (
@@ -524,7 +551,7 @@ const Ads = () => {
                     <div className="w-full h-auto sm:h-[91px] flex flex-col sm:flex-row sm:items-center justify-between px-[15px] sm:px-[24px] pt-[15px] sm:pt-[20px] pb-[15px] sm:pb-[19px] gap-[15px] sm:gap-0">
                         <div className="flex flex-col gap-[4px]">
                             <div className="h-auto sm:h-[28px] flex items-center">
-                                <p className="text-[16px] sm:text-[18px] font-medium text-[#101828]">Transactions ({transactions.length})</p>
+                                <p className="text-[16px] sm:text-[18px] font-medium text-[#101828]">Transactions ({filteredTransactions.length})</p>
                             </div>
                             <div className="flex h-auto sm:h-[20px] items-center">
                                 <p className="text-[12px] sm:text-[14px] text-[#667085]">View and manage all transactions here</p>
@@ -532,7 +559,12 @@ const Ads = () => {
                         </div>
                         <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-3 sm:px-4 py-2 shadow-sm rounded-sm w-full sm:w-auto">
                             <Image src={searchImg} alt="Search Icon" width={18} height={18} className="h-[18px] w-[18px] sm:h-[20px] sm:w-[20px]" />
-                            <input placeholder="Search" className="w-full sm:w-[175px] text-[#707070] text-[13px] sm:text-[14px] focus:outline-none" />
+                            <input 
+                                placeholder="Search transactions..." 
+                                value={searchTerm}
+                                onChange={(e) => handleSearchChange(e.target.value)}
+                                className="w-full sm:w-[175px] text-[#707070] text-[13px] sm:text-[14px] focus:outline-none" 
+                            />
                         </div>
                     </div>
 
@@ -597,18 +629,62 @@ const Ads = () => {
                             ))
                         ) : error.transactions ? (
                             <div className="text-red-500 p-4">{error.transactions}</div>
-                        ) : transactions.length > 0 ? (
-                            transactions.map((transaction, index) => (
+                        ) : filteredTransactions.length > 0 ? (
+                            currentTransactions.map((transaction, index) => (
                                 <AdsTableRow
                                     key={transaction.id}
                                     transaction={transaction}
-                                    isLast={index === transactions.length - 1}
+                                    isLast={index === currentTransactions.length - 1}
                                 />
                             ))
                         ) : (
-                            <div className="p-4 text-center text-gray-500">No transactions found</div>
+                            <div className="p-4 text-center text-gray-500">
+                                {searchTerm ? 'No transactions found matching your search' : 'No transactions found'}
+                            </div>
                         )}
                     </div>
+
+                    {/* Pagination Controls */}
+                    {filteredTransactions.length > transactionsPerPage && (
+                        <div className="flex items-center justify-between px-[15px] sm:px-[24px] py-[15px] sm:py-[20px] border-t border-[#EAECF0]">
+                            <div className="flex items-center gap-2 text-sm text-[#667085]">
+                                <span>
+                                    Showing {startIndex + 1} to {Math.min(endIndex, filteredTransactions.length)} of {filteredTransactions.length} transactions
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 text-sm border border-[#D0D5DD] rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                >
+                                    Previous
+                                </button>
+                                <div className="flex items-center gap-1">
+                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                                        <button
+                                            key={page}
+                                            onClick={() => handlePageChange(page)}
+                                            className={`px-3 py-1 text-sm rounded-md ${
+                                                currentPage === page
+                                                    ? 'bg-[#022B23] text-white'
+                                                    : 'border border-[#D0D5DD] hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 text-sm border border-[#D0D5DD] rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </>

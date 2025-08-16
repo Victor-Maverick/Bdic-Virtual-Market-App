@@ -82,6 +82,8 @@ export const useVoiceCall = ({ userEmail, onCallEnd, onError }: UseVoiceCallProp
         setRoom(null);
         setIsConnected(false);
         setParticipants([]);
+        
+        // Trigger call end callback
         onCallEnd?.();
       });
 

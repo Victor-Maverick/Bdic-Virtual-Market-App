@@ -75,11 +75,6 @@ export default function DashboardOverview() {
                     ? adsPromotions.reduce((total: number, transaction) => total + (transaction.amount /100 || 0), 0)
                     : 0;
 
-                console.log("Logistics number: ", logistics);
-                console.log("Total transactions: ", totalTransactions);
-                console.log("Ads promotions: ", adsPromotions);
-                console.log("Calculated ads revenue: ", adsRevenue);
-
                 // Format the dashboard data
                 const dashboardData: DashboardData = {
                     marketsCount: markets.length || 0,

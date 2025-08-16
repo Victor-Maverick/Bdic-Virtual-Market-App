@@ -6,25 +6,15 @@ import arrow from "../../../../public/assets/images/arrow-right.svg";
 import doneImg from "../../../../public/assets/images/logDashImg.png";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import dashImg from "../../../../public/assets/images/Logistics-rafiki.svg";
-import {useEffect, useState} from "react";
+import {useState} from "react";
 import { useOnboarding } from "@/context/LogisticsOnboardingContext";
 import { useRouter } from "next/navigation";
 import Toast from "@/components/Toast";
 
 const Setup_Complete = () => {
-    const [email, setEmail] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { onboardingData, submitOnboarding } = useOnboarding();
     const router = useRouter();
-
-    useEffect(() => {
-        // Get email from local storage
-        const storedEmail = localStorage.getItem('userEmail');
-        if (storedEmail) {
-            setEmail(storedEmail);
-            console.log("email", storedEmail);
-        }
-    }, [router]);
 
     // Toast state
     const [showToast, setShowToast] = useState(false);
@@ -53,8 +43,6 @@ const Setup_Complete = () => {
     const validateOnboardingData = (): string | null => {
         const { companyInfo, documents, bankInfo } = onboardingData;
 
-        if (!email) return "Owner email is required";
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email address";
         if (!companyInfo.companyName) return "Company name is required";
         if (!companyInfo.ownerName) return "Owner name is required";
         if (!companyInfo.companyAddress) return "Company address is required";
@@ -77,10 +65,10 @@ const Setup_Complete = () => {
         setIsSubmitting(true);
 
         try {
-            await submitOnboarding(email);
+            await submitOnboarding();
             showSuccessToast(
-                "Onboarding Submitted",
-                "Your company details have been submitted for approval. You'll be notified once approved."
+                "Company Onboarded Successfully",
+                "Your logistics company has been set up successfully!"
             );
 
             // Redirect after successful submission

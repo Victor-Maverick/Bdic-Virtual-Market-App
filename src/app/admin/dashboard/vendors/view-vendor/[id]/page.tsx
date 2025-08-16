@@ -277,8 +277,8 @@ const ViewVendor = () => {
                         </div>
 
                         {/* Second row */}
-                        <div className="flex w-full gap-[20px] h-[86px] justify-between">
-                            <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                        <div className="flex w-full gap-[20px] h-[86px]">
+                            <div className="flex flex-col w-[33.33%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
                                 <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-[#F7F7F7]">
                                     <p className="text-[#707070] text-[12px]">Products sold</p>
                                 </div>
@@ -287,19 +287,7 @@ const ViewVendor = () => {
                                 </div>
                             </div>
                             
-                            <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                                <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-[#FFEEBE]">
-                                    <p className="text-[#707070] font-medium text-[12px]">Review and rating</p>
-                                </div>
-                                <div className="h-[52px] flex justify-between items-center p-[14px]">
-                                    <p className="text-[20px] text-[#022B23] font-medium">4.3</p>
-                                    <span className="rounded-[8px] flex justify-center items-center text-[12px] font-medium text-[#52A43E] h-[25px] w-[47px] bg-[#E3FFF0] border border-[#52A43E]">
-                                        Good
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                            <div className="flex flex-col w-[33.33%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
                                 <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-black">
                                     <p className="text-[#ffffff] text-[12px]">Total transactions</p>
                                 </div>
@@ -308,7 +296,7 @@ const ViewVendor = () => {
                                 </div>
                             </div>
                             
-                            <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
+                            <div className="flex flex-col w-[33.33%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
                                 <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[34px] bg-black">
                                     <p className="text-[#ffffff] text-[12px]">Pay-outs processed</p>
                                 </div>

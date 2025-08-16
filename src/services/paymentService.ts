@@ -14,7 +14,7 @@ interface PayoutResponse {
     paidAt: string | null;
     requestedAt: string;
     vendorName: string;
-    isPaid: boolean;
+    paid: boolean;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -115,7 +115,8 @@ export const paymentService = {
                 },
             });
             if (!response.ok) {
-                throw new Error('Failed to mark payout as paid');
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to mark payout as paid');
             }
             return await response.json();
         } catch (error) {

@@ -1,14 +1,11 @@
-import DashboardHeader from "@/components/dashboardHeader";
-import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
 import Image from "next/image";
 import iPhone from "../../../../../public/assets/images/blue14.png";
 
 
 const Notifications = ()=>{
     return(
-        <>
-            <DashboardHeader />
-            <LogisticsDashboardOptions />
+        <LogisticsCompanyGuard>
             <div className="flex px-25 mt-[30px] gap-[40px]">
                 <div className="flex flex-col gap-[14px]">
                     <div className="flex flex-col">
@@ -106,7 +103,7 @@ const Notifications = ()=>{
                     </div>
                 </div>
             </div>
-        </>
+        </LogisticsCompanyGuard>
     )
 }
 

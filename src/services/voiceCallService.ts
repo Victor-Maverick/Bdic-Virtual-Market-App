@@ -61,18 +61,18 @@ class VoiceCallService {
     try {
       const url = `${API_BASE_URL}/voice-calls/join/${roomName}?userEmail=${encodeURIComponent(userEmail)}`;
       console.log('🎤 Making request to:', url);
-      
+
       // Join the call and get Twilio access token
       const response = await axios.post(url);
       console.log('🎤 Backend response for voice call token:', response.data);
       console.log('🎤 Response status:', response.status);
-      
+
       // Validate the response has the required token
       if (!response.data || !response.data.token) {
         console.error('🎤 Invalid token response - data:', response.data);
         throw new Error(`Invalid token response from backend: ${JSON.stringify(response.data)}`);
       }
-      
+
       return response.data;
     } catch (error) {
       console.error('🎤 Error getting voice call access token:', error);
@@ -84,13 +84,13 @@ class VoiceCallService {
           url: error.config?.url,
           method: error.config?.method
         });
-        
+
         // Provide more specific error messages
         if (error.response?.status === 404) {
           throw new Error('Voice call service not available. Please ensure the call service is running.');
         } else if (error.response?.status === 400) {
           throw new Error(`Bad request: ${error.response?.data || 'Invalid request parameters'}`);
-        } else  {
+        } else {
           throw new Error('Server error. Please try again later.');
         }
       }

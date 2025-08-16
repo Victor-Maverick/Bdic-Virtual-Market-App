@@ -106,6 +106,8 @@ export const useVideoCall = ({ userEmail, onCallEnd, onError }: UseVideoCallProp
         setRoom(null);
         setIsConnected(false);
         setParticipants([]);
+        
+        // Trigger call end callback
         onCallEnd?.();
       });
 

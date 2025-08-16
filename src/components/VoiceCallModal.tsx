@@ -98,30 +98,34 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
   }, [isInCall, callStartTime]);
 
-  // Handle call status changes from backend
+  // Handle call status changes from backend - enhanced to ensure modal closes
   useEffect(() => {
-    if (callStatus && isOpen && call) {
+    if (callStatus && call) {
       console.log('🎤 VoiceCallModal: Received call status:', callStatus);
       
-      const isForCurrentCall = callStatus.roomName === call.roomName;
+      // Check if this status update is for the current call
+      const isForCurrentCall = !callStatus.roomName || callStatus.roomName === call.roomName;
       
       if (isForCurrentCall) {
-        if (callStatus.type === 'CALL_ENDED') {
-          console.log('🎤 VoiceCallModal: Call ended, closing modal immediately');
+        // Handle call termination events
+        if (callStatus.type === 'CALL_ENDED' || callStatus.forceClose) {
+          console.log('🎤 VoiceCallModal: Call ended by other party, force closing modal');
           clearCallStatus();
+          // Force leave room and close modal
+          leaveRoom();
           onClose();
         } else if (callStatus.type === 'CALL_DECLINED') {
-          console.log('🎤 VoiceCallModal: Call declined, closing modal immediately');
+          console.log('🎤 VoiceCallModal: Call declined, closing modal');
           clearCallStatus();
           onClose();
         } else if (callStatus.type === 'CALL_MISSED') {
-          console.log('🎤 VoiceCallModal: Call missed, closing modal immediately');
+          console.log('🎤 VoiceCallModal: Call missed, closing modal');
           clearCallStatus();
           onClose();
         }
       }
     }
-  }, [callStatus, isOpen, call, onClose, clearCallStatus]);
+  }, [callStatus, call, onClose, clearCallStatus, leaveRoom]);
 
   // Cleanup when modal closes
   useEffect(() => {

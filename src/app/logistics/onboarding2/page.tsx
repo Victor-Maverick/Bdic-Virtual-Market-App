@@ -62,10 +62,10 @@ const InputField = ({
 };
 
 const Onboarding2 = ()=>{
-    const { onboardingData, updateDocuments } = useOnboarding();
+    const { onboardingData, updateDocuments, addOtherDocument, removeOtherDocument } = useOnboarding();
     const router = useRouter();
     const [uploadedCacImage, setUploadedCacImage] = useState<string | null>(null);
-    const [uploadedOtherDoc, setUploadedOtherDoc] = useState<string | null>(null);
+    const [uploadedOtherDocs, setUploadedOtherDocs] = useState<string[]>([]);
     const cacFileInputRef = useRef<HTMLInputElement>(null);
     const otherDocFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,8 +81,8 @@ const Onboarding2 = ()=>{
                 return;
             }
 
-            if (!file.type.match('image.*')) {
-                alert("Please select an image file");
+            if (!file.type.match('image.*') && !file.type.match('application/pdf')) {
+                alert("Please select an image or PDF file");
                 return;
             }
 
@@ -105,19 +105,24 @@ const Onboarding2 = ()=>{
                 return;
             }
 
-            if (!file.type.match('image.*')) {
-                alert("Please select an image file");
+            if (!file.type.match('image.*') && !file.type.match('application/pdf')) {
+                alert("Please select an image or PDF file");
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = (event) => {
                 if (event.target?.result) {
-                    setUploadedOtherDoc(event.target.result as string);
+                    setUploadedOtherDocs(prev => [...prev, event.target!.result as string]);
                 }
             };
             reader.readAsDataURL(file);
-            updateDocuments({ otherDocuments: [file] });
+            addOtherDocument(file);
+        }
+        
+        // Reset the input so the same file can be selected again
+        if (otherDocFileInputRef.current) {
+            otherDocFileInputRef.current.value = "";
         }
     };
 
@@ -138,13 +143,10 @@ const Onboarding2 = ()=>{
         }
     };
 
-    const removeOtherDoc = (e: React.MouseEvent) => {
+    const removeOtherDoc = (index: number) => (e: React.MouseEvent) => {
         e.stopPropagation();
-        setUploadedOtherDoc(null);
-        updateDocuments({ otherDocuments: [] });
-        if (otherDocFileInputRef.current) {
-            otherDocFileInputRef.current.value = "";
-        }
+        setUploadedOtherDocs(prev => prev.filter((_, i) => i !== index));
+        removeOtherDocument(index);
     };
 
     return(
@@ -177,7 +179,7 @@ const Onboarding2 = ()=>{
                                     type="file"
                                     ref={cacFileInputRef}
                                     onChange={handleCacImageUpload}
-                                    accept="image/*"
+                                    accept="image/*,application/pdf"
                                     className="hidden"
                                 />
 
@@ -215,8 +217,35 @@ const Onboarding2 = ()=>{
 
                         <div className="">
                             <p className="mb-[5px] text-[12px] font-medium text-[#6D6D6D]">
-                                Other supporting document
+                                Other supporting documents <span className="text-[#B0B0B0]">(optional)</span>
                             </p>
+                            
+                            {/* Display uploaded documents */}
+                            {uploadedOtherDocs.length > 0 && (
+                                <div className="mb-4 space-y-2">
+                                    {uploadedOtherDocs.map((doc, index) => (
+                                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center">
+                                                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                </div>
+                                                <span className="text-sm text-gray-700">Document {index + 1}</span>
+                                            </div>
+                                            <button
+                                                onClick={removeOtherDoc(index)}
+                                                className="text-red-500 hover:text-red-700"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            
                             <div
                                 className="flex flex-col gap-[8px] text-center items-center w-full h-[102px] rounded-[14px] bg-[#ECFDF6] justify-center border border-dashed border-[#022B23] cursor-pointer relative overflow-hidden"
                                 onClick={triggerOtherDocFileInput}
@@ -225,39 +254,15 @@ const Onboarding2 = ()=>{
                                     type="file"
                                     ref={otherDocFileInputRef}
                                     onChange={handleOtherDocUpload}
-                                    accept="image/*"
+                                    accept="image/*,application/pdf"
                                     className="hidden"
                                 />
 
-                                {uploadedOtherDoc ? (
-                                    <>
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <Image
-                                                src={uploadedOtherDoc}
-                                                alt="Uploaded document"
-                                                width={96}
-                                                height={96}
-                                                className="rounded-lg object-cover w-[96px] h-[96px]"
-                                            />
-                                        </div>
-                                        <button
-                                            onClick={removeOtherDoc}
-                                            className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-sm hover:bg-gray-100"
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Image src={uploadIcon} alt="Upload icon" width={24} height={24} />
-                                        <p className="text-[12px] font-medium text-[#022B23]">
-                                            <span className="underline">Upload</span> another supporting document here
-                                            <br />(2MB max)
-                                        </p>
-                                    </>
-                                )}
+                                <Image src={uploadIcon} alt="Upload icon" width={24} height={24} />
+                                <p className="text-[12px] font-medium text-[#022B23]">
+                                    <span className="underline">Upload</span> supporting documents
+                                    <br />(Images or PDF, 2MB max each)
+                                </p>
                             </div>
                         </div>
                         <InputField

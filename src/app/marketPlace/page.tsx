@@ -8,7 +8,6 @@ import axios from "axios"
 import Footer from "@/components/footer"
 import MarketPlaceHeader from "@/components/marketPlaceHeader"
 import categoryImg from "@/../public/assets/images/categoryImg.svg"
-import filterImg from "@/../public/assets/images/filter.svg"
 import { useRouter } from "next/navigation"
 import { fetchMarkets } from "@/utils/api"
 import { ChevronDown, Menu, X } from "lucide-react"
@@ -928,59 +927,7 @@ const MarketPlace = () => {
                         )}
                     </div>
                 </div>
-                {!isSearching && (
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center w-full justify-between min-h-[50px] sm:h-[66px] px-4 sm:px-6 lg:px-25 py-2 sm:py-0 border-y border-[#ededed] gap-2 sm:gap-4">
-                        <div className="flex flex-col sm:flex-row gap-[2px] p-0.5 border border-[#ededed] w-full sm:w-[313px] rounded-[2px]">
-                            <div className="flex gap-[4px] h-[36px] sm:h-[42px] w-full sm:w-[159px] bg-[#f9f9f9] rounded-[2px] items-center px-[8px] py-[14px]">
-                                <Image
-                                    width={16}
-                                    height={16}
-                                    src={marketIcon || "/placeholder.svg"}
-                                    alt="Market Icon"
-                                    className="sm:w-5 sm:h-5"
-                                />
-                                <p className="text-[#1E1E1E] font-normal text-[12px] sm:text-[14px]">
-                                    {loading ? "Loading..." : `${apiProducts.length} Products`}
-                                </p>
-                            </div>
-                            <div className="bg-[#f9f9f9] gap-[4px] text-[#1E1E1E] flex text-[12px] sm:text-[14px] w-full sm:w-[148px] h-[36px] sm:h-[42px] px-1 items-center justify-center rounded-[2px]">
-                                <Image
-                                    src={filterImg || "/placeholder.svg"}
-                                    alt={"image"}
-                                    width={16}
-                                    height={16}
-                                    className="w-[16px] h-[16px] sm:w-[20px] sm:h-[20px]"
-                                />
-                                <p>
-                                    Sort by: <span className="text-[#022B23] font-medium">Popular</span>
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            {selectedCategory && (
-                                <div className="bg-[#ECFDF6] px-2 sm:px-3 py-1 rounded-full flex items-center gap-1">
-                                    <span className="text-[#022B23] text-xs sm:text-sm">{selectedCategory.name}</span>
-                                    {selectedSubCategory && (
-                                        <>
-                                            <span className="text-gray-400">/</span>
-                                            <span className="text-[#022B23] text-xs sm:text-sm">{selectedSubCategory.name}</span>
-                                        </>
-                                    )}
-                                    <button
-                                        onClick={() => {
-                                            setSelectedCategory(null)
-                                            setSelectedSubCategory(null)
-                                            fetchProducts()
-                                        }}
-                                        className="text-gray-500 hover:text-gray-700 ml-1"
-                                    >
-                                        ×
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
+
                 {loading && (
                     <div className="flex justify-center items-center py-10">
                         <p className="text-[#1E1E1E] text-base sm:text-lg">Loading products...</p>

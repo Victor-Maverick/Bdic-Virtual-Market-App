@@ -2,11 +2,13 @@
 import Image from "next/image";
 import arrowUp from "../../../../../public/assets/images/green arrow up.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-import {useEffect, useRef, useState} from "react";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
+import {useEffect, useRef, useState} from "react";
+
 import BackButton from "@/components/BackButton";
 import axios from 'axios';
 import { UsersTableSkeleton, StatsCardsLoadingSkeleton } from "@/components/LoadingSkeletons";
+import { userService } from "@/services/userService";
 
 interface User {
     id: number;
@@ -70,10 +72,12 @@ interface User {
 
 const UserTableRow = ({
     user,
-    isLast
+    isLast,
+    onDeleteUser
 }: {
     user: User;
     isLast: boolean;
+    onDeleteUser: (userId: number) => void;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -181,7 +185,7 @@ const UserTableRow = ({
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setIsOpen(false);
-                                        // Handle delete user
+                                        onDeleteUser(user.id);
                                     }}
                                     className="px-4 py-2 text-[12px] hover:bg-[#FEF3F2] cursor-pointer text-red-600"
                                 >
@@ -197,11 +201,12 @@ const UserTableRow = ({
 };
 
 const Users = () => {
-    const [searchTerm, setSearchTerm] = useState('');
+
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
     const usersPerPage = 5;
 
     const fetchUsers = async () => {
@@ -235,11 +240,7 @@ const Users = () => {
         inactiveUsers: users.filter(user => !user.active).length
     };
 
-    const filteredUsers = users.filter(user => 
-        user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users;
 
     // Calculate pagination
     const indexOfLastUser = currentPage * usersPerPage;
@@ -254,6 +255,25 @@ const Users = () => {
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
+    };
+
+    const handleDeleteUser = async (userId: number) => {
+        if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+            return;
+        }
+
+        try {
+            const result = await userService.deleteUser(userId);
+            if (result.success) {
+                alert('User deleted successfully');
+                fetchUsers(); // Refresh the users list
+            } else {
+                alert(`Delete failed: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            alert('An error occurred while deleting the user');
+        }
     };
 
     return(
@@ -372,6 +392,7 @@ const Users = () => {
                                     key={user.id}
                                     user={user}
                                     isLast={index === currentUsers.length - 1}
+                                    onDeleteUser={handleDeleteUser}
                                 />
                             ))
                         )}

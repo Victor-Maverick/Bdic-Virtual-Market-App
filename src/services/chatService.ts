@@ -72,15 +72,54 @@ class ChatService {
     }
   }
 
-  async getMessages(user1Email: string, user2Email: string): Promise<ChatMessage[]> {
+  async getMessages(user1Email: string, user2Email: string, page: number = 0, size: number = 50): Promise<ChatMessage[]> {
     try {
       const response = await axios.get(`${API_BASE_URL}/chat/messages`, {
-        params: { user1: user1Email, user2: user2Email }
+        params: { 
+          user1: user1Email, 
+          user2: user2Email,
+          page,
+          size
+        }
       });
       return response.data;
     } catch (error) {
       console.error('Error getting messages:', error);
       throw error;
+    }
+  }
+
+  async getMessagesWithPagination(user1Email: string, user2Email: string, page: number = 0, size: number = 50): Promise<{
+    messages: ChatMessage[];
+    totalElements: number;
+    totalPages: number;
+    hasMore: boolean;
+  }> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/chat/messages/paginated`, {
+        params: { 
+          user1: user1Email, 
+          user2: user2Email,
+          page,
+          size
+        }
+      });
+      return {
+        messages: response.data.content || response.data,
+        totalElements: response.data.totalElements || response.data.length,
+        totalPages: response.data.totalPages || 1,
+        hasMore: response.data.hasNext || (page + 1) < (response.data.totalPages || 1)
+      };
+    } catch (error) {
+      console.error('Error getting paginated messages:', error);
+      // Fallback to regular getMessages if pagination endpoint doesn't exist
+      const messages = await this.getMessages(user1Email, user2Email, page, size);
+      return {
+        messages,
+        totalElements: messages.length,
+        totalPages: 1,
+        hasMore: false
+      };
     }
   }
 

@@ -15,7 +15,7 @@ export const useVideoCallNotifications = () => {
   const { data: session } = useSession();
   const [stompClient, setStompClient] = useState<CompatClient | null>(null);
   const [incomingCall, setIncomingCall] = useState<IncomingCallData | null>(null);
-  const [callStatus, setCallStatus] = useState<{ type: string; roomName?: string } | null>(null);
+  const [callStatus, setCallStatus] = useState<{ type: string; roomName?: string; forceClose?: boolean } | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
@@ -29,7 +29,7 @@ export const useVideoCallNotifications = () => {
     console.log('📞 User email:', session.user.email);
     
     const socket = new SockJS(wsUrl);
-    const client = Stomp.over(socket);
+    const client = Stomp.over(() => socket); // Fix: Provide factory function for auto-reconnect
 
     // Enable debug logging for troubleshooting
     client.debug = (str) => {
@@ -64,13 +64,11 @@ export const useVideoCallNotifications = () => {
           setCallStatus(data);
           console.log("Status: ", data)
           
-          // Handle specific call status types
-          if (data.type === 'CALL_ENDED') {
-            console.log('📞 useVideoCallNotifications: Call ended by other participant');
-          } else if (data.type === 'CALL_DECLINED') {
-            console.log('📞 useVideoCallNotifications: Call declined');
-          } else if (data.type === 'CALL_MISSED') {
-            console.log('📞 useVideoCallNotifications: Call missed');
+          // Handle specific call status types that should close modals
+          if (data.type === 'CALL_ENDED' || data.type === 'CALL_DECLINED' || data.type === 'CALL_MISSED') {
+            console.log(`📞 useVideoCallNotifications: ${data.type} - will trigger modal close`);
+            // Add forceClose flag to ensure modal closes
+            setCallStatus({ ...data, forceClose: true });
           }
         } catch (error) {
           console.error('❌ useVideoCallNotifications: Error parsing call status message:', error);
@@ -82,7 +80,7 @@ export const useVideoCallNotifications = () => {
         try {
           const signal = JSON.parse(message.body);
           console.log('Received video signal:', signal);
-          // Handle WebRTC signaling if needed
+          // Handle video call signaling if needed
         } catch (error) {
           console.error('Error parsing video signal:', error);
         }
@@ -99,8 +97,9 @@ export const useVideoCallNotifications = () => {
         }
       });
     }, (error: Error) => {
-      console.error('❌ WebSocket connection error:', error);
-      console.error('🔗 Failed to connect to:', `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/ws/video-call`);
+      console.error('❌ Video call WebSocket connection error:', error);
+      console.error('🔗 Failed to connect to:', `${baseUrl}/api/ws/video-call`);
+      console.log('ℹ️ This is expected if the call service is not running or WebSocket endpoints are not available');
       setIsConnected(false);
     });
 
