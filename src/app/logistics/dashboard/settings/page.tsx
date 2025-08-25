@@ -1,21 +1,18 @@
 'use client'
-import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
 import Image from "next/image";
-import verifiedImg from '@/../public/assets/images/verify.svg'
-import blueGradient from '@/../public/assets/images/blueGreenCircle.png'
-import locationImg from '@/../public/assets/images/location.png'
-import tick from '@/../public/assets/images/tick-circle.svg'
-import emptyTick from '@/../public/assets/images/empty-tick.svg'
-import clock from '@/../public/assets/images/clock.png'
-import rating from '@/../public/assets/images/rating.svg'
-import settingUser from '@/../public/assets/images/settingUser.svg'
-import adminImg from '@/../public/assets/images/AdminAvatar.svg'
-import { useState, useRef, useEffect } from "react";
-import emailIcon from "../../../../../public/assets/images/sms.svg";
+import { useState, useRef, useEffect, useCallback } from "react";
 import eyeOpen from "../../../../../public/assets/images/eye.svg";
 import eyeClosed from "../../../../../public/assets/images/eye.svg";
-import AddLogMemberModal from "@/components/addLogMemberModal";
-import AddLogMemberSuccessModal from "@/components/addLogMemberSuccessModal";
+import tick from '@/../public/assets/images/tick-circle.svg';
+import emptyTick from '@/../public/assets/images/empty-tick.svg';
+import clock from '@/../public/assets/images/clock.png';
+import rating from '@/../public/assets/images/rating.svg';
+import axios from "axios";
+import Toast from "@/components/Toast";
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
+import { useSession } from "next-auth/react";
 
 type FormField = {
     id: keyof FormData;
@@ -38,6 +35,40 @@ type PasswordValidation = {
     number: boolean;
 };
 
+type AddressResponse = {
+    id: number;
+    address: string;
+    state: string;
+    lga: string;
+};
+
+interface UserProfile {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    companyName: string;
+    companyRating: number;
+    ratingCount: number;
+    availability: boolean;
+    workHours: string;
+    ordersDelivered: number;
+}
+
+interface AddressModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSubmit: (addressData: { address: string; state: string; lga: string }) => void;
+    email: string;
+    initialData?: {
+        address: string;
+        state: string;
+        lga: string;
+    };
+    isUpdate?: boolean;
+}
+
 const formFields: FormField[] = [
     { id: 'oldPassword', label: 'Old password', type: 'password' },
     { id: 'newPassword', label: 'New password', type: 'password' },
@@ -51,6 +82,112 @@ const passwordCriteria = [
     { key: 'specialChar', label: 'special character' },
     { key: 'number', label: 'number' },
 ];
+
+const AddressModal = ({ isOpen, onClose, onSubmit, email, initialData, isUpdate = false }: AddressModalProps) => {
+    const [formData, setFormData] = useState({
+        address: initialData?.address || '',
+        state: initialData?.state || 'Benue',
+        lga: initialData?.lga || '',
+        email: email
+    });
+
+    useEffect(() => {
+        if (initialData) {
+            setFormData({
+                address: initialData.address,
+                state: initialData.state,
+                lga: initialData.lga,
+                email: email
+            });
+        }
+    }, [initialData, email]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSubmit = () => {
+        onSubmit(formData);
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20 p-4">
+            <div className="bg-white px-6 sm:px-8 lg:px-10 py-6 sm:py-8 w-full max-w-[600px] rounded-[16px] sm:rounded-[24px] gap-[20px] sm:gap-[30px] flex flex-col items-center max-h-[90vh] overflow-y-auto">
+                <div className="w-full text-left">
+                    <h2 className="text-[14px] sm:text-[16px] font-medium text-[#022B23]">{isUpdate ? 'Update' : 'Add'} Address</h2>
+                    <p className="text-[12px] sm:text-[14px] font-medium leading-tight text-[#707070]">
+                        Please provide your complete address details
+                    </p>
+                </div>
+
+                <div className="flex flex-col w-full gap-3 sm:gap-4">
+                    <div className="relative flex flex-col w-full">
+                        <label htmlFor="address" className="text-[#6D6D6D] text-[11px] sm:text-[12px] font-medium mb-1">
+                            Address
+                        </label>
+                        <input
+                            id="address"
+                            name="address"
+                            type="text"
+                            value={formData.address}
+                            onChange={handleChange}
+                            className="px-3 sm:px-4 w-full h-[50px] sm:h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[12px] sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[13px] sm:text-[14px] font-medium"
+                            placeholder="Enter your full address"
+                        />
+                    </div>
+
+                    <div className="relative flex flex-col w-full">
+                        <label htmlFor="state" className="text-[#6D6D6D] text-[11px] sm:text-[12px] font-medium mb-1">
+                            State
+                        </label>
+                        <select
+                            id="state"
+                            name="state"
+                            value={formData.state}
+                            onChange={handleChange}
+                            className="px-3 sm:px-4 w-full h-[50px] sm:h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[12px] sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[13px] sm:text-[14px] font-medium appearance-none"
+                        >
+                            <option value="Benue">Benue</option>
+                        </select>
+                    </div>
+
+                    <div className="relative flex flex-col w-full">
+                        <label htmlFor="lga" className="text-[#6D6D6D] text-[11px] sm:text-[12px] font-medium mb-1">
+                            LGA
+                        </label>
+                        <input
+                            id="lga"
+                            name="lga"
+                            type="text"
+                            value={formData.lga}
+                            onChange={handleChange}
+                            className="px-3 sm:px-4 w-full h-[50px] sm:h-[58px] border-[1.5px] border-[#D1D1D1] rounded-[12px] sm:rounded-[14px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[13px] sm:text-[14px] font-medium"
+                            placeholder="Enter your Local Government Area"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row w-full gap-3 sm:gap-4 sm:justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 sm:px-6 py-2 sm:py-3 border border-[#D0D5DD] rounded-[6px] sm:rounded-[8px] text-[#022B23] font-medium text-[13px] sm:text-[14px] order-2 sm:order-1"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="px-4 sm:px-6 py-2 sm:py-3 bg-[#022B23] rounded-[6px] sm:rounded-[8px] text-white font-medium hover:bg-[#033a30] transition-colors text-[13px] sm:text-[14px] order-1 sm:order-2"
+                    >
+                        {isUpdate ? 'Update' : 'Save'} Address
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const Settings = () => {
     const [form, setForm] = useState<FormData>({
@@ -68,32 +205,93 @@ const Settings = () => {
         specialChar: false,
         number: false
     });
-    const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
-    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-
-    const handleAddMemberSuccess = () => {
-        setIsAddMemberModalOpen(false);
-        setIsSuccessModalOpen(true);
-    };
-
-    const handleCloseSuccessModal = () => {
-        setIsSuccessModalOpen(false);
-    };
-
-    const handleOpenAddMemberModal = () => {
-        setIsAddMemberModalOpen(true);
-    };
-
     const [showOldPassword, setShowOldPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [activeSection, setActiveSection] = useState<'general' | 'team' | 'security' | 'notifications'>('general');
+    const [activeSection, setActiveSection] = useState<'general' | 'security' | 'notifications'>('general');
+    const [userAddress, setUserAddress] = useState<AddressResponse | null>(null);
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+    const [isLoadingAddress, setIsLoadingAddress] = useState(true);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [passwordUpdateError, setPasswordUpdateError] = useState<string | null>(null);
+    const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState(false);
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+    const [isUpdatingPhone, setIsUpdatingPhone] = useState(false);
+    const [phone, setPhone] = useState('');
+    const [isEditingPhone, setIsEditingPhone] = useState(false);
+
+    // Toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastSubMessage, setToastSubMessage] = useState("");
+
+    const { data: session } = useSession();
 
     // Refs for each section
     const generalSettingsRef = useRef<HTMLDivElement>(null);
-    const teamRef = useRef<HTMLDivElement>(null);
     const securityRef = useRef<HTMLDivElement>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
+
+    const showErrorToast = (message: string, subMessage: string) => {
+        setToastType("error");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+    };
+
+    const showSuccessToast = (message: string, subMessage: string) => {
+        setToastType("success");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+    };
+
+    const handleCloseToast = () => setShowToast(false);
+
+    const fetchUserData = useCallback(async () => {
+        if (!session?.user?.email) return;
+
+        try {
+            setLoading(true);
+            setIsLoadingAddress(true);
+
+            // Fetch user profile
+            const profileResponse = await axios.get<UserProfile>(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-profile?email=${session.user.email}`
+            );
+            setUserProfile(profileResponse.data);
+            setPhone(profileResponse.data.phone || '');
+
+            // Check if address exists
+            const existsResponse = await axios.get(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/address-exists?email=${session.user.email}`
+            );
+
+            if (existsResponse.data) {
+                const addressResponse = await axios.get<AddressResponse>(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`
+                );
+                setUserAddress(addressResponse.data);
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An error occurred while fetching data');
+            console.error('Error:', err);
+        } finally {
+            setLoading(false);
+            setIsLoadingAddress(false);
+        }
+    }, [session]);
+
+    useEffect(() => {
+        if (session?.user?.email) {
+            fetchUserData();
+        }
+    }, [session, fetchUserData]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -129,36 +327,29 @@ const Settings = () => {
         return field.type;
     };
 
-    const shouldShowIcon = (field: FormField) => {
-        return (focusedFields[field.id] || form[field.id]) && field.withIcon;
-    };
-
     const shouldShowPasswordToggle = (field: FormField) => {
         return (focusedFields[field.id] || form[field.id]) && field.type === 'password';
     };
 
-    // Handle navigation clicks
-    const handleNavClick = (section: 'general' | 'team' | 'security' | 'notifications') => {
+    const handleNavClick = (section: 'general' | 'security' | 'notifications') => {
         setActiveSection(section);
-        switch (section) {
-            case 'general':
-                generalSettingsRef.current?.scrollIntoView({ behavior: 'smooth' });
-                break;
-            case 'team':
-                teamRef.current?.scrollIntoView({ behavior: 'smooth' });
-                break;
-            case 'security':
-                securityRef.current?.scrollIntoView({ behavior: 'smooth' });
-                break;
-            case 'notifications':
-                notificationsRef.current?.scrollIntoView({ behavior: 'smooth' });
-                break;
+        const targetRef = section === 'general' ? generalSettingsRef.current :
+            section === 'security' ? securityRef.current :
+                notificationsRef.current;
+
+        if (targetRef) {
+            const elementPosition = targetRef.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - 119;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
         }
     };
 
     useEffect(() => {
         const generalSettingsNode = generalSettingsRef.current;
-        const teamNode = teamRef.current;
         const securityNode = securityRef.current;
         const notificationsNode = notificationsRef.current;
 
@@ -169,9 +360,6 @@ const Settings = () => {
                         switch (entry.target.id) {
                             case 'general-settings':
                                 setActiveSection('general');
-                                break;
-                            case 'team-section':
-                                setActiveSection('team');
                                 break;
                             case 'security-section':
                                 setActiveSection('security');
@@ -187,64 +375,190 @@ const Settings = () => {
         );
 
         if (generalSettingsNode) observer.observe(generalSettingsNode);
-        if (teamNode) observer.observe(teamNode);
         if (securityNode) observer.observe(securityNode);
         if (notificationsNode) observer.observe(notificationsNode);
 
         return () => {
             if (generalSettingsNode) observer.unobserve(generalSettingsNode);
-            if (teamNode) observer.unobserve(teamNode);
             if (securityNode) observer.unobserve(securityNode);
             if (notificationsNode) observer.unobserve(notificationsNode);
         };
     }, []);
 
+    const handleAddressSubmit = async (addressData: { address: string; state: string; lga: string }) => {
+        if (!session?.user?.email) return;
+
+        try {
+            const endpoint = userAddress
+                ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/update-address`
+                : `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/add-address`;
+
+            const response = await axios({
+                method: 'POST',
+                url: endpoint,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: {
+                    ...addressData,
+                    email: session.user.email
+                }
+            });
+
+            if (response.status >= 200 && response.status < 300) {
+                const addressResponse = await axios.get<AddressResponse>(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`
+                );
+                setUserAddress(addressResponse.data);
+                showSuccessToast('Success', userAddress ? 'Address updated successfully' : 'Address added successfully');
+            } else {
+                throw new Error(userAddress ? 'Failed to update address' : 'Failed to add address');
+            }
+        } catch (err) {
+            showErrorToast('Error', err instanceof Error ? err.message : 'An error occurred while processing address');
+            console.error('Error:', err);
+        } finally {
+            setIsAddressModalOpen(false);
+        }
+    };
+
+    const handleUpdatePassword = async () => {
+        if (!session?.user?.email) return;
+        if (form.newPassword !== form.confirmPassword) {
+            setPasswordUpdateError("New passwords don't match");
+            showErrorToast('Error', 'New passwords do not match');
+            return;
+        }
+
+        try {
+            setIsUpdatingPassword(true);
+            setPasswordUpdateError(null);
+            setPasswordUpdateSuccess(false);
+
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/change-password`,
+                {
+                    email: session.user.email,
+                    oldPassword: form.oldPassword,
+                    newPassword: form.newPassword
+                }
+            );
+
+            if (response.status >= 200 && response.status < 300) {
+                setPasswordUpdateSuccess(true);
+                setForm({
+                    oldPassword: '',
+                    newPassword: '',
+                    confirmPassword: ''
+                });
+                showSuccessToast('Success', 'Password updated successfully');
+                setTimeout(() => setPasswordUpdateSuccess(false), 5000);
+            } else {
+                throw new Error('Failed to update password');
+            }
+        } catch (err) {
+            setPasswordUpdateError("Wrong password");
+            showErrorToast('Error', 'Failed to update password. Please check your old password.');
+            console.error('Error updating password:', err);
+        } finally {
+            setIsUpdatingPassword(false);
+        }
+    };
+
+    const handleUpdatePhone = async () => {
+        if (!session?.user?.email || !userProfile) return;
+
+        try {
+            setIsUpdatingPhone(true);
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/update-phone`,
+                {
+                    email: session.user.email,
+                    phone: phone
+                },
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            if (response.status >= 200 && response.status < 300) {
+                setUserProfile(prev => prev ? { ...prev, phone } : null);
+                setIsEditingPhone(false);
+                showSuccessToast('Success', 'Phone number updated successfully');
+            } else {
+                throw new Error('Failed to update phone number');
+            }
+        } catch (err) {
+            showErrorToast('Error', err instanceof Error ? err.message : 'Failed to update phone number');
+            console.error('Error updating phone:', err);
+        } finally {
+            setIsUpdatingPhone(false);
+        }
+    };
+
     // Split password criteria into two rows
     const firstRowCriteria = passwordCriteria.slice(0, 2);
     const secondRowCriteria = passwordCriteria.slice(2);
 
+    if (loading) {
+        return (
+            <LogisticsCompanyGuard>
+                <DashboardHeader />
+                <LogisticsDashboardOptions />
+                <div className="flex justify-center items-center h-screen">
+                    <p>Loading profile...</p>
+                </div>
+            </LogisticsCompanyGuard>
+        );
+    }
+
+    if (error) {
+        return (
+            <LogisticsCompanyGuard>
+                <DashboardHeader />
+                <LogisticsDashboardOptions />
+                <div className="flex justify-center items-center h-screen">
+                    <p className="text-red-500">Error: {error}</p>
+                </div>
+            </LogisticsCompanyGuard>
+        );
+    }
+
+    if (!userProfile) {
+        return (
+            <LogisticsCompanyGuard>
+                <DashboardHeader />
+                <LogisticsDashboardOptions />
+                <div className="flex justify-center items-center h-screen">
+                    <p>No profile data available</p>
+                </div>
+            </LogisticsCompanyGuard>
+        );
+    }
+
     return (
         <LogisticsCompanyGuard>
-            <div className="flex flex-col pl-25 mt-[30px] gap-[40px]">
-                <div className="flex flex-col">
-                    <p className="text-[18px] font-medium text-[#101828]">Settings</p>
-                    <p className="text-[#667085] text-[14px]">Manage your account here</p>
+            <DashboardHeader />
+            <LogisticsDashboardOptions />
+            <div className="h-[48px] w-full border-b-[0.5px] border-[#EDEDED]">
+                <div className="h-[48px] px-25 gap-[8px] items-center flex">
+                    <Image src={tick} alt={'image'} />
+                    <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Settings</span></p>
                 </div>
-                <div className="flex gap-[30px] mt-[-10px]">
+            </div>
+            <div className="pt-[62px] px-25">
+                <div className="flex w-[400px] bg-[#f8f8f8] mb-[10px] h-[40px] rounded-[10px] items-center px-[8px]">
+                    <p className="text-[12px] font-medium text-[#022B23]">Settings</p>
+                </div>
+                <div className="flex gap-[30px]">
                     <div className="flex flex-col gap-[14px]">
-                        <div className="flex flex-col w-[380px] h-[201px] rounded-[24px] border-[1px] border-[#EDEDED]">
-                            <div className="border-b-[0.5px] items-center py-[8px] px-[20px] h-[58px] border-[#EDEDED] flex justify-between w-full">
-                                <div className="flex gap-[4px] items-center">
-                                    <Image src={blueGradient} alt={'image'} />
-                                    <p>Spiff Logistics</p>
-                                </div>
-                                <div className="flex rounded-[8px] p-[6px] text-[#461602] text-[12px] font-medium items-center gap-[4px] bg-[#FFEEBE]">
-                                    <Image src={verifiedImg} alt={'image'} />
-                                    <p>Verified</p>
-                                </div>
-                            </div>
-                            <div className="px-[21px] text-[14px] text-[#707070] mt-[18px] gap-[4px] flex items-center">
-                                <Image src={locationImg} width={18} height={18} alt={'image'} />
-                                <p>No. 22 Aki Plaza Modern market, Makurdi,<br />
-                                    Benue State</p>
-                            </div>
-                            <div className="flex ml-[40px] mt-[18px] justify-center gap-[4px] p-[6px] items-center text-[#018124] text-[12px] bg-[#EEFFF6] rounded-[100px] w-[72px] h-[32px] ">
-                                <Image src={tick} alt={'image'} />
-                                <p>Active</p>
-                            </div>
-                        </div>
-                        <div className="flex flex-col w-[380px] h-[160px] rounded-[12px] border-[1px] border-[#EDEDED]">
+                        <div className="flex flex-col w-[400px] h-[120px] rounded-[12px] border-[1px] border-[#EDEDED]">
                             <span
                                 className={`text-[#022B23] ${activeSection === 'general' ? 'bg-[#F8F8F8]' : ''} rounded-tr-[12px] rounded-tl-[12px] text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
                                 onClick={() => handleNavClick('general')}
                             >
                                 General settings
-                            </span>
-                            <span
-                                className={`text-[#022B23] ${activeSection === 'team' ? 'bg-[#F8F8F8]' : ''} text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
-                                onClick={() => handleNavClick('team')}
-                            >
-                                Team
                             </span>
                             <span
                                 className={`text-[#022B23] ${activeSection === 'security' ? 'bg-[#F8F8F8]' : ''} text-[12px] py-[10px] px-[8px] h-[40px] cursor-pointer`}
@@ -271,151 +585,76 @@ const Settings = () => {
                                 <p className="text-[#667085] text-[14px]">View and manage all your settings</p>
                             </div>
                             <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
-                                <p className="text-[#6A6C6E] text-[14px] ">Full Name</p>
-                                <p className="text-[#141415] text-[16px] font-medium">Tordue Francis</p>
-                            </div>
-                            <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
-                                <p className="text-[#6A6C6E] text-[14px] ">Company name</p>
-                                <p className="text-[#141415] text-[16px] font-medium">Spiff Logistics</p>
+                                <p className="text-[#6A6C6E] text-[14px]">Full Name</p>
+                                <p className="text-[#141415] text-[16px] font-medium">{userProfile.firstName} {userProfile.lastName}</p>
                             </div>
                             <div className="flex justify-between items-center h-[77px] w-full px-[37px] py-[14px] leading-tight">
                                 <div className="flex flex-col">
-                                    <p className="text-[#6A6C6E] text-[14px] ">Phone No</p>
-                                    <p className="text-[#141415] text-[16px] font-medium">+234 801 2345 678</p>
+                                    <p className="text-[#6A6C6E] text-[14px]">Phone No</p>
+                                    {isEditingPhone ? (
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="text"
+                                                value={phone}
+                                                onChange={(e) => setPhone(e.target.value)}
+                                                className="px-2 h-[40px] border-[1.5px] border-[#D1D1D1] rounded-[8px] outline-none focus:border-[2px] focus:border-[#022B23] text-[#121212] text-[14px] font-medium"
+                                            />
+                                            <button
+                                                onClick={handleUpdatePhone}
+                                                disabled={isUpdatingPhone}
+                                                className="px-2 py-1 bg-[#022B23] text-white rounded-[4px] text-[12px]"
+                                            >
+                                                {isUpdatingPhone ? 'Saving...' : 'Save'}
+                                            </button>
+                                            <button
+                                                onClick={() => setIsEditingPhone(false)}
+                                                className="px-2 py-1 border border-[#D0D5DD] rounded-[4px] text-[12px]"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <p className="text-[#141415] text-[16px] font-medium">
+                                            {phone || 'Phone number not provided'}
+                                        </p>
+                                    )}
                                 </div>
-                                <div className="flex hover:shadow-sm cursor-pointer justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[58px] h-[40px] border-[1px] border-[#D0D5DD]">
-                                    <p>Edit</p>
-                                </div>
+                                {!isEditingPhone && (
+                                    <div
+                                        className="flex hover:shadow-sm cursor-pointer justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[58px] h-[40px] border-[1px] border-[#D0D5DD]"
+                                        onClick={() => setIsEditingPhone(true)}
+                                    >
+                                        <p>Edit</p>
+                                    </div>
+                                )}
                             </div>
                             <div className="flex justify-between items-center h-[77px] w-full px-[37px] py-[14px] leading-tight">
                                 <div className="flex flex-col">
-                                    <p className="text-[#6A6C6E] text-[14px] ">Address</p>
-                                    <p className="text-[#141415] text-[16px] font-medium">No. 24 Child Ave. High Level Makurdi, Lagos</p>
+                                    <p className="text-[#6A6C6E] text-[14px]">Address</p>
+                                    <p className="text-[#141415] text-[16px] font-medium">
+                                        {isLoadingAddress ? "Loading..." :
+                                            userAddress ? `${userAddress.address}, ${userAddress.lga}, ${userAddress.state}` : "No address provided"}
+                                    </p>
                                 </div>
-                                <div className="flex cursor-pointer hover:shadow-sm justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[58px] h-[40px] border-[1px] border-[#D0D5DD]">
-                                    <p>Edit</p>
-                                </div>
-                            </div>
-                            <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
-                                <p className="text-[#6A6C6E] text-[14px] ">LGA</p>
-                                <p className="text-[#141415] text-[16px] font-medium">Makurdi</p>
-                            </div>
-                            <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
-                                <p className="text-[#6A6C6E] text-[14px] ">State</p>
-                                <p className="text-[#141415] text-[16px] font-medium">Benue</p>
-                            </div>
-                            <div className="flex h-[77px] gap-[50px] w-full px-[37px] py-[14px] leading-tight">
-                                <div className="flex-col flex ">
-                                    <p className="text-[#6A6C6E] text-[14px]">Company rating (321)</p>
-                                    <div className="flex gap-[2px] items-center">
-                                        <Image src={rating} alt={'image'} />
-                                        <p className="text-[#141415] font-medium text-[16px]">4.8</p>
-                                    </div>
-                                </div>
-                                <div className="flex-col flex ">
-                                    <p className="text-[#6A6C6E] text-[14px]">Availability</p>
-                                    <div className="flex gap-[2px] items-center">
-                                        <Image src={emptyTick} alt={'image'} />
-                                        <p className="text-[#141415] font-medium text-[16px]">Yes</p>
-                                    </div>
-                                </div>
-                                <div className="flex-col flex ">
-                                    <p className="text-[#6A6C6E] text-[14px]">Work hours</p>
-                                    <div className="flex gap-[2px] items-center">
-                                        <Image src={clock} alt={'image'} width={18} height={18} />
-                                        <p className="text-[#141415] font-medium text-[16px]">7:00am-9:00pm</p>
-                                    </div>
+                                <div
+                                    className="flex cursor-pointer hover:shadow-sm justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[100px] h-[40px] border-[1px] border-[#D0D5DD]"
+                                    onClick={() => setIsAddressModalOpen(true)}
+                                >
+                                    {userAddress ? "Edit" : "Add Address"}
                                 </div>
                             </div>
                             <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
-                                <p className="text-[#6A6C6E] text-[14px] ">Orders delivered</p>
-                                <p className="text-[#141415] text-[16px] font-medium">128 successful orders</p>
+                                <p className="text-[#6A6C6E] text-[14px]">LGA</p>
+                                <p className="text-[#141415] text-[16px] font-medium">
+                                    {isLoadingAddress ? "Loading..." : userAddress ? userAddress.lga : "Not specified"}
+                                </p>
                             </div>
-                        </div>
-                        <div
-                            ref={teamRef}
-                            id="team-section"
-                            className="w-full rounded-[24px] border border-[#ededed]"
-                        >
-                            <div className="flex flex-col h-[92px] w-[800px] px-[37px] py-[14px] border-b border-[#ededed]">
-                                <p className="text-[#101828] text-[18px] font-medium">Team (24)</p>
-                                <p className="text-[#667085] text-[14px]">View and manage your team</p>
+                            <div className="flex flex-col h-[77px] w-full px-[37px] py-[14px] leading-tight">
+                                <p className="text-[#6A6C6E] text-[14px]">State</p>
+                                <p className="text-[#141415] text-[16px] font-medium">
+                                    {isLoadingAddress ? "Loading..." : userAddress ? userAddress.state : "Benue State"}
+                                </p>
                             </div>
-
-                            <div className="flex justify-between mt-[20px] items-center h-[62px] w-full pl-[15px] pr-[30px] py-[14px] leading-tight">
-                                <div className="flex gap-[8px] items-center">
-                                    <Image src={adminImg} alt={'image'} />
-                                    <div className="flex flex-col">
-                                        <p className="text-[#101828] font-medium text-[14px] ">Phoenix Baker</p>
-                                        <p className="text-[#667085] text-[16px]">phoenixbaker@gmail.com</p>
-                                    </div>
-                                </div>
-                                <p className="text-[#667085] text-[14px]">You (Super admin)</p>
-                            </div>
-
-                            <div className="flex flex-col mb-[28px] mt-[30px] gap-[8px]">
-                                <div className="flex justify-between items-center h-[62px] w-full pl-[15px] pr-[30px] py-[14px] leading-tight">
-                                    <div className="flex gap-[8px] items-center">
-                                        <Image src={settingUser} alt={'image'} />
-                                        <div className="flex flex-col">
-                                            <p className="text-[#101828] font-medium text-[14px] ">Laura Iye</p>
-                                            <p className="text-[#667085] text-[16px]">lauraiye@gmail.com</p>
-                                            <span className="w-[51px] text-[#022B23] text-[12px] font-medium py-[2px] px-[8px] bg-[#F9FDE8] rounded-[16px] flex justify-center items-center h-[22px] ">
-                                                Driver
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex cursor-pointer hover:shadow-sm justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[86px] h-[40px] border-[1px] border-[#D0D5DD]">
-                                        <p>Remove</p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center h-[62px] w-full pl-[15px] pr-[30px] py-[14px] leading-tight">
-                                    <div className="flex gap-[8px] items-center">
-                                        <Image src={settingUser} alt={'image'} />
-                                        <div className="flex flex-col">
-                                            <p className="text-[#101828] font-medium text-[14px] ">Laura Iye</p>
-                                            <p className="text-[#667085] text-[16px]">lauraiye@gmail.com</p>
-                                            <span className="w-[51px] text-[#022B23] text-[12px] font-medium py-[2px] px-[8px] bg-[#F9FDE8] rounded-[16px] flex justify-center items-center h-[22px] ">
-                                                Driver
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex cursor-pointer hover:shadow-sm justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[86px] h-[40px] border-[1px] border-[#D0D5DD]">
-                                        <p>Remove</p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center h-[62px] w-full pl-[15px] pr-[30px] py-[14px] leading-tight">
-                                    <div className="flex gap-[8px] items-center">
-                                        <Image src={settingUser} alt={'image'} />
-                                        <div className="flex flex-col">
-                                            <p className="text-[#101828] font-medium text-[14px] ">Laura Iye</p>
-                                            <p className="text-[#667085] text-[16px]">lauraiye@gmail.com</p>
-                                            <span className="w-[51px] text-[#022B23] text-[12px] font-medium py-[2px] px-[8px] bg-[#F9FDE8] rounded-[16px] flex justify-center items-center h-[22px] ">
-                                                Driver
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex cursor-pointer hover:shadow-sm justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[86px] h-[40px] border-[1px] border-[#D0D5DD]">
-                                        <p>Remove</p>
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center h-[62px] w-full pl-[15px] pr-[30px] py-[14px] leading-tight">
-                                    <div className="flex gap-[8px] items-center">
-                                        <Image src={settingUser} alt={'image'} />
-                                        <div className="flex flex-col">
-                                            <p className="text-[#101828] font-medium text-[14px] ">Laura Iye</p>
-                                            <p className="text-[#667085] text-[16px]">lauraiye@gmail.com</p>
-                                            <span className="w-[51px] text-[#022B23] text-[12px] font-medium py-[2px] px-[8px] bg-[#F9FDE8] rounded-[16px] flex justify-center items-center h-[22px] ">
-                                                Driver
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div className="flex cursor-pointer hover:shadow-sm justify-center text-[#023047] text-[14px] items-center rounded-[8px] w-[86px] h-[40px] border-[1px] border-[#D0D5DD]">
-                                        <p>Remove</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <button onClick={handleOpenAddMemberModal} className="w-[156px] h-[40px] mb-[15px] rounded-[8px] ml-[15px] cursor-pointer hover:shadow-sm text-[#023047] font-medium text-[14px] px-[16px] py-[10px] border border-[#D0D5DD]">Add team member</button>
                         </div>
                         <div
                             ref={securityRef}
@@ -454,13 +693,6 @@ const Settings = () => {
                                                     : "text-[#BDBDBD] text-[16px] font-medium"
                                             }`}
                                         />
-
-                                        {shouldShowIcon(field) && (
-                                            <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                                                <Image src={emailIcon} alt="Email icon" width={20} height={20} />
-                                            </div>
-                                        )}
-
                                         {shouldShowPasswordToggle(field) && (
                                             <div
                                                 className="absolute right-4 px-[6px] py-[4px] flex items-center text-[#DCDCDC] text-[12px] shadow-md gap-[8px] rounded-[8px] border-[1px] border-[#EAEAEA] w-[72px] top-1/2 transform -translate-y-1/2 cursor-pointer bg-white"
@@ -520,9 +752,23 @@ const Settings = () => {
                                     ))}
                                 </div>
                             </div>
+                            {passwordUpdateError && (
+                                <div className="px-[15px] text-red-500 text-sm">
+                                    {passwordUpdateError}
+                                </div>
+                            )}
+                            {passwordUpdateSuccess && (
+                                <div className="px-[15px] text-green-500 text-sm">
+                                    Password updated successfully!
+                                </div>
+                            )}
                             <div className="flex px-[15px] py-[20px]">
-                                <button className="w-[156px] h-[40px] rounded-[8px] cursor-pointer hover:shadow-sm border-[#D0D5DD] border font-medium text-[14px] px-[16px] py-[10px] text-[#022B23]">
-                                    Update Password
+                                <button
+                                    className="w-[156px] h-[40px] rounded-[8px] cursor-pointer hover:shadow-sm border-[#D0D5DD] border font-medium text-[14px] px-[16px] py-[10px] text-[#022B23]"
+                                    onClick={handleUpdatePassword}
+                                    disabled={isUpdatingPassword}
+                                >
+                                    {isUpdatingPassword ? 'Updating...' : 'Update Password'}
                                 </button>
                             </div>
                         </div>
@@ -537,8 +783,8 @@ const Settings = () => {
                             </div>
                             <div className="flex justify-between items-center h-[77px] w-full px-[37px] py-[14px] leading-tight">
                                 <div className="flex flex-col">
-                                    <p className="text-[#6A6C6E] text-[14px] ">Email</p>
-                                    <p className="text-[#141415] text-[16px] font-medium">torduefrancis@gmail.com</p>
+                                    <p className="text-[#6A6C6E] text-[14px]">Email</p>
+                                    <p className="text-[#141415] text-[16px] font-medium">{userProfile.email}</p>
                                 </div>
                                 <div className="flex w-[72px] justify-end cursor-pointer p-[4px] items-center rounded-[24px] bg-[#C6EB5F] h-[40px]">
                                     <div className="w-[32px] bg-white h-[32px] rounded-full"></div>
@@ -548,18 +794,24 @@ const Settings = () => {
                     </div>
                 </div>
             </div>
-            <AddLogMemberModal
-                isAddLogMemberModalOpen={isAddMemberModalOpen}
-                onCloseAddLogMemberModal={() => setIsAddMemberModalOpen(false)}
-                onRequestSuccess={handleAddMemberSuccess}
+            <AddressModal
+                isOpen={isAddressModalOpen}
+                onClose={() => setIsAddressModalOpen(false)}
+                onSubmit={handleAddressSubmit}
+                email={session?.user?.email || ''}
+                initialData={userAddress || undefined}
+                isUpdate={!!userAddress}
             />
-
-            <AddLogMemberSuccessModal
-                isOpen={isSuccessModalOpen}
-                onClose={handleCloseSuccessModal}
-            />
+            {showToast && (
+                <Toast
+                    type={toastType}
+                    message={toastMessage}
+                    subMessage={toastSubMessage}
+                    onClose={handleCloseToast}
+                />
+            )}
         </LogisticsCompanyGuard>
-    )
-}
+    );
+};
 
 export default Settings;

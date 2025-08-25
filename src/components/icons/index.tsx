@@ -587,6 +587,145 @@ export const ExportIcon: React.FC<IconProps> = ({ className, ...props }) => (
     </svg>
 );
 
+// Additional icons for vendor and logistics dashboards
+export const ShopIcon: React.FC<IconProps> = ({ className, ...props }) => (
+    <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        {...props}
+    >
+        <path
+            d="M2.50833 9.34998V13.0916C2.50833 16.8333 4.00833 18.3333 7.75 18.3333H12.2417C15.9833 18.3333 17.4833 16.8333 17.4833 13.0916V9.34998"
+            stroke="#1E1E1E"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M10 9.99996C11.525 9.99996 12.65 8.75829 12.5 7.23329L11.95 1.66663H8.05834L7.5 7.23329C7.35 8.75829 8.475 9.99996 10 9.99996Z"
+            stroke="#1E1E1E"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+export const OrderIcon: React.FC<IconProps> = ({ className, ...props }) => (
+    <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        {...props}
+    >
+        <path
+            d="M7.5 18.3333H12.5C16.6667 18.3333 18.3333 16.6666 18.3333 12.5V7.49996C18.3333 3.33329 16.6667 1.66663 12.5 1.66663H7.5C3.33333 1.66663 1.66667 3.33329 1.66667 7.49996V12.5C1.66667 16.6666 3.33333 18.3333 7.5 18.3333Z"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M6.66667 9.16663H13.3333"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M6.66667 12.5H10"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+export const ReviewsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+    <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        {...props}
+    >
+        <path
+            d="M14.4333 2.84998L12.175 5.10831C11.8417 5.44165 11.8417 5.97498 12.175 6.30831L13.6917 7.82498C14.025 8.15831 14.5583 8.15831 14.8917 7.82498L17.15 5.56665C18.2583 6.82498 18.3333 8.59165 17.4 9.99998L9.99999 17.4C8.59166 18.3333 6.82499 18.2583 5.56666 17.15L2.84999 14.4333C1.74166 13.175 1.66666 11.4083 2.59999 9.99998L9.99999 2.59998C11.4083 1.66665 13.175 1.74165 14.4333 2.84998Z"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M7.91667 14.1666L5.83334 12.0833"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+export const ChatsIcon: React.FC<IconProps> = ({ className, ...props }) => (
+    <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        {...props}
+    >
+        <path
+            d="M7.08333 15.8334H6.66667C3.33333 15.8334 1.66667 15.0001 1.66667 10.8334V6.66675C1.66667 3.33341 3.33333 1.66675 6.66667 1.66675H13.3333C16.6667 1.66675 18.3333 3.33341 18.3333 6.66675V10.8334C18.3333 14.1667 16.6667 15.8334 13.3333 15.8334H12.9167C12.6583 15.8334 12.4083 15.9584 12.25 16.1667L11 17.8334C10.45 18.5667 9.55 18.5667 9 17.8334L7.75 16.1667C7.61667 15.9834 7.30833 15.8334 7.08333 15.8334Z"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeMiterlimit="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+export const FleetIcon: React.FC<IconProps> = ({ className, ...props }) => (
+    <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        className={className}
+        {...props}
+    >
+        <path
+            d="M10 11.6666H10.8333C11.75 11.6666 12.5 10.9166 12.5 9.99996V1.66663H5C3.75 1.66663 2.65834 2.35828 2.09167 3.37495"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+        <path
+            d="M1.66667 14.1666C1.66667 15.55 2.78333 16.6666 4.16667 16.6666H5C5 15.75 5.75 15 6.66667 15C7.58333 15 8.33333 15.75 8.33333 16.6666H11.6667C11.6667 15.75 12.4167 15 13.3333 15C14.25 15 15 15.75 15 16.6666H15.8333C17.2167 16.6666 18.3333 15.55 18.3333 14.1666V11.6666H15.8333C15.375 11.6666 15 11.2916 15 10.8333V8.33329C15 7.87496 15.375 7.49996 15.8333 7.49996H16.9083L15.4833 5.0083C15.1833 4.49163 14.6334 4.16663 14.0334 4.16663H12.5V9.99996C12.5 10.9166 11.75 11.6666 10.8333 11.6666H10"
+            stroke="#171719"
+            strokeWidth="1.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
 export const SuperGoLogo: React.FC<IconProps> = ({ className, ...props }) => (
     <svg
         width="43"

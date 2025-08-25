@@ -29,53 +29,59 @@ export interface VideoCallResponse {
   vendorJoined: boolean;
 }
 
-export interface TwilioTokenResponse {
-  token: string;
+export interface WebRTCSessionResponse {
   roomName: string;
-  identity: string;
+  userEmail: string;
+  otherParticipant: string;
+  callType: 'video' | 'voice';
+  iceServers: Array<{
+    urls: string;
+    username?: string;
+    credential?: string;
+  }>;
 }
 
 class VideoCallService {
   async testConnection(): Promise<boolean> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/video-calls/health`);
-      console.log('📞 Video call service health check:', response.status);
+      const response = await axios.get(`${API_BASE_URL}/webrtc/video-calls/health`);
+      console.log('📞 WebRTC video call service health check:', response.status);
       return response.status === 200;
     } catch (error) {
-      console.error('📞 Video call service not available:', error);
+      console.error('📞 WebRTC video call service not available:', error);
       return false;
     }
   }
 
   async initiateCall(request: VideoCallRequest): Promise<VideoCallResponse> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/video-calls/initiate`, request);
+      const response = await axios.post(`${API_BASE_URL}/webrtc/video-calls/initiate`, request);
       return response.data;
     } catch (error) {
-      console.error('Error initiating video call:', error);
+      console.error('Error initiating WebRTC video call:', error);
       throw error;
     }
   }
 
-  async getAccessToken(roomName: string, userEmail: string): Promise<TwilioTokenResponse> {
+  async getSessionInfo(roomName: string, userEmail: string): Promise<WebRTCSessionResponse> {
     try {
-      const url = `${API_BASE_URL}/video-calls/join/${roomName}?userEmail=${encodeURIComponent(userEmail)}`;
-      console.log('🎥 Making request to:', url);
+      const url = `${API_BASE_URL}/webrtc/video-calls/join/${roomName}?userEmail=${encodeURIComponent(userEmail)}`;
+      console.log('🎥 Making WebRTC request to:', url);
       
-      // Join the call and get Twilio access token
+      // Join the call and get WebRTC session info
       const response = await axios.post(url);
-      console.log('🎥 Backend response for video call token:', response.data);
+      console.log('🎥 Backend response for WebRTC video call session:', response.data);
       console.log('🎥 Response status:', response.status);
       
-      // Validate the response has the required token
-      if (!response.data || !response.data.token) {
-        console.error('🎥 Invalid token response - data:', response.data);
-        throw new Error(`Invalid token response from backend: ${JSON.stringify(response.data)}`);
+      // Validate the response has the required session info
+      if (!response.data || !response.data.roomName) {
+        console.error('🎥 Invalid session response - data:', response.data);
+        throw new Error(`Invalid session response from backend: ${JSON.stringify(response.data)}`);
       }
       
       return response.data;
     } catch (error) {
-      console.error('🎥 Error getting video call access token:', error);
+      console.error('🎥 Error getting WebRTC video call session:', error);
       if (axios.isAxiosError(error)) {
         console.error('🎥 Axios error details:', {
           status: error.response?.status,
@@ -87,7 +93,7 @@ class VideoCallService {
         
         // Provide more specific error messages
         if (error.response?.status === 404) {
-          throw new Error('Video call service not available. Please ensure the call service is running.');
+          throw new Error('WebRTC video call service not available. Please ensure the call service is running.');
         } else if (error.response?.status === 400) {
           throw new Error(`Bad request: ${error.response?.data || 'Invalid request parameters'}`);
         } else {
@@ -101,11 +107,11 @@ class VideoCallService {
   async endCall(roomName: string, userEmail: string): Promise<VideoCallResponse> {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/video-calls/end/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
+        `${API_BASE_URL}/webrtc/video-calls/end/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error ending video call:', error);
+      console.error('Error ending WebRTC video call:', error);
       throw error;
     }
   }
@@ -113,11 +119,11 @@ class VideoCallService {
   async declineCall(roomName: string, userEmail: string): Promise<VideoCallResponse> {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/video-calls/decline/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
+        `${API_BASE_URL}/webrtc/video-calls/decline/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error declining video call:', error);
+      console.error('Error declining WebRTC video call:', error);
       throw error;
     }
   }
@@ -125,11 +131,11 @@ class VideoCallService {
   async getCallHistory(userEmail: string): Promise<VideoCallResponse[]> {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/video-calls/history?userEmail=${encodeURIComponent(userEmail)}`
+        `${API_BASE_URL}/webrtc/video-calls/history?userEmail=${encodeURIComponent(userEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error getting call history:', error);
+      console.error('Error getting WebRTC video call history:', error);
       throw error;
     }
   }
@@ -137,21 +143,23 @@ class VideoCallService {
   async getPendingCalls(vendorEmail: string): Promise<VideoCallResponse[]> {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/video-calls/pending?vendorEmail=${encodeURIComponent(vendorEmail)}`
+        `${API_BASE_URL}/webrtc/video-calls/pending?vendorEmail=${encodeURIComponent(vendorEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error getting pending calls:', error);
+      console.error('Error getting pending WebRTC video calls:', error);
       throw error;
     }
   }
 
-  async acceptCall(roomName: string): Promise<VideoCallResponse> {
+  async acceptCall(roomName: string, userEmail: string): Promise<VideoCallResponse> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/video-calls/accept/${roomName}`);
+      const response = await axios.post(
+        `${API_BASE_URL}/webrtc/video-calls/accept/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Error accepting video call:', error);
+      console.error('Error accepting WebRTC video call:', error);
       throw error;
     }
   }

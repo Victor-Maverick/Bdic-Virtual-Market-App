@@ -37,6 +37,9 @@ export interface Rider {
     firstName?: string;
     lastName?: string;
     email?: string;
+    name: string;
+    status: string;
+    phone: string;
     vehicle?: Vehicle;
 }
 
@@ -47,6 +50,35 @@ export interface LogisticsStats {
     pendingPartners: number;
     totalVehicles: number;
     totalRiders: number;
+}
+
+export interface UpdateVehicleRequest {
+    engineNumber: string
+    plateNumber: string
+    type: string
+}
+
+export interface VehicleResponse {
+    id: number;
+    engineNumber: string;
+    plateNumber: string;
+    type: string;
+    riderName: string;
+}
+
+export interface  DeliveryResponse{
+    id: number;
+    orderNumber: string;
+    customerName: string;
+    contactPhone: string;
+    deliveryAddress: string;
+    deliveryMethod: string;
+    deliveryFee: number;
+    grandTotal: number;
+    riderName: string;
+    riderPhone: string;
+    createdAt: string;
+    updatedAt: string;
 }
 
 export const logisticsService = {
@@ -72,13 +104,14 @@ export const logisticsService = {
         }
     },
 
-    // Get all riders
-    async getAllRiders(): Promise<Rider[]> {
+
+    // Get all company vehicles count
+    async getAllCompanyRiders(email: string): Promise<Rider[]> {
         try {
-            const response = await logisticsApi.get('/logistics/allRiders');
+            const response = await logisticsApi.get(`/logistics/allCompanyRiders?email=${encodeURIComponent(email)}`);
             return response.data;
         } catch (error) {
-            console.error('Error fetching riders:', error);
+            console.error('Error fetching company vehicles count:', error);
             throw error;
         }
     },
@@ -216,6 +249,113 @@ export const logisticsService = {
         } catch (error) {
             console.error('Error fetching company by owner email:', error);
             throw error;
+        }
+    },
+
+    // Get all company vehicles count
+    async getAllCompanyOrders(email: string): Promise<DeliveryResponse[]> {
+        try {
+            const response = await logisticsApi.get(`/logistics/company-orders?email=${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching company vehicles count:', error);
+            throw error;
+        }
+    },
+
+    // Get all company vehicles count
+    async getAllCompanyVehiclesCount(email: string): Promise<number> {
+        try {
+            const response = await logisticsApi.get(`/logistics/allCompanyVehiclesCount?email=${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching company vehicles count:', error);
+            throw error;
+        }
+    },
+
+    // Get all company bikes count
+    async getAllCompanyBikesCount(email: string): Promise<number> {
+        try {
+            const response = await logisticsApi.get(`/logistics/allCompanyBikesCount?email=${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching company bikes count:', error);
+            throw error;
+        }
+    },
+
+    // Get all company trucks count
+    async getAllCompanyTrucksCount(email: string): Promise<number> {
+        try {
+            const response = await logisticsApi.get(`/logistics/allCompanyTrucksCount?email=${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching company trucks count:', error);
+            throw error;
+        }
+    },
+
+    // Get all company riders count
+    async getAllCompanyRidersCount(email: string): Promise<number> {
+        try {
+            const response = await logisticsApi.get(`/logistics/allCompanyRidersCount?email=${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching company riders count:', error);
+            throw error;
+        }
+    },
+
+    // Get all company vehicles
+    async getAllCompanyVehicles(email: string): Promise<VehicleResponse[]> {
+        try {
+            const response = await logisticsApi.get(`/logistics/allCompanyVehicles?email=${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching company vehicles:', error);
+            throw error;
+        }
+    },
+
+    // Get all vehicles for company
+    async getAllVehiclesForCompany(email: string): Promise<VehicleResponse[]> {
+        try {
+            const response = await logisticsApi.get(`/logistics/allVehiclesForCompany?email=${encodeURIComponent(email)}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error fetching company vehicles:', error);
+            throw error;
+        }
+    },
+
+    async deleteVehicle(vehicleId: number): Promise<string> {
+        try {
+            const response = await logisticsApi.delete(`/logistics/delete-vehicle?vehicleId=${vehicleId}`)
+            return response.data
+        } catch (error) {
+            console.error("Error deleting vehicle:", error)
+            throw error
+        }
+    },
+
+    async editVehicle(vehicleId: number, request: UpdateVehicleRequest): Promise<string> {
+        try {
+            const response = await logisticsApi.put(`/logistics/editVehicle?vehicleId=${vehicleId}`, request)
+            return response.data
+        } catch (error) {
+            console.error("Error editing vehicle:", error)
+            throw error
+        }
+    },
+
+    async deleteRider(riderId: number): Promise<string> {
+        try {
+            const response = await logisticsApi.delete(`/logistics/delete-rider?riderId=${riderId}`)
+            return response.data
+        } catch (error) {
+            console.error("Error deleting rider:", error)
+            throw error
         }
     },
 

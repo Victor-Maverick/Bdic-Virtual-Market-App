@@ -35,7 +35,20 @@ const VoiceCallButton: React.FC<VoiceCallButtonProps> = ({
 
 
   const handleVoiceCall = () => {
-    setShowCallManager(true);
+    // Use the global CallManager
+    if (typeof window !== 'undefined' && (window as any).callManager) {
+      (window as any).callManager.initiateVoiceCall({
+        vendorEmail,
+        buyerEmail: session?.user?.email || '',
+        productId,
+        productName,
+        shopId,
+        shopName
+      });
+    } else {
+      // Fallback to old modal system
+      setShowCallManager(true);
+    }
   };
 
   const buttonClassName = getButtonClassName(variant);

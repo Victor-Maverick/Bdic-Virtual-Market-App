@@ -35,7 +35,20 @@ const VideoCallButton: React.FC<VideoCallButtonProps> = ({
 
 
   const handleVideoCall = () => {
-    setShowCallManager(true);
+    // Use the global CallManager
+    if (typeof window !== 'undefined' && (window as any).callManager) {
+      (window as any).callManager.initiateVideoCall({
+        vendorEmail,
+        buyerEmail: session?.user?.email || '',
+        productId,
+        productName,
+        shopId,
+        shopName
+      });
+    } else {
+      // Fallback to old modal system
+      setShowCallManager(true);
+    }
   };
 
   const buttonClassName = getButtonClassName(variant);

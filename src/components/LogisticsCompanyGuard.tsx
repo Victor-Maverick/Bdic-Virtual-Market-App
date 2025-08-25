@@ -12,10 +12,10 @@ interface LogisticsCompanyGuardProps {
     showDashboardOptions?: boolean;
 }
 
-const LogisticsCompanyGuardContent: React.FC<LogisticsCompanyGuardProps> = ({ 
-    children, 
-    showHeader = true, 
-    showDashboardOptions = true
+const LogisticsCompanyGuardContent: React.FC<LogisticsCompanyGuardProps> = ({
+    children,
+    showHeader = false,
+    showDashboardOptions = false
 }) => {
     const [companyExists, setCompanyExists] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
@@ -43,7 +43,7 @@ const LogisticsCompanyGuardContent: React.FC<LogisticsCompanyGuardProps> = ({
     if (loading) {
         return (
             <>
-                {showHeader && <DashboardHeader/>}
+                {showHeader && <DashboardHeader />}
                 <div className="flex justify-center items-center h-screen">
                     <p>Loading...</p>
                 </div>
@@ -55,8 +55,8 @@ const LogisticsCompanyGuardContent: React.FC<LogisticsCompanyGuardProps> = ({
     if (!companyExists) {
         return (
             <>
-                {showHeader && <DashboardHeader/>}
-                {showDashboardOptions && <LogisticsDashboardOptions/>}
+                {showHeader && <DashboardHeader />}
+                {showDashboardOptions && <LogisticsDashboardOptions />}
                 <div className="flex flex-col items-center justify-center h-screen">
                     <p className="mb-4 text-[#022B23] text-[18px] font-medium">You need to set up your logistics company first</p>
                     <button
@@ -73,8 +73,8 @@ const LogisticsCompanyGuardContent: React.FC<LogisticsCompanyGuardProps> = ({
     // Company is set up - render children with default headers
     return (
         <>
-            {showHeader && <DashboardHeader/>}
-            {showDashboardOptions && <LogisticsDashboardOptions/>}
+            {showHeader && <DashboardHeader />}
+            {showDashboardOptions && <LogisticsDashboardOptions />}
             {children}
         </>
     );

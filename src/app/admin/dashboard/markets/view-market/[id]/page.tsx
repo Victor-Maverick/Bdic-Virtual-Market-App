@@ -5,7 +5,7 @@ import searchImg from "../../../../../../../public/assets/images/search-normal.p
 import arrowDown from "../../../../../../../public/assets/images/arrow-down.svg";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import EditMarketLineModal from "@/components/editMarketLineModal";
-import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
+import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import AddNewLineModal from "@/components/addNewLineModal";
 import { toast } from "react-hot-toast";
 import axios from "axios";
@@ -41,6 +41,7 @@ interface Shop {
     marketId: number;
     marketSectionId: string;
     email: string;
+    status: "ACTIVE" | "INACTIVE";
 }
 
 interface MarketSection {
@@ -50,6 +51,7 @@ interface MarketSection {
     shops: number;
     createdAt: string;
     updatedAt: string;
+    status: "ACTIVE" | "INACTIVE";
 }
 
 const MarketSectionTableRow = ({ section, isLast, onRefresh }: { section: MarketSection; isLast: boolean; onRefresh: () => void }) => {
@@ -62,8 +64,12 @@ const MarketSectionTableRow = ({ section, isLast, onRefresh }: { section: Market
             </div>
 
             <div className="flex items-center w-[17%] px-[10px]">
-                <div className="w-[55px] h-[22px] rounded-[8px] flex items-center justify-center bg-[#ECFDF3] text-[#027A48]">
-                    <p className="text-[12px] font-medium">ACTIVE</p>
+                <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
+                    section.status === 'ACTIVE'
+                        ? 'bg-[#ECFDF3] text-[#027A48]'
+                        : 'bg-[#FEF3F2] text-[#FF5050]'
+                }`}>
+                    <p className="text-[12px] font-medium">{section.status}</p>
                 </div>
             </div>
 
@@ -72,7 +78,7 @@ const MarketSectionTableRow = ({ section, isLast, onRefresh }: { section: Market
             </div>
 
             <div className="flex items-center justify-center w-[3%]">
-                <MarketActionsDropdown section={section.name} marketId={section.id} onRefresh={onRefresh}>
+                <MarketActionsDropdown section={section.name} marketId={section.id} onRefresh={onRefresh} sectionStatus={section.status}>
                     <div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -84,12 +90,11 @@ const MarketSectionTableRow = ({ section, isLast, onRefresh }: { section: Market
     );
 };
 
-const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { section: string, marketId: number; children: React.ReactNode; onRefresh: () => void }) => {
+const MarketActionsDropdown = ({ children, section, marketId, onRefresh, sectionStatus }: { section: string, marketId: number; children: React.ReactNode; onRefresh: () => void; sectionStatus?: "ACTIVE" | "INACTIVE" }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLDivElement>(null);
     const [isMarketModalOpen, setIsMarketModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentSectionName, setCurrentSectionName] = useState(section);
 
     const handleToggle = (e: React.MouseEvent) => {
@@ -126,31 +131,25 @@ const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { sec
         setIsMarketModalOpen(false);
     };
 
-    const handleOpenDeleteModal = () => {
-        setIsOpen(false);
-        setIsDeleteModalOpen(true);
-    };
-
-    const handleCloseDeleteModal = () => {
-        setIsDeleteModalOpen(false);
-    };
-
-    const handleDelete = async () => {
+    const handleToggleLineStatus = async () => {
         try {
-            const response = await axios.delete(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/delete/${marketId}`
-            );
+            const endpoint = sectionStatus === 'ACTIVE'
+                ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/deActivate-line?id=${marketId}`
+                : `${process.env.NEXT_PUBLIC_API_BASE_URL}/market-sections/activate-line?id=${marketId}`;
+            
+            const response = await axios.put(endpoint);
 
-            if (response.status === 204) {
-                toast.success("Section deleted successfully");
+            if (response.status === 200) {
+                const action = sectionStatus === 'ACTIVE' ? 'deactivated' : 'activated';
+                toast.success(`Line ${action} successfully`);
                 // Refresh the sections list to show updated data
                 onRefresh();
             }
         } catch (error) {
-            console.error("Error deleting section:", error);
-            toast.error("Failed to delete section. Please try again.");
+            console.error("Error toggling line status:", error);
+            toast.error("Failed to update line status. Please try again.");
         }
-        setIsDeleteModalOpen(false);
+        setIsOpen(false);
     };
 
     useEffect(() => {
@@ -176,7 +175,7 @@ const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { sec
                 </div>
 
                 {isOpen && (
-                    <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
+                    <div className="absolute right-0 top-full mt-1 h-[76px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
                         <ul className="">
                             <li
                                 onClick={handleOpenMarketModal}
@@ -184,14 +183,8 @@ const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { sec
                             >
                                 edit line
                             </li>
-                            <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer">
-                                Deactivate line
-                            </li>
-                            <li
-                                onClick={handleOpenDeleteModal}
-                                className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]"
-                            >
-                                Delete
+                            <li onClick={handleToggleLineStatus} className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:bg-[#f9f9f9] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer">
+                                {sectionStatus === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                             </li>
                         </ul>
                     </div>
@@ -204,12 +197,6 @@ const MarketActionsDropdown = ({ children, section, marketId, onRefresh }: { sec
                 isOpen={isMarketModalOpen}
                 onClose={handleCloseMarketModal}
                 onContinue={handleMarketModalContinue}
-            />
-
-            <DeleteConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={handleCloseDeleteModal}
-                onDelete={handleDelete}
             />
         </>
     );
@@ -230,6 +217,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
     const [currentSectionPage, setCurrentSectionPage] = useState(1);
     const SECTIONS_PER_PAGE = 5;
     const totalSectionPages = Math.ceil(marketSections.length / SECTIONS_PER_PAGE);
+
     const currentSections = marketSections.slice(
         (currentSectionPage - 1) * SECTIONS_PER_PAGE,
         currentSectionPage * SECTIONS_PER_PAGE
@@ -348,11 +336,13 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
         setIsDeactivateModalOpen(false);
     };
 
-    const handleDeactivateMarket = async () => {
+    const handleToggleMarketStatus = async () => {
         try {
-            const response = await axios.put(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/deActivateMarket?id=${id}`
-            );
+            const endpoint = market?.status === 'ACTIVE' 
+                ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/deActivateMarket?id=${id}`
+                : `${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/activateMarket?id=${id}`;
+            
+            const response = await axios.put(endpoint);
 
             if (response.status === 200) {
                 const newStatus = market?.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
@@ -361,7 +351,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
                 setMarket(prev => prev ? { ...prev, status: newStatus as "ACTIVE" | "INACTIVE" } : null);
             }
         } catch (error) {
-            console.error("Error deactivating market:", error);
+            console.error("Error toggling market status:", error);
             toast.error("Failed to update market status. Please try again.");
         }
         setIsDeactivateModalOpen(false);
@@ -373,110 +363,99 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
 
     // Calculate stats
     const totalShops = market.shops.length;
-    // const inactiveShops = market.shops.filter(shop => /* condition for inactive shops */ false).length;
-    // const activeShops = totalShops - inactiveShops;
-
+    
     return (
-        <div className="w-full">
+        <div className="w-full min-h-screen">
             {/* Header Navigation */}
-            <div className="text-[#707070] text-[14px] px-5 font-medium gap-2 flex items-center h-[56px] w-full border-b border-[#ededed]">
+            <div className="text-[#707070] text-[14px] px-3 md:px-5 font-medium gap-2 flex items-center h-[56px] w-full border-b border-[#ededed]">
                 <BackButton variant="default" text="Back to market management" onClick={() => router.push("/admin/dashboard/markets")} />
             </div>
 
             {/* Page Title */}
-            <div className="text-[#022B23] text-[14px] px-5 font-medium flex items-center h-[49px] border-b border-[#ededed]">
+            <div className="text-[#022B23] text-[14px] px-3 md:px-5 font-medium flex items-center h-[49px] border-b border-[#ededed]">
                 <p>View market</p>
             </div>
 
             {/* Market Header Info */}
-            <div className="px-[20px] py-4">
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex flex-col gap-[4px]">
-                        <div className="flex gap-[8px] items-center">
-                            <h2 className="text-[18px] font-semibold text-[#022B23]">{market.name}</h2>
-                            <span className="text-[12px] font-medium w-[50px] rounded-[8px] h-[25px] bg-[#F9FAFB] flex items-center justify-center text-[#667085]">ID: #{market.id}</span>
+            <div className="px-3 md:px-[20px] py-4">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
+                    <div className="flex flex-col gap-[4px] flex-1 min-w-0">
+                        <div className="flex flex-col md:flex-row gap-2 md:gap-[8px] md:items-center">
+                            <h2 className="text-[16px] md:text-[18px] font-semibold text-[#022B23] truncate">{market.name}</h2>
+                            <span className="text-[10px] md:text-[12px] font-medium w-fit px-2 md:w-[50px] rounded-[8px] h-[20px] md:h-[25px] bg-[#F9FAFB] flex items-center justify-center text-[#667085]">ID: #{market.id}</span>
                         </div>
-                        <p className="text-[14px] text-[#707070] font-medium">{market.address}, {market.city}</p>
+                        <p className="text-[12px] md:text-[14px] text-[#707070] font-medium">{market.address}, {market.city}</p>
                     </div>
-                    <span className={`${market.status === 'ACTIVE' ? 'text-[#93C51D] border-[#93C51D] bg-[#F9FDE8]' : 'text-[#FF5050] border-[#FF5050] bg-[#FFFAF9]'} border w-[53px] h-[32px] flex justify-center items-center text-[12px] rounded-[6px]`}>
+                    <span className={`${market.status === 'ACTIVE' ? 'text-[#93C51D] border-[#93C51D] bg-[#F9FDE8]' : 'text-[#FF5050] border-[#FF5050] bg-[#FFFAF9]'} border w-[53px] h-[32px] flex justify-center items-center text-[12px] rounded-[6px] flex-shrink-0`}>
                         {market.status}
                     </span>
                 </div>
 
-                <div className="flex w-full gap-[20px] mb-[20px] mt-[20px] h-[110px] justify-between">
-                    <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                            <p className="text-[#707070] text-[12px]">Lines</p>
+                <div className="grid grid-cols-2 md:grid-cols-3 w-full gap-3 md:gap-[20px] mb-[20px] mt-[20px] md:h-[110px]">
+                    <div className="flex flex-col rounded-[8px] md:rounded-[14px] h-[90px] md:h-full border-[#EAEAEA] border-[0.5px]">
+                        <div className="w-full px-2 md:px-[14px] flex items-center rounded-tl-[8px] rounded-tr-[8px] md:rounded-tl-[14px] md:rounded-tr-[14px] h-[25px] md:h-[30px] bg-[#F7F7F7]">
+                            <p className="text-[#707070] text-[10px] md:text-[12px]">Lines</p>
                         </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">{market.lines}</p>
-                        </div>
-                    </div>
-                    <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                            <p className="text-[#707070] text-[12px]">Total shops</p>
-                        </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">{totalShops}</p>
+                        <div className="h-[65px] md:h-[80px] flex justify-center flex-col p-2 md:p-[14px]">
+                            <p className="text-[16px] md:text-[20px] text-[#022B23] font-medium">{market.lines}</p>
                         </div>
                     </div>
-                    <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                            <p className="text-[#707070] text-[12px]">Inactive shops</p>
+                    <div className="flex flex-col rounded-[8px] md:rounded-[14px] h-[90px] md:h-full border-[#EAEAEA] border-[0.5px]">
+                        <div className="w-full px-2 md:px-[14px] flex items-center rounded-tl-[8px] rounded-tr-[8px] md:rounded-tl-[14px] md:rounded-tr-[14px] h-[25px] md:h-[30px] bg-[#F7F7F7]">
+                            <p className="text-[#707070] text-[10px] md:text-[12px]">Total shops</p>
                         </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            <p className="text-[20px] text-[#022B23] font-medium">{totalShops}</p>
+                        <div className="h-[65px] md:h-[80px] flex justify-center flex-col p-2 md:p-[14px]">
+                            <p className="text-[16px] md:text-[20px] text-[#022B23] font-medium">{totalShops}</p>
                         </div>
                     </div>
-                    <div className="flex flex-col w-[25%] rounded-[14px] h-full border-[#EAEAEA] border-[0.5px]">
-                        <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#000000]">
-                            <p className="text-white text-[12px]">Transactions</p>
+                    <div className="flex flex-col rounded-[8px] md:rounded-[14px] h-[90px] md:h-full border-[#EAEAEA] border-[0.5px]">
+                        <div className="w-full px-2 md:px-[14px] flex items-center rounded-tl-[8px] rounded-tr-[8px] md:rounded-tl-[14px] md:rounded-tr-[14px] h-[25px] md:h-[30px] bg-[#F7F7F7]">
+                            <p className="text-[#707070] text-[10px] md:text-[12px]">Inactive shops</p>
                         </div>
-                        <div className="h-[80px] flex justify-center flex-col p-[14px]">
-                            {transactionLoading ? (
-                                <p className="text-[14px] text-[#707070]">Loading...</p>
-                            ) : (
-                                <p className="text-[20px] text-[#022B23] font-medium">{transactionCount}</p>
-                            )}
+                        <div className="h-[65px] md:h-[80px] flex justify-center flex-col p-2 md:p-[14px]">
+                            <p className="text-[16px] md:text-[20px] text-[#022B23] font-medium">{market.shops.filter(shop => shop.status === 'INACTIVE').length}</p>
                         </div>
                     </div>
                 </div>
                 {/* Action Buttons */}
-                <div className="flex gap-[6px] h-[48px]">
+                <div className="flex flex-col md:flex-row gap-3 md:gap-[6px] md:h-[48px]">
                     <div
                         onClick={handleOpenAddNewLineModal}
-                        className="bg-[#022B23] flex items-center h-full justify-center w-[189px] text-[#C6EB5F] text-[14px] font-semibold rounded-[12px] cursor-pointer hover:bg-[#033a30] transition-colors"
+                        className="bg-[#022B23] flex items-center h-[40px] md:h-full justify-center w-full md:w-[189px] text-[#C6EB5F] text-[12px] md:text-[14px] font-semibold rounded-[8px] md:rounded-[12px] cursor-pointer hover:bg-[#033a30] transition-colors"
                     >
                         Add new line
                     </div>
                     <div
+                        onClick={() => router.push(`/admin/dashboard/markets/view-shops/${id}`)}
+                        className="bg-[#C6EB5F] flex items-center h-[40px] md:h-full justify-center w-full md:w-[140px] text-[#022B23] text-[12px] md:text-[14px] font-semibold rounded-[8px] md:rounded-[12px] cursor-pointer hover:bg-[#b8d954] transition-colors"
+                    >
+                        View Shops
+                    </div>
+                    <div
                         onClick={handleOpenUpdateMarketModal}
-                        className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#022B23] text-[#022B23] px-4 py-2 rounded-[12px] cursor-pointer hover:bg-[#022B23] hover:text-white transition-colors"
+                        className="border flex items-center h-[40px] md:h-full justify-center w-full md:w-[112px] text-[12px] md:text-[14px] font-medium border-[#022B23] text-[#022B23] px-4 py-2 rounded-[8px] md:rounded-[12px] cursor-pointer hover:bg-[#022B23] hover:text-white transition-colors"
                     >
                         Update
                     </div>
                     <div
                         onClick={handleOpenDeactivateModal}
-                        className="border flex items-center h-full justify-center w-[112px] text-[14px] font-medium border-[#FF5050] text-[#FF5050] px-4 py-2 rounded-[12px] cursor-pointer hover:bg-[#FF5050] hover:text-white transition-colors"
+                        className="border flex items-center h-[40px] md:h-full justify-center w-full md:w-[112px] text-[12px] md:text-[14px] font-medium border-[#FF5050] text-[#FF5050] px-4 py-2 rounded-[8px] md:rounded-[12px] cursor-pointer hover:bg-[#FF5050] hover:text-white transition-colors"
                     >
                         {market.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
                     </div>
                 </div>
                 <div className="mt-[30px]">
-                    <div className="w-full flex flex-col h-auto border-[#EAECF0] border rounded-[24px]">
-                        <div className="w-full h-[91px] flex items-center justify-between px-[24px] pt-[20px] pb-[19px]">
-                            <div className="flex flex-col gap-[4px]">
+                    <div className="w-full flex flex-col h-auto border-[#EAECF0] border rounded-[12px] md:rounded-[24px]">
+                        <div className="w-full min-h-[91px] flex flex-col md:flex-row items-start md:items-center justify-between px-4 md:px-[24px] pt-[20px] pb-[19px] gap-4">
+                            <div className="flex flex-col gap-[4px] flex-1">
                                 <div className="h-[28px] flex items-center">
-                                    <p className="text-[18px] font-medium text-[#101828]">Market Lines and Sections</p>
+                                    <p className="text-[16px] md:text-[18px] font-medium text-[#101828]">Market Lines and Sections</p>
                                 </div>
                                 <div className="flex h-[20px] items-center">
-                                    <p className="text-[14px] text-[#667085]">View and manage sections in {market?.name}</p>
+                                    <p className="text-[12px] md:text-[14px] text-[#667085]">View and manage sections in {market?.name}</p>
                                 </div>
                             </div>
-                            <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                                <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
-                                <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none" />
-                            </div>
+
                         </div>
 
                         <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">
@@ -578,7 +557,7 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
             <DeleteConfirmationModal
                 isOpen={isDeactivateModalOpen}
                 onClose={handleCloseDeactivateModal}
-                onDelete={handleDeactivateMarket}
+                onDelete={handleToggleMarketStatus}
                 title={`${market?.status === 'ACTIVE' ? 'Deactivate' : 'Activate'} Market`}
                 message={`Are you sure you want to ${market?.status === 'ACTIVE' ? 'deactivate' : 'activate'} this market? This will affect all shops and sections in this market.`}
             />

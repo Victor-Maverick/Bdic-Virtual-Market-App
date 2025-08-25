@@ -12,6 +12,8 @@ import VideoCallModal from '@/components/VideoCallModal';
 import VoiceCallModal from '@/components/VoiceCallModal';
 import ImprovedChatInterface from '@/components/ImprovedChatInterface';
 import VendorShopGuard from "@/components/VendorShopGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 
 interface ChatConversation {
     id: string;
@@ -258,6 +260,8 @@ const VendorChatsPage = () => {
     if (loading) {
         return (
             <VendorShopGuard showSubHeader={false}>
+                <DashboardHeader />
+                <DashboardOptions />
                 <div className="flex items-center justify-center h-screen">
                     <div className="text-center">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#022B23] mx-auto"></div>
@@ -270,6 +274,8 @@ const VendorChatsPage = () => {
 
     return (
         <VendorShopGuard showSubHeader={false}>
+            <DashboardHeader />
+            <DashboardOptions />
             {/* Chat Interface with responsive margins */}
             <div className="mx-4 sm:mx-25 my-4 sm:my-6">
                 <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[calc(100vh-200px)] flex">

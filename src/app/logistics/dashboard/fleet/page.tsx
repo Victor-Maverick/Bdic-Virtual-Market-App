@@ -1,267 +1,440 @@
-'use client';
-import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
-import flag from '@/../public/assets/images/flag-2.svg'
-import Image, {StaticImageData} from "next/image";
-import arrowUp from '@/../public/assets/images/arrow-up.svg'
-import truck from '@/../public/assets/images/truck.svg'
-import formatCircle from '@/../public/assets/images/format-circle.svg'
-import bike from '@/../public/assets/images/bike.svg'
-import truckIcon from '@/../public/assets/images/truckIcon.svg'
-import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-import searchImg from "../../../../../public/assets/images/search-normal.png";
+"use client"
+import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard"
+import DashboardHeader from "@/components/dashboardHeader"
+import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions"
+import flag from "@/../public/assets/images/flag-2.svg"
+import Image from "next/image"
+import arrowUp from "@/../public/assets/images/arrow-up.svg"
+import truck from "@/../public/assets/images/truck.svg"
+import formatCircle from "@/../public/assets/images/format-circle.svg"
+import bike from "@/../public/assets/images/bike.svg"
+import truckIcon from "@/../public/assets/images/truckIcon.svg"
 import trashImg from "../../../../../public/assets/images/trash-2.svg"
-import editImg from '@/../public/assets/images/edit-2.svg'
-import addImg from '@/../public/assets/images/add.svg'
-import arrowBack from '@/../public/assets/images/arrowBack.svg'
-import arrowFoward from '@/../public/assets/images/arrowFoward.svg'
-import {useState} from "react";
-import {OnboardFleetModal} from "@/components/onboardFleetModal";
-import FleetOnboardSuccessModal from "@/components/fleetOnboardSuccessModal";
-import OnboardRiderModal from "@/components/onboardRiderModal";
-import axios from "axios";
-import { FullVehicle, NewVehicleData } from "@/types/vehicle";
-import { useSession } from "next-auth/react";
-import { logisticsService } from "@/services/logisticsService";
-import { useEffect } from "react";
+import editImg from "@/../public/assets/images/edit-2.svg"
+import addImg from "@/../public/assets/images/add.svg"
+import arrowBack from "@/../public/assets/images/arrowBack.svg"
+import arrowFoward from "@/../public/assets/images/arrowFoward.svg"
+import { useState, useEffect } from "react"
+import { OnboardFleetModal } from "@/components/onboardFleetModal"
+import FleetOnboardSuccessModal from "@/components/fleetOnboardSuccessModal"
+import OnboardRiderModal from "@/components/onboardRiderModal"
+import DeleteConfirmationModal from "../../../../components/DeleteConfirmationModal"
+import axios from "axios"
+import type { NewVehicleData } from "@/types/vehicle"
+import { useSession } from "next-auth/react"
+import {
+    logisticsService,
+    type Vehicle,
+    type VehicleResponse,
+    type UpdateVehicleRequest,
+} from "@/services/logisticsService"
+import { useRouter, useSearchParams } from "next/navigation"
 
-
-interface Vehicle {
-    id: number;
-    vehicleId: string;
-    image: string | StaticImageData;
-    name: string;
-    status: "active" | "inactive";
-    engineNumber: string;
-    type: "Bike" | "Truck";
-    plateNumber: string;
+interface AddVehicleResponse {
+    id: string
+    plateNumber: string
+    engineNumber: string
+    type: string
 }
 
-interface AddVehicleResponse{
-    id: string;
-    plateNumber: string;
-    engineNumber: string;
-    type: string;
+interface UpdateFleetResponse {
+    ownerEmail: string
 }
 
-interface UpdateFleetResponse{
-    ownerEmail: string;
+interface Rider {
+    id: number
+    firstName?: string
+    lastName?: string
+    email?: string
+    name: string
+    status: string
+    phone: string
+    vehicle?: Vehicle
 }
 
-const mockFleet: Vehicle[] = [
-    { id: 1, plateNumber: "11111", vehicleId: "01234567", image: bike, name: "TVS Bike", status: "active", engineNumber: "027654-VHS", type: "Bike" },
-    { id: 2, plateNumber: "11111", vehicleId: "01234567", image: truckIcon, name: "TVS Truck", status: "active", engineNumber: "027654-DNS", type: "Truck" },
-    { id: 3, plateNumber: "11111",vehicleId: "01234567", image: bike, status: "active", name: "TVS Bike", engineNumber: "027654-VHS", type: "Bike" },
-    { id: 4, plateNumber: "11111", vehicleId: "01234567", image: truckIcon, status: "inactive", name: "TVS Truck", engineNumber: "027654-DNS", type: "Truck" },
-    { id: 5, plateNumber: "11111",vehicleId: "01234567", image: bike, name: "TVS Bike", status: "active", engineNumber: "027654-VHS", type: "Bike" },
-    { id: 6, plateNumber: "11111",vehicleId: "01234567", image: truckIcon, name: "TVS Truck", status: "active", engineNumber: "027654-DNS", type: "Truck" },
-    { id: 7, plateNumber: "11111",vehicleId: "01234567", image: bike, name: "TVS Bike", status: "active", engineNumber: "027654-VHS", type: "Bike" },
-    { id: 8, plateNumber: "11111",vehicleId: "01234567", image: truckIcon, name: "TVS Truck", status: "active", engineNumber: "027654-DNS", type: "Truck" },
-];
+const FleetTableRow = ({
+                           vehicle,
+                           isLast,
+                           onEdit,
+                           onDelete,
+                       }: {
+    vehicle: VehicleResponse
+    isLast: boolean
+    onEdit: (vehicle: VehicleResponse) => void
+    onDelete: (vehicle: VehicleResponse) => void
+}) => {
+    const vehicleImage = vehicle.type.toLowerCase() === "bike" ? bike : truckIcon
+    const vehicleName = vehicle.type.toLowerCase() === "bike" ? "Bike" : "Truck"
 
-const SearchBar = () => (
-    <div className="flex gap-2 items-center border-[1px] border-[#ededed] h-[44px] text-black px-4 py-1 rounded-[8px]">
-        <Image src={searchImg} alt="Search Icon" width={20} height={20} />
-        <input placeholder="Search" className="w-[310px] text-[#667085] text-[16px] focus:outline-none" />
-    </div>
-);
-
-const ProductTableRow = ({ product, isLast }: { product: Vehicle; isLast: boolean }) => {
     return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex items-center w-[600px] px-[24px] gap-[12px]">
-                <input
-                    type="checkbox"
-                    className="w-[20px] h-[20px] rounded-[6px] border border-[#D0D5DD] accent-[#6941C6]"
-                />
+        <div className={`flex h-[72px] ${!isLast ? "border-b border-[#EAECF0]" : ""}`}>
+            <div className="flex items-center w-[570px] px-[24px] gap-[12px]">
+                <input type="checkbox" className="w-[20px] h-[20px] rounded-[6px] border border-[#D0D5DD] accent-[#6941C6]" />
                 <div className="bg-[#ededed] flex justify-center items-center rounded-full h-[40px] w-[40px] overflow-hidden mt-[2px]">
                     <Image
-                        src={product.image}
-                        alt={'vehicle image'}
+                        src={vehicleImage || "/placeholder.svg"}
+                        alt={"vehicle image"}
                         width={26}
                         height={26}
                         className="object-cover"
                     />
                 </div>
                 <div className="flex flex-col">
-                    <p className="text-[14px] font-medium text-[#101828]">{product.name}</p>
-                    <p className="text-[12px] text-[#667085]">ID: #{product.vehicleId}</p>
+                    <p className="text-[14px] font-medium text-[#101828]">{vehicleName}</p>
+                    <p className="text-[12px] text-[#667085]">ID: #{vehicle.id}</p>
                 </div>
             </div>
-            <div className="flex justify-center items-center w-[110px]">
-                <div className={`w-[65px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    product.status === 'active' ? 'bg-[#ECFDF3] text-[#027A48]' : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium">{product.status}</p>
-                </div>
+            <div className="flex justify-center items-center w-[140px]">
+                <p className="text-[14px] font-medium text-[#101828]">{vehicle.plateNumber}</p>
             </div>
             <div className="flex items-center w-[156px] px-[16px]">
-                <p className="text-[14px] font-medium text-[#101828]">{product.engineNumber}</p>
+                <p className="text-[14px] font-medium text-[#101828]">{vehicle.engineNumber}</p>
             </div>
             <div className="flex flex-col gap-[4px] justify-center w-[290px] px-[20px]">
-                <div className={`
-          ${product.type === 'Bike' ? 'bg-[#F9F5FF] text-[#027A48]' : 'bg-[#FFFAEB] text-[#F99007]'}
-          text-[12px] w-[50px] rounded-[16px] px-[8px] flex justify-center items-center py-[2px] font-medium
-        `}>
-                    <p>{product.type}</p>
-                </div>
+                <p className="text-[14px] font-medium text-[#101828]">{vehicle.riderName ? vehicle.riderName : "none"}</p>
             </div>
             <div className="flex w-[116px] gap-[16px] p-[20px]">
-                <Image src={trashImg} alt={'image'} />
-                <Image src={editImg} alt={'image'} />
+                <Image
+                    src={trashImg || "/placeholder.svg"}
+                    alt={"delete"}
+                    className="cursor-pointer hover:opacity-70"
+                    onClick={() => onDelete(vehicle)}
+                />
+                <Image
+                    src={editImg || "/placeholder.svg"}
+                    alt={"edit"}
+                    className="cursor-pointer hover:opacity-70"
+                    onClick={() => onEdit(vehicle)}
+                />
             </div>
         </div>
-    );
-};
+    )
+}
+
+const RiderTableRow = ({
+                           rider,
+                           isLast,
+                           onDelete,
+                       }: {
+    rider: Rider
+    isLast: boolean
+    onDelete: (rider: Rider) => void
+}) => {
+    return (
+        <div className={`flex h-[72px] ${!isLast ? "border-b border-[#EAECF0]" : ""}`}>
+            <div className="flex items-center w-[570px] px-[24px] gap-[12px]">
+                <input type="checkbox" className="w-[20px] h-[20px] rounded-[6px] border border-[#D0D5DD] accent-[#6941C6]" />
+                <div className="flex flex-col">
+                    <p className="text-[14px] font-medium text-[#101828]">{rider.name}</p>
+                    <p className="text-[12px] text-[#667085]">ID: #{rider.id}</p>
+                </div>
+            </div>
+            <div className="flex justify-center items-center w-[140px]">
+                <p className="text-[14px] font-medium text-[#101828]">{rider.phone}</p>
+            </div>
+            <div className="flex items-center w-[156px] px-[16px]">
+                <p className="text-[14px] font-medium text-[#101828]">{rider.email}</p>
+            </div>
+            <div className="flex flex-col gap-[4px] justify-center w-[290px] px-[20px]">
+                <p className="text-[14px] font-medium text-[#101828]">{rider.status}</p>
+            </div>
+            <div className="flex w-[116px] gap-[16px] p-[20px]">
+                <Image
+                    src={trashImg || "/placeholder.svg"}
+                    alt={"delete"}
+                    className="cursor-pointer hover:opacity-70"
+                    onClick={() => onDelete(rider)}
+                />
+                <Image src={editImg || "/placeholder.svg"} alt={"edit"} className="opacity-50 cursor-not-allowed" />
+            </div>
+        </div>
+    )
+}
 
 const logisticsApi = axios.create({
-    baseURL: 'https://api.digitalmarke.bdic.ng/api/logistics',
+    baseURL: "https://digitalmarket.benuestate.gov.ng/api/logistics",
     headers: {
-        'Content-Type': 'application/json',
-        // Add authorization header if needed
-        // 'Authorization': `Bearer ${yourAuthToken}`
-    }
-});
+        "Content-Type": "application/json",
+    },
+})
 
-type BackendVehicleType = 'BIKE' | 'TRUCK';
+type BackendVehicleType = "BIKE" | "TRUCK"
 
 const mapToBackendType = (frontendType: "Bike" | "Truck"): BackendVehicleType => {
-    return frontendType.toUpperCase() as BackendVehicleType;
-};
+    return frontendType.toUpperCase() as BackendVehicleType
+}
 
 const Fleet = () => {
-    const { data: session } = useSession();
-    const [isFleetModalOpen, setIsFleetModalOpen] = useState(false);
-    const [isRiderModalOpen, setIsRiderModalOpen] = useState(false);
-    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-    const [fleetData, setFleetData] = useState<FullVehicle[]>(mockFleet);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 8;
-    const totalPages = Math.ceil(fleetData.length / itemsPerPage);
-    const [newVehiclesCount, setNewVehiclesCount] = useState(0);
-    const [companyData, setCompanyData] = useState<{ id: number; fleetNumber: number } | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { data: session } = useSession()
+    const [isFleetModalOpen, setIsFleetModalOpen] = useState(false)
+    const [isRiderModalOpen, setIsRiderModalOpen] = useState(false)
+    const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
+    const [fleetData, setFleetData] = useState<VehicleResponse[]>([])
+    const [ridersData, setRidersData] = useState<Rider[]>([])
+    const [currentPage, setCurrentPage] = useState(1)
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const initialTab = (searchParams.get("tab") as "fleet" | "riders") || "fleet"
+    const [activeTab, setActiveTab] = useState<"fleet" | "riders">(initialTab)
+    const itemsPerPage = 8
+    const totalPages = Math.ceil(activeTab === "fleet" ? fleetData.length : ridersData.length / itemsPerPage)
 
-    // Fetch company data and fleet information
+    const [loading, setLoading] = useState(true)
+    const [totalFleetCount, setTotalFleetCount] = useState(0)
+    const [bikesCount, setBikesCount] = useState(0)
+    const [trucksCount, setTrucksCount] = useState(0)
+    const [ridersCount, setRidersCount] = useState(0)
+    const [companyVehicles, setCompanyVehicles] = useState<VehicleResponse[]>([])
+
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [itemToDelete, setItemToDelete] = useState<{ type: "vehicle" | "rider"; item: VehicleResponse | Rider } | null>(
+        null,
+    )
+    const [editingVehicle, setEditingVehicle] = useState<VehicleResponse | null>(null)
+    const [editFormData, setEditFormData] = useState<UpdateVehicleRequest>({
+        engineNumber: "",
+        plateNumber: "",
+        type: "",
+    })
+
+    const handleTabChange = (tab: "fleet" | "riders") => {
+        setActiveTab(tab)
+        setCurrentPage(1) // Reset to first page when switching tabs
+        router.replace(`/logistics/dashboard/fleet?tab=${tab}`, { scroll: false })
+    }
+
     useEffect(() => {
-        const fetchCompanyData = async () => {
+        const fetchData = async () => {
             if (session?.user?.email) {
                 try {
-                    const company = await logisticsService.getCompanyByOwnerEmail(session.user.email);
-                    setCompanyData(company);
+                    const [totalFleet, bikes, trucks, riders, vehicles, companyVehicles, ridersData] = await Promise.all([
+                        logisticsService.getAllCompanyVehiclesCount(session.user.email),
+                        logisticsService.getAllCompanyBikesCount(session.user.email),
+                        logisticsService.getAllCompanyTrucksCount(session.user.email),
+                        logisticsService.getAllCompanyRidersCount(session.user.email),
+                        logisticsService.getAllCompanyVehicles(session.user.email),
+                        logisticsService.getAllVehiclesForCompany(session.user.email),
+                        logisticsService.getAllCompanyRiders(session.user.email),
+                    ])
+                    setTotalFleetCount(totalFleet)
+                    setBikesCount(bikes)
+                    setTrucksCount(trucks)
+                    setRidersCount(riders)
+                    setFleetData(vehicles)
+                    setCompanyVehicles(companyVehicles)
+                    setRidersData(ridersData)
                 } catch (error) {
-                    console.error('Error fetching company data:', error);
+                    console.error("Error fetching data:", error)
                 } finally {
-                    setLoading(false);
+                    setLoading(false)
                 }
             }
-        };
+        }
 
-        fetchCompanyData();
-    }, [session]);
+        fetchData()
+    }, [session])
 
     const handleSubmitVehicles = async (vehicles: NewVehicleData[]) => {
-        if (!session?.user?.email) return;
-        
-        try {
-            const ownerEmail = session.user.email;
+        if (!session?.user?.email) return
 
-            // 1. Onboard all vehicles
-            const onboardPromises = vehicles.map(vehicle =>
-                logisticsApi.post<AddVehicleResponse>('/onboardVehicle', {
+        try {
+            const ownerEmail = session.user.email
+            const onboardPromises = vehicles.map((vehicle) =>
+                logisticsApi.post<AddVehicleResponse>("/onboardVehicle", {
                     ownerEmail,
                     engineNumber: vehicle.engineNumber,
                     plateNumber: vehicle.plateNumber,
-                    type: mapToBackendType(vehicle.type) // Use the mapped type here
-                })
-            );
+                    type: mapToBackendType(vehicle.type),
+                }),
+            )
 
-            // Wait for all onboardings to complete
-            await Promise.all(onboardPromises);
+            await Promise.all(onboardPromises)
 
-            // 2. Update fleet number
-            await logisticsApi.post<UpdateFleetResponse>('/updateFleetNumber', {
+            await logisticsApi.post<UpdateFleetResponse>("/updateFleetNumber", {
                 ownerEmail,
-                fleetNumber: newVehiclesCount // Changed from newVehiclesCount to vehicles.length
-            });
+                fleetNumber: vehicles.length,
+            })
 
-            // 3. Update local state if all API calls succeeded
-            const newVehicles = vehicles.map((v, i) => ({
-                id: fleetData.length + i + 1,
-                vehicleId: `VH${Math.floor(Math.random() * 100000)}`,
-                image: v.type === 'Bike' ? bike : truckIcon,
-                name: v.type === 'Bike' ? 'TVS Bike' : 'TVS Truck',
-                status: "active" as const,
-                engineNumber: v.engineNumber,
-                plateNumber: v.plateNumber,
-                type: v.type
-            }));
+            const [totalFleet, bikes, trucks, riders, vehiclesData] = await Promise.all([
+                logisticsService.getAllCompanyVehiclesCount(session.user.email),
+                logisticsService.getAllCompanyBikesCount(session.user.email),
+                logisticsService.getAllCompanyTrucksCount(session.user.email),
+                logisticsService.getAllCompanyRidersCount(session.user.email),
+                logisticsService.getAllCompanyVehicles(session.user.email),
+            ])
 
-            setFleetData(prev => [...prev, ...newVehicles]);
-            setNewVehiclesCount(vehicles.length);
-            setIsSuccessModalOpen(true);
-
+            setTotalFleetCount(totalFleet)
+            setBikesCount(bikes)
+            setTrucksCount(trucks)
+            setRidersCount(riders)
+            setFleetData(vehiclesData)
+            setIsSuccessModalOpen(true)
         } catch (error) {
-            console.error("Fleet onboarding failed:", error);
-
-            let errorMessage = "Failed to onboard fleet";
+            console.error("Fleet onboarding failed:", error)
+            let errorMessage = "Failed to onboard fleet"
             if (axios.isAxiosError(error)) {
-                errorMessage = error.response?.data?.message || error.message;
+                errorMessage = error.response?.data?.message || error.message
             }
-
-            alert(errorMessage);
+            alert(errorMessage)
         } finally {
-            setIsFleetModalOpen(false);
+            setIsFleetModalOpen(false)
         }
-    };
+    }
 
     const handleOpenFleetModal = () => {
-        setIsFleetModalOpen(true);
-    };
+        setIsFleetModalOpen(true)
+    }
 
     const handleCloseFleetModal = () => {
-        setIsFleetModalOpen(false);
-    };
+        setIsFleetModalOpen(false)
+    }
 
     const handleOpenRiderModal = () => {
-        setIsRiderModalOpen(true);
-    };
+        setIsRiderModalOpen(true)
+    }
 
     const handleCloseRiderModal = () => {
-        setIsRiderModalOpen(false);
-    };
+        setIsRiderModalOpen(false)
+    }
 
-    const handleRiderSuccess = () => {
-        // You can add any additional logic here after successful rider onboarding
-        console.log("Rider onboarded successfully!");
-        // You might want to refresh rider data or show a success message
-    };
+    const handleRiderSuccess = async () => {
+        if (session?.user?.email) {
+            try {
+                const [riders, ridersData] = await Promise.all([
+                    logisticsService.getAllCompanyRidersCount(session.user.email),
+                    logisticsService.getAllCompanyRiders(session.user.email),
+                ])
+                setRidersCount(riders)
+                setRidersData(ridersData)
+                console.log("Rider onboarded successfully!")
+            } catch (error) {
+                console.error("Error refreshing riders count:", error)
+            }
+        }
+    }
 
     const handleSuccessModalClose = () => {
-        setIsSuccessModalOpen(false);
-    };
+        setIsSuccessModalOpen(false)
+    }
 
     const handlePrevious = () => {
         if (currentPage > 1) {
-            setCurrentPage(currentPage - 1);
+            setCurrentPage(currentPage - 1)
         }
-    };
+    }
 
     const handleNext = () => {
         if (currentPage < totalPages) {
-            setCurrentPage(currentPage + 1);
+            setCurrentPage(currentPage + 1)
         }
-    };
+    }
 
     const handlePageClick = (page: number) => {
-        setCurrentPage(page);
-    };
+        setCurrentPage(page)
+    }
 
-    // Calculate the items to display on the current page
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentItems = fleetData.slice(startIndex, startIndex + itemsPerPage);
+    const handleEditVehicle = (vehicle: VehicleResponse) => {
+        setEditingVehicle(vehicle)
+        setEditFormData({
+            engineNumber: vehicle.engineNumber,
+            plateNumber: vehicle.plateNumber,
+            type: vehicle.type,
+        })
+    }
+
+    const handleDeleteVehicle = (vehicle: VehicleResponse) => {
+        setItemToDelete({ type: "vehicle", item: vehicle })
+        setDeleteModalOpen(true)
+    }
+
+    const handleDeleteRider = (rider: Rider) => {
+        setItemToDelete({ type: "rider", item: rider })
+        setDeleteModalOpen(true)
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!itemToDelete) return
+
+        try {
+            if (itemToDelete.type === "vehicle") {
+                const vehicle = itemToDelete.item as VehicleResponse
+                await logisticsService.deleteVehicle(vehicle.id)
+
+                if (session?.user?.email) {
+                    const [totalFleet, bikes, trucks, vehicles, companyVehicles] = await Promise.all([
+                        logisticsService.getAllCompanyVehiclesCount(session.user.email),
+                        logisticsService.getAllCompanyBikesCount(session.user.email),
+                        logisticsService.getAllCompanyTrucksCount(session.user.email),
+                        logisticsService.getAllCompanyVehicles(session.user.email),
+                        logisticsService.getAllVehiclesForCompany(session.user.email),
+                    ])
+                    setTotalFleetCount(totalFleet)
+                    setBikesCount(bikes)
+                    setTrucksCount(trucks)
+                    setFleetData(vehicles)
+                    setCompanyVehicles(companyVehicles)
+                }
+            } else if (itemToDelete.type === "rider") {
+                const rider = itemToDelete.item as Rider
+                await logisticsService.deleteRider(rider.id)
+
+                if (session?.user?.email) {
+                    const [riders, ridersData] = await Promise.all([
+                        logisticsService.getAllCompanyRidersCount(session.user.email),
+                        logisticsService.getAllCompanyRiders(session.user.email),
+                    ])
+                    setRidersCount(riders)
+                    setRidersData(ridersData)
+                }
+            }
+
+            setDeleteModalOpen(false)
+            setItemToDelete(null)
+        } catch (error) {
+            console.error("Error deleting item:", error)
+            alert("Failed to delete item. Please try again.")
+        }
+    }
+
+    const handleSaveEdit = async () => {
+        if (!editingVehicle) return
+
+        try {
+            await logisticsService.editVehicle(editingVehicle.id, editFormData)
+
+            if (session?.user?.email) {
+                const [vehicles, companyVehicles] = await Promise.all([
+                    logisticsService.getAllCompanyVehicles(session.user.email),
+                    logisticsService.getAllVehiclesForCompany(session.user.email),
+                ])
+                setFleetData(vehicles)
+                setCompanyVehicles(companyVehicles)
+            }
+
+            setEditingVehicle(null)
+        } catch (error) {
+            console.error("Error editing vehicle:", error)
+            alert("Failed to edit vehicle. Please try again.")
+        }
+    }
+
+    const handleCancelEdit = () => {
+        setEditingVehicle(null)
+        setEditFormData({
+            engineNumber: "",
+            plateNumber: "",
+            type: "",
+        })
+    }
+
+    const startIndex = (currentPage - 1) * itemsPerPage
+    const currentFleetItems = companyVehicles.slice(startIndex, startIndex + itemsPerPage)
+    const currentRiderItems = ridersData.slice(startIndex, startIndex + itemsPerPage)
 
     return (
         <LogisticsCompanyGuard>
+            <DashboardHeader />
+            <LogisticsDashboardOptions />
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col gap-[12px]">
                     <p className="text-[#022B23] text-[16px] font-medium">Fleet management</p>
@@ -269,108 +442,245 @@ const Fleet = () => {
                         <div className="flex h-[100px] gap-[20px]">
                             <div className="flex border-[0.5px] flex-col gap-[12px] p-[12px] border-[#E4E4E7] rounded-[14px] h-full w-[246px]">
                                 <div className="flex items-center text-[#71717A] text-[12px] font-medium gap-[8px]">
-                                    <Image src={flag} alt={'image'} />
+                                    <Image src={flag || "/placeholder.svg"} alt={"image"} />
                                     <p>Total Fleet</p>
                                 </div>
                                 <div className="flex justify-between">
-                                    <p className="text-[#18181B] text-[16px] font-medium">{loading ? '...' : (companyData?.fleetNumber || fleetData.length)}</p>
+                                    <p className="text-[#18181B] text-[16px] font-medium">{loading ? "..." : fleetData.length}</p>
                                     <div className="flex gap-[4px] items-center">
-                                        <Image src={arrowUp} alt={'image'} />
-                                        <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
+                                        <Image src={arrowUp || "/placeholder.svg"} alt={"image"} />
                                     </div>
                                 </div>
                             </div>
                             <div className="flex border-[0.5px] flex-col gap-[12px] p-[12px] border-[#E4E4E7] rounded-[14px] h-full w-[246px]">
                                 <div className="flex items-center text-[#71717A] text-[12px] font-medium gap-[8px]">
-                                    <Image src={formatCircle} alt={'image'} />
+                                    <Image src={formatCircle || "/placeholder.svg"} alt={"image"} />
                                     <p>Bikes</p>
                                 </div>
                                 <div className="flex justify-between">
-                                    <p className="text-[#18181B] text-[16px] font-medium">{fleetData.filter(item => item.type === 'Bike').length}</p>
+                                    <p className="text-[#18181B] text-[16px] font-medium">{loading ? "..." : bikesCount}</p>
                                     <div className="flex gap-[4px] items-center">
-                                        <Image src={arrowUp} alt={'image'} />
-                                        <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
+                                        <Image src={arrowUp || "/placeholder.svg"} alt={"image"} />
                                     </div>
                                 </div>
                             </div>
                             <div className="flex border-[0.5px] flex-col gap-[12px] p-[12px] border-[#E4E4E7] rounded-[14px] h-full w-[246px]">
                                 <div className="flex items-center text-[#71717A] text-[12px] font-medium gap-[8px]">
-                                    <Image src={truck} alt={'image'} />
+                                    <Image src={truck || "/placeholder.svg"} alt={"image"} />
                                     <p>Trucks</p>
                                 </div>
                                 <div className="flex justify-between">
-                                    <p className="text-[#18181B] text-[16px] font-medium">{fleetData.filter(item => item.type === 'Truck').length}</p>
+                                    <p className="text-[#18181B] text-[16px] font-medium">{loading ? "..." : trucksCount}</p>
                                     <div className="flex gap-[4px] items-center">
-                                        <Image src={arrowUp} alt={'image'} />
-                                        <p className="text-[#22C55E] text-[12px] font-medium">2%</p>
+                                        <Image src={arrowUp || "/placeholder.svg"} alt={"image"} />
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <div onClick={handleOpenFleetModal} className="flex items-center w-[164px] gap-[9px] cursor-pointer bg-[#022B23] h-[52px] rounded-[12px] text-[#C6EB5F] p-[16px]">
+                        <div
+                            onClick={handleOpenFleetModal}
+                            className="flex items-center w-[164px] gap-[9px] cursor-pointer bg-[#022B23] h-[52px] rounded-[12px] text-[#C6EB5F] p-[16px]"
+                        >
                             <p>Add new fleet</p>
-                            <Image src={addImg} alt={'image'} />
+                            <Image src={addImg || "/placeholder.svg"} alt={"image"} />
                         </div>
                     </div>
                     <div className="flex gap-[20px] items-center">
                         <div className="flex h-[100px] gap-[20px]">
                             <div className="flex border-[0.5px] flex-col gap-[12px] p-[12px] border-[#E4E4E7] rounded-[14px] h-full w-[246px]">
                                 <div className="flex items-center text-[#71717A] text-[12px] font-medium gap-[8px]">
-                                    <Image src={truck} alt={'image'} />
+                                    <Image src={truck || "/placeholder.svg"} alt={"image"} />
                                     <p>Riders</p>
                                 </div>
                                 <div className="flex justify-between">
-                                    <p className="text-[#18181B] text-[16px] font-medium">{fleetData.filter(item => item.type === 'Truck').length}</p>
+                                    <p className="text-[#18181B] text-[16px] font-medium">{loading ? "..." : ridersCount}</p>
+                                    <p
+                                        className="text-[#18181B] cursor-pointer text-[12px] underline"
+                                        onClick={() => handleTabChange("riders")}
+                                    >
+                                        view riders
+                                    </p>
                                 </div>
                             </div>
                         </div>
-                        <div onClick={handleOpenRiderModal} className="flex items-center w-[164px] gap-[9px] cursor-pointer bg-[#022B23] h-[52px] rounded-[12px] text-[#C6EB5F] p-[16px]">
+                        <div
+                            onClick={handleOpenRiderModal}
+                            className="flex items-center w-[164px] gap-[9px] cursor-pointer bg-[#022B23] h-[52px] rounded-[12px] text-[#C6EB5F] p-[16px]"
+                        >
                             <p>Add new Rider</p>
-                            <Image src={addImg} alt={'image'} />
+                            <Image src={addImg || "/placeholder.svg"} alt={"image"} />
                         </div>
                     </div>
                 </div>
                 <div className="flex flex-col mt-[60px] rounded-[24px] border-[1px] border-[#EAECF0]">
-                    <div className="my-[20px] mx-[20px] flex justify-between">
-                        <div className="flex items-center gap-[8px]">
-                            <p className="text-[#101828] text-[18px] font-medium">Company fleet</p>
-                            <span className="flex text-[18px] text-[#6941C6] font-medium items-center justify-center h-[22px] w-[32px] rounded-[16px] bg-[#F9F5FF]">{fleetData.length}</span>
-                        </div>
-                        <SearchBar />
-                    </div>
-                    <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                        <div className="flex items-center px-[24px] w-[600px] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Vehicle ID</p>
-                        </div>
-                        <div className="flex items-center px-[20px] w-[110px] py-[12px] gap-[4px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Status</p>
-                            <Image src={arrowDown} alt={'image'} />
-                        </div>
-                        <div className="flex items-center px-[20px] w-[156px] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Engine number</p>
-                        </div>
-                        <div className="flex items-center px-[20px] w-[278px] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Type</p>
-                        </div>
-                        <div className="flex items-center px-[20px] w-[116px] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Price</p>
+                    <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
+                        <div className="w-[273px] h-[52px] gap-[24px] flex items-end">
+                            <p
+                                className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === "fleet" ? "font-medium border-b-2 border-[#C6EB5F]" : "text-gray-500"}`}
+                                onClick={() => handleTabChange("fleet")}
+                            >
+                                Fleet
+                            </p>
+                            <p
+                                className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === "riders" ? "font-medium border-b-2 border-[#C6EB5F]" : "text-gray-500"}`}
+                                onClick={() => handleTabChange("riders")}
+                            >
+                                Riders
+                            </p>
                         </div>
                     </div>
-                    <div className="flex flex-col">
-                        {currentItems.map((product, index) => (
-                            <ProductTableRow
-                                key={product.id}
-                                product={product}
-                                isLast={index === currentItems.length - 1}
-                            />
-                        ))}
-                    </div>
+
+                    {activeTab === "fleet" && (
+                        <>
+                            <div className="my-[20px] mx-[20px] flex justify-between">
+                                <div className="flex items-center gap-[8px]">
+                                    <p className="text-[#101828] text-[18px] font-medium">Company fleet</p>
+                                    <span className="flex text-[18px] text-[#6941C6] font-medium items-center justify-center h-[22px] w-[32px] rounded-[16px] bg-[#F9F5FF]">
+                    {companyVehicles.length}
+                  </span>
+                                </div>
+                            </div>
+                            <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
+                                <div className="flex items-center px-[24px] w-[600px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Vehicle ID</p>
+                                </div>
+                                <div className="flex items-center px-[10px] w-[140px] py-[12px] gap-[4px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Plate Number</p>
+                                </div>
+                                <div className="flex items-center px-[20px] w-[156px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Engine number</p>
+                                </div>
+                                <div className="flex items-center px-[20px] w-[278px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Rider</p>
+                                </div>
+                                <div className="flex items-center px-[20px] w-[116px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Actions</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col">
+                                {currentFleetItems.map((product, index) =>
+                                    editingVehicle?.id === product.id ? (
+                                        <div
+                                            key={product.id}
+                                            className={`flex h-[72px] ${index !== currentFleetItems.length - 1 ? "border-b border-[#EAECF0]" : ""}`}
+                                        >
+                                            <div className="flex items-center w-[570px] px-[24px] gap-[12px]">
+                                                <input
+                                                    type="checkbox"
+                                                    className="w-[20px] h-[20px] rounded-[6px] border border-[#D0D5DD] accent-[#6941C6]"
+                                                />
+                                                <div className="bg-[#ededed] flex justify-center items-center rounded-full h-[40px] w-[40px] overflow-hidden mt-[2px]">
+                                                    <Image
+                                                        src={product.type.toLowerCase() === "bike" ? bike : truckIcon}
+                                                        alt={"vehicle image"}
+                                                        width={26}
+                                                        height={26}
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <p className="text-[14px] font-medium text-[#101828]">
+                                                        {product.type.toLowerCase() === "bike" ? "Bike" : "Truck"}
+                                                    </p>
+                                                    <p className="text-[12px] text-[#667085]">ID: #{product.id}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-center items-center w-[140px]">
+                                                <input
+                                                    type="text"
+                                                    value={editFormData.plateNumber}
+                                                    onChange={(e) => setEditFormData({ ...editFormData, plateNumber: e.target.value })}
+                                                    className="text-[14px] font-medium text-[#101828] border border-gray-300 rounded px-2 py-1 w-full"
+                                                />
+                                            </div>
+                                            <div className="flex items-center w-[156px] px-[16px]">
+                                                <input
+                                                    type="text"
+                                                    value={editFormData.engineNumber}
+                                                    onChange={(e) => setEditFormData({ ...editFormData, engineNumber: e.target.value })}
+                                                    className="text-[14px] font-medium text-[#101828] border border-gray-300 rounded px-2 py-1 w-full"
+                                                />
+                                            </div>
+                                            <div className="flex flex-col gap-[4px] justify-center w-[290px] px-[20px]">
+                                                <p className="text-[14px] font-medium text-[#101828]">
+                                                    {product.riderName ? product.riderName : "none"}
+                                                </p>
+                                            </div>
+                                            <div className="flex w-[116px] gap-[8px] p-[20px]">
+                                                <button
+                                                    onClick={handleSaveEdit}
+                                                    className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+                                                >
+                                                    Done
+                                                </button>
+                                                <button
+                                                    onClick={handleCancelEdit}
+                                                    className="px-3 py-1 bg-gray-500 text-white text-xs rounded hover:bg-gray-600"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <FleetTableRow
+                                            key={product.id}
+                                            vehicle={product}
+                                            isLast={index === currentFleetItems.length - 1}
+                                            onEdit={handleEditVehicle}
+                                            onDelete={handleDeleteVehicle}
+                                        />
+                                    ),
+                                )}
+                            </div>
+                        </>
+                    )}
+
+                    {activeTab === "riders" && (
+                        <>
+                            <div className="my-[20px] mx-[20px] flex justify-between">
+                                <div className="flex items-center gap-[8px]">
+                                    <p className="text-[#101828] text-[18px] font-medium">Company Riders</p>
+                                    <span className="flex text-[18px] text-[#6941C6] font-medium items-center justify-center h-[22px] w-[32px] rounded-[16px] bg-[#F9F5FF]">
+                    {ridersData.length}
+                  </span>
+                                </div>
+                            </div>
+                            <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
+                                <div className="flex items-center px-[24px] w-[600px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Rider ID</p>
+                                </div>
+                                <div className="flex items-center px-[10px] w-[140px] py-[12px] gap-[4px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Phone</p>
+                                </div>
+                                <div className="flex items-center px-[20px] w-[156px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Email</p>
+                                </div>
+                                <div className="flex items-center px-[20px] w-[278px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                                </div>
+                                <div className="flex items-center px-[20px] w-[116px] py-[12px]">
+                                    <p className="text-[#667085] font-medium text-[12px]">Actions</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-col">
+                                {currentRiderItems.map((rider, index) => (
+                                    <RiderTableRow
+                                        key={rider.id}
+                                        rider={rider}
+                                        isLast={index === currentRiderItems.length - 1}
+                                        onDelete={handleDeleteRider}
+                                    />
+                                ))}
+                            </div>
+                        </>
+                    )}
+
                     <div className="h-[68px] border-t-[1px] justify-between flex items-center border-[#EAECF0] px-[24px] py-[12px]">
                         <div
                             onClick={handlePrevious}
-                            className={`flex text-[#344054] text-[14px] font-medium gap-[8px] justify-center items-center border-[#D0D5DD] border-[1px] cursor-pointer hover:shadow-md shadow-sm w-[114px] rounded-[8px] px-[14px] py-[8px] h-[36px] ${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`flex text-[#344054] text-[14px] font-medium gap-[8px] justify-center items-center border-[#D0D5DD] border-[1px] cursor-pointer hover:shadow-md shadow-sm w-[114px] rounded-[8px] px-[14px] py-[8px] h-[36px] ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
-                            <Image src={arrowBack} alt={'image'} />
+                            <Image src={arrowBack || "/placeholder.svg"} alt={"image"} />
                             <p>Previous</p>
                         </div>
                         <div className="flex gap-[2px]">
@@ -380,8 +690,8 @@ const Fleet = () => {
                                     onClick={() => handlePageClick(index + 1)}
                                     className={`flex justify-center items-center w-[36px] h-[36px] rounded-[8px] text-[14px] font-medium cursor-pointer ${
                                         currentPage === index + 1
-                                            ? 'bg-[#ecfdf6] text-[#022B23]'
-                                            : 'bg-white text-[#022B23]  hover:shadow-md'
+                                            ? "bg-[#ecfdf6] text-[#022B23]"
+                                            : "bg-white text-[#022B23] hover:shadow-md"
                                     }`}
                                 >
                                     {index + 1}
@@ -390,33 +700,34 @@ const Fleet = () => {
                         </div>
                         <div
                             onClick={handleNext}
-                            className={`flex text-[#344054] text-[14px] gap-[8px] font-medium justify-center items-center border-[#D0D5DD] border-[1px] cursor-pointer hover:shadow-md shadow-sm w-[88px] rounded-[8px] px-[14px] py-[8px] h-[36px] ${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`flex text-[#344054] text-[14px] gap-[8px] font-medium justify-center items-center border-[#D0D5DD] border-[1px] cursor-pointer hover:shadow-md shadow-sm w-[88px] rounded-[8px] px-[14px] py-[8px] h-[36px] ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                             <p>Next</p>
-                            <Image src={arrowFoward} alt={'image'} />
+                            <Image src={arrowFoward || "/placeholder.svg"} alt={"image"} />
                         </div>
                     </div>
                 </div>
             </div>
 
-            <OnboardFleetModal
-                isOpen={isFleetModalOpen}
-                onClose={handleCloseFleetModal}
-                onSubmit={handleSubmitVehicles}
-            />
+            <OnboardFleetModal isOpen={isFleetModalOpen} onClose={handleCloseFleetModal} onSubmit={handleSubmitVehicles} />
 
-            <OnboardRiderModal
-                isOpen={isRiderModalOpen}
-                onClose={handleCloseRiderModal}
-                onSuccess={handleRiderSuccess}
-            />
+            <OnboardRiderModal isOpen={isRiderModalOpen} onClose={handleCloseRiderModal} onSuccess={handleRiderSuccess} />
 
-            <FleetOnboardSuccessModal
-                isOpen={isSuccessModalOpen}
-                onClose={handleSuccessModalClose}
+            <FleetOnboardSuccessModal isOpen={isSuccessModalOpen} onClose={handleSuccessModalClose} />
+
+            <DeleteConfirmationModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false)
+                    setItemToDelete(null)
+                }}
+                onDelete={handleConfirmDelete}
+                title={`Sure you want to delete this ${itemToDelete?.type}?`}
+                message={`Be sure you want to delete this ${itemToDelete?.type} as this action cannot be undone`}
+                confirmText="Delete"
             />
         </LogisticsCompanyGuard>
-    );
-};
+    )
+}
 
-export default Fleet;
+export default Fleet

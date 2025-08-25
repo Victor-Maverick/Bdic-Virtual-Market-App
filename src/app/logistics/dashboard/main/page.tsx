@@ -1,6 +1,8 @@
 'use client'
 import {Suspense, useEffect, useRef} from 'react'
 import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard"
+import DashboardHeader from "@/components/dashboardHeader"
+import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import orderImg from '../../../../../public/assets/images/archive.svg'
@@ -204,43 +206,46 @@ function DashboardContent() {
 
     return (
         <LogisticsCompanyGuard>
-
-            <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
-                <div className="w-[328px] h-[52px] gap-[24px] flex items-end">
-                    <p
-                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'new-orders' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
-                        onClick={() => handleTabChange('new-orders')}
-                    >
-                        New orders
-                    </p>
-                    <p
-                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'pending' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
-                        onClick={() => handleTabChange('pending')}
-                    >
-                        Pending
-                    </p>
-                    <p
-                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'delivered' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
-                        onClick={() => handleTabChange('delivered')}
-                    >
-                        Delivered
-                    </p>
-                    <p
-                        className={`py-2 text-[#11151F] cursor-pointer text-[14px] ${activeTab === 'disputes' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
-                        onClick={() => handleTabChange('disputes')}
-                    >
-                        Disputes
-                    </p>
+            <DashboardHeader />
+            <LogisticsDashboardOptions />
+            <div className="mt-16 md:mt-0">
+                <div className="flex border-b border-[#ededed] mb-6 px-4 md:px-[100px] overflow-x-auto">
+                    <div className="flex gap-4 md:gap-[24px] items-end min-w-max">
+                        <p
+                            className={`py-2 text-[#11151F] cursor-pointer text-[12px] md:text-[14px] whitespace-nowrap ${activeTab === 'new-orders' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
+                            onClick={() => handleTabChange('new-orders')}
+                        >
+                            New orders
+                        </p>
+                        <p
+                            className={`py-2 text-[#11151F] cursor-pointer text-[12px] md:text-[14px] whitespace-nowrap ${activeTab === 'pending' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
+                            onClick={() => handleTabChange('pending')}
+                        >
+                            Pending
+                        </p>
+                        <p
+                            className={`py-2 text-[#11151F] cursor-pointer text-[12px] md:text-[14px] whitespace-nowrap ${activeTab === 'delivered' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
+                            onClick={() => handleTabChange('delivered')}
+                        >
+                            Delivered
+                        </p>
+                        <p
+                            className={`py-2 text-[#11151F] cursor-pointer text-[12px] md:text-[14px] whitespace-nowrap ${activeTab === 'disputes' ? 'font-medium border-b-2 border-[#C6EB5F]' : 'text-gray-500'}`}
+                            onClick={() => handleTabChange('disputes')}
+                        >
+                            Disputes
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg mx-[100px] mb-8">
+            <div className="bg-white rounded-lg mx-4 md:mx-[100px] mb-8">
                 {activeTab === 'new-orders' && (
                     <div>
                         <div className="flex flex-col gap-[12px]">
-                            <p className="text-[#022B23] text-[16px] font-medium">New orders ({pendingCount})</p>
-                            <div className="flex justify-between h-[100px] w-[778px]">
-                                <div className="h-full flex flex-col gap-[20px] bg-[#FFFAEB] p-[12px] w-[246px] rounded-[14px] border-[0.5px] border-[#1E1E1E]">
+                            <p className="text-[#022B23] text-[14px] md:text-[16px] font-medium">New orders ({pendingCount})</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                                <div className="flex flex-col gap-[20px] bg-[#FFFAEB] p-[12px] rounded-[14px] border-[0.5px] border-[#1E1E1E] min-h-[100px]">
                                     <div className="flex gap-[8px] items-center">
                                         <Image src={orderImg} alt={'image'} width={18} height={18} />
                                         <p className="text-[#1E1E1E] font-medium text-[12px]">New orders</p>
@@ -253,7 +258,7 @@ function DashboardContent() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="h-full bg-[#FFFFFF] flex-col flex gap-[20px] p-[12px] rounded-[14px] w-[246px] border-[0.5px] border-[#E4E4E7]">
+                                <div className="bg-[#FFFFFF] flex-col flex gap-[20px] p-[12px] rounded-[14px] border-[0.5px] border-[#E4E4E7] min-h-[100px]">
                                     <div className="flex gap-[8px] items-center">
                                         <Image src={pendingImg} alt={'image'} width={18} height={18} />
                                         <p className="text-[#1E1E1E] font-medium text-[12px]">Pending</p>
@@ -266,7 +271,7 @@ function DashboardContent() {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="h-full bg-[#FFFFFF] flex-col flex gap-[20px] p-[12px] rounded-[14px] w-[246px] border-[0.5px] border-[#E4E4E7]">
+                                <div className="bg-[#FFFFFF] flex-col flex gap-[20px] p-[12px] rounded-[14px] border-[0.5px] border-[#E4E4E7] min-h-[100px]">
                                     <div className="flex gap-[8px] items-center">
                                         <Image src={deliveredImg} alt={'image'} width={18} height={18} />
                                         <p className="text-[#1E1E1E] font-medium text-[12px]">Delivered</p>

@@ -65,9 +65,9 @@ interface VendorShopGuardProps {
 
 const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({ 
     children, 
-    showHeader = true, 
-    showDashboardOptions = true, 
-    showSubHeader = true 
+    showHeader = false, 
+    showDashboardOptions = false, 
+    showSubHeader = false 
 }) => {
     const [shopData, setShopData] = useState<ShopData | null>(null);
     const [loading, setLoading] = useState(true);

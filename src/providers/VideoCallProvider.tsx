@@ -59,7 +59,7 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
     if (incomingCall) {
       try {
         // Accept the call via API first
-        await videoCallService.acceptCall(incomingCall.call.roomName);
+        await videoCallService.acceptCall(incomingCall.call.roomName, session?.user?.email || '');
         
         // Then open the modal
         setCurrentCall(incomingCall.call);
@@ -173,6 +173,7 @@ export const VideoCallProvider: React.FC<VideoCallProviderProps> = ({ children }
       <IncomingCallModal
         isOpen={!!incomingCall}
         call={incomingCall?.call || null}
+        callType="video"
         productName={incomingCall?.productName}
         shopName={incomingCall?.shopName}
         onAccept={handleAcceptCall}

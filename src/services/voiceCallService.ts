@@ -29,53 +29,59 @@ export interface VoiceCallResponse {
   vendorJoined: boolean;
 }
 
-export interface TwilioTokenResponse {
-  token: string;
+export interface WebRTCSessionResponse {
   roomName: string;
-  identity: string;
+  userEmail: string;
+  otherParticipant: string;
+  callType: 'video' | 'voice';
+  iceServers: Array<{
+    urls: string;
+    username?: string;
+    credential?: string;
+  }>;
 }
 
 class VoiceCallService {
   async testConnection(): Promise<boolean> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/voice-calls/health`);
-      console.log('🎤 Voice call service health check:', response.status);
+      const response = await axios.get(`${API_BASE_URL}/webrtc/voice-calls/health`);
+      console.log('🎤 WebRTC voice call service health check:', response.status);
       return response.status === 200;
     } catch (error) {
-      console.error('🎤 Voice call service not available:', error);
+      console.error('🎤 WebRTC voice call service not available:', error);
       return false;
     }
   }
 
   async initiateCall(request: VoiceCallRequest): Promise<VoiceCallResponse> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/voice-calls/initiate`, request);
+      const response = await axios.post(`${API_BASE_URL}/webrtc/voice-calls/initiate`, request);
       return response.data;
     } catch (error) {
-      console.error('Error initiating voice call:', error);
+      console.error('Error initiating WebRTC voice call:', error);
       throw error;
     }
   }
 
-  async getAccessToken(roomName: string, userEmail: string): Promise<TwilioTokenResponse> {
+  async getSessionInfo(roomName: string, userEmail: string): Promise<WebRTCSessionResponse> {
     try {
-      const url = `${API_BASE_URL}/voice-calls/join/${roomName}?userEmail=${encodeURIComponent(userEmail)}`;
-      console.log('🎤 Making request to:', url);
+      const url = `${API_BASE_URL}/webrtc/voice-calls/join/${roomName}?userEmail=${encodeURIComponent(userEmail)}`;
+      console.log('🎤 Making WebRTC request to:', url);
 
-      // Join the call and get Twilio access token
+      // Join the call and get WebRTC session info
       const response = await axios.post(url);
-      console.log('🎤 Backend response for voice call token:', response.data);
+      console.log('🎤 Backend response for WebRTC voice call session:', response.data);
       console.log('🎤 Response status:', response.status);
 
-      // Validate the response has the required token
-      if (!response.data || !response.data.token) {
-        console.error('🎤 Invalid token response - data:', response.data);
-        throw new Error(`Invalid token response from backend: ${JSON.stringify(response.data)}`);
+      // Validate the response has the required session info
+      if (!response.data || !response.data.roomName) {
+        console.error('🎤 Invalid session response - data:', response.data);
+        throw new Error(`Invalid session response from backend: ${JSON.stringify(response.data)}`);
       }
 
       return response.data;
     } catch (error) {
-      console.error('🎤 Error getting voice call access token:', error);
+      console.error('🎤 Error getting WebRTC voice call session:', error);
       if (axios.isAxiosError(error)) {
         console.error('🎤 Axios error details:', {
           status: error.response?.status,
@@ -87,7 +93,7 @@ class VoiceCallService {
 
         // Provide more specific error messages
         if (error.response?.status === 404) {
-          throw new Error('Voice call service not available. Please ensure the call service is running.');
+          throw new Error('WebRTC voice call service not available. Please ensure the call service is running.');
         } else if (error.response?.status === 400) {
           throw new Error(`Bad request: ${error.response?.data || 'Invalid request parameters'}`);
         } else {
@@ -101,11 +107,11 @@ class VoiceCallService {
   async endCall(roomName: string, userEmail: string): Promise<VoiceCallResponse> {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/voice-calls/end/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
+        `${API_BASE_URL}/webrtc/voice-calls/end/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error ending voice call:', error);
+      console.error('Error ending WebRTC voice call:', error);
       throw error;
     }
   }
@@ -113,11 +119,11 @@ class VoiceCallService {
   async declineCall(roomName: string, userEmail: string): Promise<VoiceCallResponse> {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/voice-calls/decline/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
+        `${API_BASE_URL}/webrtc/voice-calls/decline/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error declining voice call:', error);
+      console.error('Error declining WebRTC voice call:', error);
       throw error;
     }
   }
@@ -125,11 +131,11 @@ class VoiceCallService {
   async getCallHistory(userEmail: string): Promise<VoiceCallResponse[]> {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/voice-calls/history?userEmail=${encodeURIComponent(userEmail)}`
+        `${API_BASE_URL}/webrtc/voice-calls/history?userEmail=${encodeURIComponent(userEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error getting call history:', error);
+      console.error('Error getting WebRTC voice call history:', error);
       throw error;
     }
   }
@@ -137,21 +143,23 @@ class VoiceCallService {
   async getPendingCalls(vendorEmail: string): Promise<VoiceCallResponse[]> {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/voice-calls/pending?vendorEmail=${encodeURIComponent(vendorEmail)}`
+        `${API_BASE_URL}/webrtc/voice-calls/pending?vendorEmail=${encodeURIComponent(vendorEmail)}`
       );
       return response.data;
     } catch (error) {
-      console.error('Error getting pending calls:', error);
+      console.error('Error getting pending WebRTC voice calls:', error);
       throw error;
     }
   }
 
-  async acceptCall(roomName: string): Promise<VoiceCallResponse> {
+  async acceptCall(roomName: string, userEmail: string): Promise<VoiceCallResponse> {
     try {
-      const response = await axios.post(`${API_BASE_URL}/voice-calls/accept/${roomName}`);
+      const response = await axios.post(
+        `${API_BASE_URL}/webrtc/voice-calls/accept/${roomName}?userEmail=${encodeURIComponent(userEmail)}`
+      );
       return response.data;
     } catch (error) {
-      console.error('Error accepting voice call:', error);
+      console.error('Error accepting WebRTC voice call:', error);
       throw error;
     }
   }

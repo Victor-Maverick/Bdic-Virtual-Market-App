@@ -14,7 +14,6 @@ const VendorCallNotifications: React.FC = () => {
 
   const fetchPendingCalls = useCallback(async () => {
     if (!session?.user?.email) return;
-
     try {
       const calls = await videoCallService.getPendingCalls(session.user.email);
       console.log('📞 Fetched pending calls:', calls);

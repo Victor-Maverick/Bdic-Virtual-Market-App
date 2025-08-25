@@ -187,7 +187,7 @@ const Login = () => {
                 } else if (roles.includes('ADMIN')) {
                     smartNavigate('/admin/dashboard/main');
                 } else if (roles.includes('LOGISTICS')) {
-                    smartNavigate('/logistics/dashboard');
+                    smartNavigate('/logistics/dashboard/main');
                 } else if (roles.includes('RIDER')) {
                     smartNavigate('/rider/dashboard');
                 } else if (roles.includes('BUYER')) {

@@ -23,7 +23,7 @@ export const useVideoCallNotifications = () => {
 
     // Remove /api from the end of API_BASE_URL and add the WebSocket endpoint
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '');
-    const wsUrl = `${baseUrl}/api/ws/video-call`;
+    const wsUrl = `${baseUrl}/ws`;
     console.log('📞 Attempting to connect to video call WebSocket:', wsUrl);
     console.log('📞 Base URL:', baseUrl);
     console.log('📞 User email:', session.user.email);
@@ -75,30 +75,19 @@ export const useVideoCallNotifications = () => {
         }
       });
 
-      // Subscribe to video signaling
-      client.subscribe(`/user/${session.user.email}/queue/video-signal`, (message) => {
+      // Subscribe to WebRTC signaling
+      client.subscribe(`/user/queue/webrtc-signal`, (message) => {
         try {
           const signal = JSON.parse(message.body);
-          console.log('Received video signal:', signal);
-          // Handle video call signaling if needed
+          console.log('Received WebRTC signal:', signal);
+          // Handle WebRTC signaling if needed
         } catch (error) {
-          console.error('Error parsing video signal:', error);
-        }
-      });
-
-      // Subscribe to ICE candidates
-      client.subscribe(`/user/${session.user.email}/queue/ice-candidate`, (message) => {
-        try {
-          const candidate = JSON.parse(message.body);
-          console.log('Received ICE candidate:', candidate);
-          // Handle ICE candidate if needed
-        } catch (error) {
-          console.error('Error parsing ICE candidate:', error);
+          console.error('Error parsing WebRTC signal:', error);
         }
       });
     }, (error: Error) => {
       console.error('❌ Video call WebSocket connection error:', error);
-      console.error('🔗 Failed to connect to:', `${baseUrl}/api/ws/video-call`);
+      console.error('🔗 Failed to connect to:', `${baseUrl}/ws`);
       console.log('ℹ️ This is expected if the call service is not running or WebSocket endpoints are not available');
       setIsConnected(false);
     });
@@ -123,7 +112,7 @@ export const useVideoCallNotifications = () => {
 
   const sendSignal = (targetUser: string, signal: { type: string; [key: string]: unknown }) => {
     if (stompClient && stompClient.connected) {
-      stompClient.send('/app/video-call/signal', {}, JSON.stringify({
+      stompClient.send('/app/webrtc/offer', {}, JSON.stringify({
         ...signal,
         targetUser,
         fromUser: session?.user?.email
@@ -133,7 +122,7 @@ export const useVideoCallNotifications = () => {
 
   const sendIceCandidate = (targetUser: string, candidate: RTCIceCandidate) => {
     if (stompClient && stompClient.connected) {
-      stompClient.send('/app/video-call/ice-candidate', {}, JSON.stringify({
+      stompClient.send('/app/webrtc/ice-candidate', {}, JSON.stringify({
         ...candidate,
         targetUser,
         fromUser: session?.user?.email

@@ -7,7 +7,6 @@ import {ChevronDown} from "lucide-react";
 import {useRouter} from "next/navigation";
 import Image from "next/image";
 import arrow from "../../../../public/assets/images/arrow-right.svg";
-import greenTick from "../../../../public/assets/images/green tick.png";
 import limeArrow from "../../../../public/assets/images/green arrow.png";
 import { useOnboarding } from "@/context/LogisticsOnboardingContext";
 
@@ -174,12 +173,6 @@ const Onboarding3 =()=>{
                             onChange={(value) => updateBankInfo({ accountNumber: value })}
                             placeholder="Account number"
                         />
-                        <div className="flex-col flex ">
-                            <div className="h-[40px] flex justify-between font-medium text-[#121212] w-full rounded-[8px] items-center px-[18px] text-[14px] bg-[#ECFDF6]">
-                                <p>Terngu paul</p>
-                                <Image src={greenTick} alt={'verified account name'}/>
-                            </div>
-                        </div>
                     </div>
                     <div
                         className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] ${

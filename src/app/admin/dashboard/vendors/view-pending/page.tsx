@@ -1,7 +1,7 @@
 'use client'
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
-import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
+import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import iPhone from "../../../../../../public/assets/images/blue14.png";
 import Image, {StaticImageData} from "next/image";
 import arrowBack from "../../../../../../public/assets/images/arrow-right.svg";

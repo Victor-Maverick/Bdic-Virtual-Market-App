@@ -78,7 +78,7 @@ const MarketPlaceHeader = () => {
             router.push('/admin/dashboard/main');
         }
         else if (roles.includes('LOGISTICS')) {
-            router.push('/logistics/dashboard');
+            router.push('/logistics/dashboard/main');
         } else {
             router.push('/buyer/orders');
         }

@@ -1,19 +1,26 @@
 'use client'
 import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
 import Image, { StaticImageData } from "next/image";
 import biArrows from "../../../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../../../public/assets/images/arrow-up.svg";
 import exportImg from "../../../../../public/assets/images/exportImg.svg";
 import archiveImg from "../../../../../public/assets/images/archive.svg";
 import Stats from "../../../../../public/assets/images/Stats.svg";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import iPhone from "../../../../../public/assets/images/blue14.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
+import {
+    logisticsService,
+    type DeliveryResponse,
+} from "@/services/logisticsService"
+import { useSession } from "next-auth/react";
 
-type Product = {
+interface Product {
     id: number;
-    productId: string;
+    orderNumber: string;
     image: StaticImageData;
     name: string;
     date: string;
@@ -22,20 +29,7 @@ type Product = {
     time: string;
     deliveryAddress: string;
     fee: number;
-};
-
-const products: Product[] = [
-    { id: 1, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 2, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 3, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 4, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 5, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 6, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 7, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 8, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 9, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Pending", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 },
-    { id: 10, productId: "1234567887654", image: iPhone, name: "iPhone 14 pro max", date: "4th Apr. 2025", status: "Paid", deliveryMethod: "Home delivery", time: "02:33:00 PM", deliveryAddress: "NO 22. Railway estate, Logo 1, Makurdi", fee: 1200 }
-];
+}
 
 const ProductTableRow = ({ product, isLast }: { product: Product; isLast: boolean }) => {
     return (
@@ -52,7 +46,7 @@ const ProductTableRow = ({ product, isLast }: { product: Product; isLast: boolea
                 </div>
                 <div className="flex flex-col">
                     <p className="text-[14px] font-medium text-[#101828]">{product.name}</p>
-                    <p className="text-[12px] text-[#667085]">ID: #{product.productId}</p>
+                    <p className="text-[12px] text-[#667085]">ID: #{product.orderNumber}</p>
                 </div>
             </div>
 
@@ -91,18 +85,55 @@ const Transactions = () => {
     const [activeView, setActiveView] = useState<'product-transactions' | 'pay-outs'>('product-transactions');
     const [currentPage, setCurrentPage] = useState(1);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [orders, setOrders] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(false);
+    const { data: session } = useSession();
+
+    useEffect(() => {
+        const fetchData = async () => {
+            if (session?.user?.email) {
+                setLoading(true);
+                try {
+                    const orderData = await logisticsService.getAllCompanyOrders(session.user.email);
+                    // Map DeliveryResponse to Product type
+                    const mappedOrders: Product[] = orderData.map((order: DeliveryResponse) => ({
+                        id: order.id,
+                        orderNumber: order.orderNumber,
+                        image: iPhone, // Using default image since DeliveryResponse doesn't include image
+                        name: order.customerName, // Using customerName as product name
+                        date: new Date(order.createdAt).toLocaleDateString('en-US', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        }),
+                        status: order.grandTotal > 0 ? 'Paid' : 'Pending', // Assuming paid if grandTotal exists
+                        deliveryMethod: order.deliveryMethod,
+                        time: new Date(order.createdAt).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        }),
+                        deliveryAddress: order.deliveryAddress,
+                        fee: order.deliveryFee
+                    }));
+                    setOrders(mappedOrders);
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+
+        fetchData();
+    }, [session]);
 
     const productsPerPage = 5;
-    const totalPages = Math.ceil(products.length / productsPerPage);
+    const totalPages = Math.ceil(orders.length / productsPerPage);
     const indexOfLastProduct = currentPage * productsPerPage;
     const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-    const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+    const currentProducts = orders.slice(indexOfFirstProduct, indexOfLastProduct);
 
-    // const handleOpenPayoutRequest = () => setIsPayoutRequestModalOpen(true);
-    // const handlePayoutRequestSuccess = () => {
-    //     setIsPayoutRequestModalOpen(false);
-    //     setIsSuccessModalOpen(true);
-    // };
     const handleCloseSuccessModal = () => setIsSuccessModalOpen(false);
 
     const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
@@ -110,7 +141,8 @@ const Transactions = () => {
 
     return (
         <LogisticsCompanyGuard>
-
+            <DashboardHeader />
+            <LogisticsDashboardOptions />
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col gap-[12px]">
                     <p className="text-[#022B23] text-[16px] font-medium">Transaction summary</p>
@@ -137,11 +169,10 @@ const Transactions = () => {
                                         <p>Available for payout</p>
                                     </div>
                                     <span
-                                        // onClick={handleOpenPayoutRequest}
                                         className="text-[#C6EB5F] cursor-pointer flex justify-center items-center text-[12px] font-medium h-[30px] w-[113px] rounded-[100px] px-[8px] py-[6px] bg-[#022B23]"
                                     >
-                    Request payout
-                  </span>
+                                        Request payout
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <p className="text-[#18181B] text-[16px] font-medium">N84,426,231.00</p>
@@ -211,7 +242,7 @@ const Transactions = () => {
 
                             <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
                                 <div className="flex items-center px-[24px] w-[35%] py-[12px] gap-[4px]">
-                                    <p className="text-[#667085] font-medium text-[12px]">Products</p>
+                                    <p className="text-[#667085] font-medium text-[12px]">Order</p>
                                     <Image src={arrowDown} alt="Sort" width={12} height={12} />
                                 </div>
                                 <div className="flex items-center px-[24px] w-[13%] py-[12px]">
@@ -229,13 +260,19 @@ const Transactions = () => {
                             </div>
 
                             <div className="flex flex-col">
-                                {currentProducts.map((product, index) => (
-                                    <ProductTableRow
-                                        key={product.id}
-                                        product={product}
-                                        isLast={index === currentProducts.length - 1}
-                                    />
-                                ))}
+                                {loading ? (
+                                    <p>Loading...</p>
+                                ) : currentProducts.length > 0 ? (
+                                    currentProducts.map((product, index) => (
+                                        <ProductTableRow
+                                            key={product.id}
+                                            product={product}
+                                            isLast={index === currentProducts.length - 1}
+                                        />
+                                    ))
+                                ) : (
+                                    <p className="text-center my-[30px]">No transactions available</p>
+                                )}
                             </div>
 
                             {/* Pagination Controls */}
@@ -253,8 +290,8 @@ const Transactions = () => {
                                 </button>
 
                                 <span className="text-[#667085]">
-                  Page {currentPage} of {totalPages}
-                </span>
+                                    Page {currentPage} of {totalPages}
+                                </span>
 
                                 <button
                                     onClick={goToNextPage}
@@ -348,12 +385,6 @@ const Transactions = () => {
                     </>
                 )}
             </div>
-
-            {/*<PayoutRequestModal*/}
-            {/*    isPayoutRequestModalOpen={isPayoutRequestModalOpen}*/}
-            {/*    onClosePayoutRequestModal={() => setIsPayoutRequestModalOpen(false)}*/}
-            {/*    onRequestSuccess={handlePayoutRequestSuccess}*/}
-            {/*/>*/}
 
             <PayoutRequestSuccessModal
                 isOpen={isSuccessModalOpen}

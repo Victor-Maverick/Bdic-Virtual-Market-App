@@ -59,7 +59,7 @@ export const VoiceCallProvider: React.FC<VoiceCallProviderProps> = ({ children }
     if (incomingCall) {
       try {
         // Accept the call via API first
-        await voiceCallService.acceptCall(incomingCall.call.roomName);
+        await voiceCallService.acceptCall(incomingCall.call.roomName, session?.user?.email || '');
         
         // Then open the modal
         setCurrentCall(incomingCall.call);

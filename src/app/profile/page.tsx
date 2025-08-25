@@ -8,6 +8,7 @@ import eyeOpen from "../../../public/assets/images/eye.svg";
 import eyeClosed from "../../../public/assets/images/eye.svg";
 import {useSession} from "next-auth/react";
 import axios from "axios";
+import Toast from "@/components/Toast";
 
 type FormField = {
     id: keyof FormData;
@@ -210,10 +211,34 @@ const Profile = () => {
     const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
     const [isLoadingAddress, setIsLoadingAddress] = useState(true);
 
+    // Toast state
+    const [showToast, setShowToast] = useState(false);
+    const [toastType, setToastType] = useState<"success" | "error">("success");
+    const [toastMessage, setToastMessage] = useState("");
+    const [toastSubMessage, setToastSubMessage] = useState("");
+
     // Refs for each section
     const generalSettingsRef = useRef<HTMLDivElement>(null);
     const securityRef = useRef<HTMLDivElement>(null);
     const notificationsRef = useRef<HTMLDivElement>(null);
+
+    const showErrorToast = (message: string, subMessage: string) => {
+        setToastType("error");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+    };
+
+    const showSuccessToast = (message: string, subMessage: string) => {
+        setToastType("success");
+        setToastMessage(message);
+        setToastSubMessage(subMessage);
+        setShowToast(true);
+        setTimeout(() => setShowToast(false), 5000);
+    };
+
+    const handleCloseToast = () => setShowToast(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -291,11 +316,12 @@ const Profile = () => {
                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/get-userAddress?email=${session.user.email}`
                 );
                 setUserAddress(addressResponse.data);
+                showSuccessToast('Success', userAddress ? 'Address updated successfully' : 'Address added successfully');
             } else {
                 throw new Error(userAddress ? 'Failed to update address' : 'Failed to add address');
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred while processing address');
+            showErrorToast('Error', err instanceof Error ? err.message : 'An error occurred while processing address');
             console.error('Error:', err);
         } finally {
             setIsAddressModalOpen(false);
@@ -330,12 +356,14 @@ const Profile = () => {
                     newPassword: '',
                     confirmPassword: ''
                 });
+                showSuccessToast('Success', 'Password updated successfully');
                 setTimeout(() => setPasswordUpdateSuccess(false), 5000);
             } else {
                 throw new Error('Failed to update password');
             }
         } catch (err) {
-            setPasswordUpdateError(err instanceof Error ? err.message : 'Failed to update password');
+            setPasswordUpdateError("Wrong password");
+            showErrorToast('Error', 'Failed to update password. Please check your old password.');
             console.error('Error updating password:', err);
         } finally {
             setIsUpdatingPassword(false);
@@ -706,6 +734,14 @@ const Profile = () => {
                 initialData={userAddress || undefined}
                 isUpdate={!!userAddress}
             />
+            {showToast && (
+                <Toast
+                    type={toastType}
+                    message={toastMessage}
+                    subMessage={toastSubMessage}
+                    onClose={handleCloseToast}
+                />
+            )}
         </>
     )
 }

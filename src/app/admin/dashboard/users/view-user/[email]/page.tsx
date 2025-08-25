@@ -26,6 +26,15 @@ interface OrderItemDto {
     productImage: string;
 }
 
+interface ShopOrderInfo {
+    shopId: number;
+    shopName: string;
+    vendorName: string;
+    vendorEmail: string;
+    subtotal: number;
+    items: OrderItemDto[];
+}
+
 interface UserOrderResponse {
     orderNumber: string;
     status: string;
@@ -37,7 +46,9 @@ interface UserOrderResponse {
     totalAmount: number;
     deliveryFee: number;
     grandTotal: number;
-    itemsByShop: Record<number, OrderItemDto[]>;
+    itemsByShop: Record<number, OrderItemDto[]>; // Keep for backward compatibility
+    items: OrderItemDto[]; // Flat list of all items
+    shopOrders: ShopOrderInfo[]; // Shop-specific information
 }
 
 const OrderModal = ({
@@ -49,7 +60,7 @@ const OrderModal = ({
 }) => {
     if (!order) return null;
 
-    const allItems = order ? Object.values(order.itemsByShop).flat() : [];
+    const allItems = order ? (order.items || Object.values(order.itemsByShop || {}).flat()) : [];
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -282,6 +293,7 @@ const ViewUser = () => {
             );
 
             setOrders(sortedOrders);
+            console.log("ORders ::",sortedOrders);
         } catch (error) {
             console.error('Error fetching user orders:', error);
             setOrders([]);
@@ -306,7 +318,7 @@ const ViewUser = () => {
     };
 
     const getAllItemsFromOrder = (order: UserOrderResponse): OrderItemDto[] => {
-        return Object.values(order.itemsByShop).flat();
+        return order.items || Object.values(order.itemsByShop || {}).flat();
     };
 
     const getProductDisplayName = (order: UserOrderResponse) => {

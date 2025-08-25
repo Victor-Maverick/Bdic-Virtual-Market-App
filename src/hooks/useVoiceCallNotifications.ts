@@ -23,7 +23,7 @@ export const useVoiceCallNotifications = () => {
 
     // Remove /api from the end of API_BASE_URL and add the WebSocket endpoint
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/api', '');
-    const wsUrl = `${baseUrl}/api/ws/voice-call`;
+    const wsUrl = `${baseUrl}/ws`;
     console.log('🎤 Attempting to connect to voice call WebSocket:', wsUrl);
     console.log('🎤 Base URL:', baseUrl);
     console.log('🎤 User email:', session.user.email);
@@ -76,7 +76,7 @@ export const useVoiceCallNotifications = () => {
 
     }, (error: Error) => {
       console.error('❌ Voice call WebSocket connection error:', error);
-      console.error('🔗 Failed to connect to:', `${baseUrl}/api/ws/voice-call`);
+      console.error('🔗 Failed to connect to:', `${baseUrl}/ws`);
       console.log('ℹ️ This is expected if the call service is not running or WebSocket endpoints are not available');
       setIsConnected(false);
     });

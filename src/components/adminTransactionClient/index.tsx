@@ -10,6 +10,7 @@ import { cleanPaymentType } from "../../utils/paymentUtils";
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { StatsCardSkeleton, TransactionsTableSkeleton } from "@/components/LoadingSkeletons";
+import LoadingSpinner from "@/components/LoadingSpinner/index";
 
 const PayoutDetailsModal = ({
     payoutId,
@@ -90,7 +91,7 @@ const PayoutDetailsModal = ({
         return (
             <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#808080]/20">
                 <div className="bg-white px-[60px] py-[50px] w-[597px] h-[620px] shadow-lg relative flex items-center justify-center">
-                    <p>Loading payout details...</p>
+                    <LoadingSpinner size="lg" text="Loading payout details..." />
                 </div>
             </div>
         );
@@ -186,7 +187,14 @@ const PayoutDetailsModal = ({
                                 : 'text-[#027A48] border-[#027A48] hover:bg-[#027A48] hover:text-white'
                                 }`}
                         >
-                            {markingAsPaid ? 'Processing...' : 'Mark as Paid'}
+                            {markingAsPaid ? (
+                                <>
+                                    <LoadingSpinner size="sm" className="mr-2" />
+                                    Processing...
+                                </>
+                            ) : (
+                                'Mark as Paid'
+                            )}
                         </button>
                     )}
                     <button onClick={onClose} className="justify-center text-[16px] font-medium flex items-center text-[#022B23] w-[87px] border border-[#022B23] rounded-[12px]">

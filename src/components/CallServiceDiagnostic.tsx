@@ -29,26 +29,63 @@ const CallServiceDiagnostic: React.FC = () => {
       console.log('🔍 User Email:', userEmail);
 
       // Test video service
-      const videoServiceAvailable = await videoCallService.testConnection();
+      let videoServiceAvailable = false;
+      try {
+        const response = await fetch(`${apiBaseUrl}/health/webrtc/video`);
+        videoServiceAvailable = response.ok;
+      } catch (error) {
+        console.error('🔍 Video service test failed:', error);
+      }
       console.log('🔍 Video service available:', videoServiceAvailable);
 
       // Test voice service
-      const voiceServiceAvailable = await voiceCallService.testConnection();
+      let voiceServiceAvailable = false;
+      try {
+        const response = await fetch(`${apiBaseUrl}/health/webrtc/voice`);
+        voiceServiceAvailable = response.ok;
+      } catch (error) {
+        console.error('🔍 Voice service test failed:', error);
+      }
       console.log('🔍 Voice service available:', voiceServiceAvailable);
 
       // Test WebSocket connections
       const baseUrl = apiBaseUrl.replace('/api', '');
-      const videoWsUrl = `${baseUrl}/api/ws/video-call`;
-      const voiceWsUrl = `${baseUrl}/api/ws/voice-call`;
-
-      console.log('🔍 Video WebSocket URL:', videoWsUrl);
-      console.log('🔍 Voice WebSocket URL:', voiceWsUrl);
+      const wsUrl = `${baseUrl}/ws`;
+      
+      console.log('🔍 WebSocket URL:', wsUrl);
+      
+      // Test WebSocket connection
+      let websocketAvailable = false;
+      try {
+        const socket = new WebSocket(wsUrl.replace('http', 'ws'));
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            socket.close();
+            reject(new Error('WebSocket connection timeout'));
+          }, 5000);
+          
+          socket.onopen = () => {
+            clearTimeout(timeout);
+            websocketAvailable = true;
+            socket.close();
+            resolve(true);
+          };
+          
+          socket.onerror = (error) => {
+            clearTimeout(timeout);
+            reject(error);
+          };
+        });
+      } catch (error) {
+        console.error('🔍 WebSocket test failed:', error);
+      }
+      console.log('🔍 WebSocket available:', websocketAvailable);
 
       setDiagnostics({
         videoService: videoServiceAvailable,
         voiceService: voiceServiceAvailable,
-        websocketVideo: true, // We'll assume these work if services are available
-        websocketVoice: true,
+        websocketVideo: websocketAvailable,
+        websocketVoice: websocketAvailable,
         apiBaseUrl,
         userEmail,
         loading: false
@@ -76,7 +113,7 @@ const CallServiceDiagnostic: React.FC = () => {
     );
   }
 
-  const allServicesWorking = diagnostics.videoService && diagnostics.voiceService;
+  const allServicesWorking = diagnostics.videoService && diagnostics.voiceService && diagnostics.websocketVideo;
 
   return (
     <div className={`fixed bottom-4 right-4 border px-4 py-3 rounded shadow-lg max-w-sm ${
@@ -95,6 +132,10 @@ const CallServiceDiagnostic: React.FC = () => {
         <div className="flex items-center">
           <span className={`w-2 h-2 rounded-full mr-2 ${diagnostics.voiceService ? 'bg-green-500' : 'bg-red-500'}`}></span>
           Voice Service: {diagnostics.voiceService ? 'Available' : 'Unavailable'}
+        </div>
+        <div className="flex items-center">
+          <span className={`w-2 h-2 rounded-full mr-2 ${diagnostics.websocketVideo ? 'bg-green-500' : 'bg-red-500'}`}></span>
+          WebSocket: {diagnostics.websocketVideo ? 'Connected' : 'Failed'}
         </div>
         {!allServicesWorking && (
           <div className="mt-2 text-xs">

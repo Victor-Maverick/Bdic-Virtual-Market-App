@@ -2,24 +2,37 @@
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
 import arrowRight from "../../../../public/assets/images/greyforwardarrow.svg";
-import React, {useEffect, useRef, useState} from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import BackButton from "@/components/BackButton";
 import axios from "axios";
-import {ToastContainer} from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import { toast } from 'react-toastify';
+import { LoadingButton } from "@/components/LoadingButton";
+import { useLoading } from "@/contexts/LoadingContext";
 
 
 interface OrderItemDto {
     id: number;
     productId: number;
     productName: string;
+    description?: string;
+    productImage: string;
     unitPrice: number;
     quantity: number;
-    productImage: string;
+    totalPrice: number;
+    vendorName: string;
+    buyerName?: string;
 }
 
-
+interface ShopOrderInfo {
+    shopId: number;
+    shopName: string;
+    vendorName: string;
+    vendorEmail: string;
+    subtotal: number;
+    items: OrderItemDto[];
+}
 
 interface BuyerOrderResponse {
     orderNumber: string;
@@ -32,20 +45,26 @@ interface BuyerOrderResponse {
     totalAmount: number;
     deliveryFee: number;
     grandTotal: number;
-    itemsByShop: Record<number, OrderItemDto[]>;
+    itemsByShop: Record<number, OrderItemDto[]>; // Keep for backward compatibility
+    items: OrderItemDto[]; // Flat list of all items
+    shopOrders: ShopOrderInfo[]; // Shop-specific information
 }
 
 
 const OrderItemActionsDropdown = ({
-                                      item,
-                                      children,
-                                      onDispute,
-                                      onReview
-                                  }: {
+    item,
+    children,
+    onDispute,
+    onReview,
+    onRefund,
+    orderStatus
+}: {
     item: OrderItemDto;
     children: React.ReactNode;
     onDispute: (item: OrderItemDto) => void;
     onReview: (item: OrderItemDto) => void;
+    onRefund?: (item: OrderItemDto) => void;
+    orderStatus: string;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -63,6 +82,8 @@ const OrderItemActionsDropdown = ({
             onDispute(item);
         } else if (action === 'review') {
             onReview(item);
+        } else if (action === 'refund' && onRefund) {
+            onRefund(item);
         }
         setIsOpen(false);
     };
@@ -98,18 +119,30 @@ const OrderItemActionsDropdown = ({
                     }}
                 >
                     <ul className="py-1">
-                        <li
-                            className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                            onClick={(e) => handleAction(e, 'dispute')}
-                        >
-                            Dispute
-                        </li>
-                        <li
-                            className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                            onClick={(e) => handleAction(e, 'review')}
-                        >
-                            Review
-                        </li>
+                        {orderStatus === 'DELIVERED' && (
+                            <>
+                                <li
+                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                    onClick={(e) => handleAction(e, 'dispute')}
+                                >
+                                    Dispute
+                                </li>
+                                <li
+                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                    onClick={(e) => handleAction(e, 'review')}
+                                >
+                                    Review
+                                </li>
+                            </>
+                        )}
+                        {(orderStatus === 'CANCELLED' || orderStatus === 'DECLINED') && onRefund && (
+                            <li
+                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={(e) => handleAction(e, 'refund')}
+                            >
+                                Request Refund
+                            </li>
+                        )}
                     </ul>
                 </div>
             )}
@@ -119,27 +152,35 @@ const OrderItemActionsDropdown = ({
 
 
 const OrderModal = ({
-                        order,
-                        onClose,
-                        onDispute,
-                        onReview
-                    }: {
+    order,
+    onClose,
+    onDispute,
+    onReview,
+    onRefund
+}: {
     order: BuyerOrderResponse | null;
     onClose: () => void;
     onDispute: (item: OrderItemDto) => void;
     onReview: (item: OrderItemDto) => void;
+    onRefund: (item: OrderItemDto) => void;
 }) => {
     if (!order) return null;
 
-    const allItems = order ? Object.values(order.itemsByShop).flat() : [];
+    const allItems = order ? (order.items || Object.values(order.itemsByShop || {}).flat()) : [];
 
     // Status styling
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'DELIVERED':
                 return 'bg-[#0C4F24] text-white';
+            case 'SHIPPED':
             case 'PENDING_DELIVERY':
                 return 'bg-[#FFFAEB] text-[#B54708]';
+            case 'PROCESSING':
+                return 'bg-[#E1F5FE] text-[#0277BD]';
+            case 'CANCELLED':
+            case 'DECLINED':
+                return 'bg-[#FFEBEB] text-[#F90707]';
             default:
                 return 'bg-gray-200 text-gray-800';
         }
@@ -149,10 +190,17 @@ const OrderModal = ({
         switch (status) {
             case 'DELIVERED':
                 return 'Delivered';
+            case 'SHIPPED':
+                return 'Shipped';
+            case 'PROCESSING':
+                return 'Processing';
             case 'PENDING':
                 return 'Pending';
             case 'PENDING_DELIVERY':
                 return 'Pending Delivery';
+            case 'CANCELLED':
+            case 'DECLINED':
+                return 'Cancelled';
             default:
                 return 'Paid';
         }
@@ -210,11 +258,13 @@ const OrderModal = ({
                                         <div className="flex items-center gap-2">
                                             <p className="text-[#101828] text-[12px] sm:text-[14px] font-medium">₦{item.unitPrice.toLocaleString()}</p>
 
-                                            {order.status === 'DELIVERED' && (
+                                            {(order.status === 'DELIVERED' || order.status === 'CANCELLED' || order.status === 'DECLINED') && (
                                                 <OrderItemActionsDropdown
                                                     item={item}
                                                     onDispute={onDispute}
                                                     onReview={onReview}
+                                                    onRefund={onRefund}
+                                                    orderStatus={order.status}
                                                 >
                                                     <div className="flex flex-col gap-[2px] cursor-pointer p-2 -m-2">
                                                         <span className="w-[4px] h-[4px] rounded-full bg-[#7c7c7c]"></span>
@@ -271,10 +321,10 @@ const OrderModal = ({
 };
 
 const ReviewModal = ({
-                         product,
-                         onClose,
-                         onSubmit
-                     }: {
+    product,
+    onClose,
+    onSubmit
+}: {
     product: OrderItemDto;
     onClose: () => void;
     onSubmit: (rating: number, comment: string) => void;
@@ -321,8 +371,8 @@ const ReviewModal = ({
                                 </button>
                             ))}
                             <span className="ml-2 text-sm text-gray-500">
-                {hoverRating || rating > 0 ? `${hoverRating || rating}.0` : 'Rate this product'}
-              </span>
+                                {hoverRating || rating > 0 ? `${hoverRating || rating}.0` : 'Rate this product'}
+                            </span>
                         </div>
                     </div>
 
@@ -350,9 +400,8 @@ const ReviewModal = ({
                         <button
                             onClick={handleSubmit}
                             disabled={rating === 0}
-                            className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
-                                rating === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#022B23] hover:bg-[#033a30]'
-                            }`}
+                            className={`px-4 py-2 text-sm font-medium text-white rounded-md ${rating === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#022B23] hover:bg-[#033a30]'
+                                }`}
                         >
                             Submit Review
                         </button>
@@ -363,12 +412,115 @@ const ReviewModal = ({
     );
 };
 
+const RefundModal = ({
+    product,
+    order,
+    onClose,
+    onSubmit
+}: {
+    product: OrderItemDto;
+    order: BuyerOrderResponse;
+    onClose: () => void;
+    onSubmit: (reason: string, description: string) => void;
+}) => {
+    const [reason, setReason] = useState<string>('');
+    const [description, setDescription] = useState<string>('');
+
+    const handleSubmit = () => {
+        if (!reason.trim()) {
+            alert('Please select a reason for the refund');
+            return;
+        }
+        onSubmit(reason, description);
+    };
+
+    const refundReasons = [
+        'Product was damaged/defective',
+        'Wrong product received',
+        'Product not as described',
+        'Order was cancelled by vendor',
+        'Order was declined by vendor',
+        'Other'
+    ];
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+            <div className="bg-white rounded-lg p-[30px] w-full max-w-md">
+                <div className="flex border-b-[0.5px] pb-3 border-[#ededed] justify-between items-center">
+                    <h2 className="text-[16px] text-[#022B23] font-medium">Request Refund</h2>
+                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                        &times;
+                    </button>
+                </div>
+
+                <div className="mt-4">
+                    <div className="mb-4">
+                        <h3 className="text-[14px] font-medium mb-2">{product.productName}</h3>
+                        <p className="text-[12px] text-gray-600 mb-2">Order: {order.orderNumber}</p>
+                        <p className="text-[12px] text-gray-600">Refund Amount: ₦{product.unitPrice.toLocaleString()}</p>
+                    </div>
+
+                    <div className="mb-4">
+                        <label htmlFor="refund-reason" className="block text-sm font-medium text-gray-700 mb-1">
+                            Reason for Refund *
+                        </label>
+                        <select
+                            id="refund-reason"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#022B23]"
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                        >
+                            <option value="">Select a reason</option>
+                            {refundReasons.map((reasonOption) => (
+                                <option key={reasonOption} value={reasonOption}>
+                                    {reasonOption}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="mb-4">
+                        <label htmlFor="refund-description" className="block text-sm font-medium text-gray-700 mb-1">
+                            Additional Details
+                        </label>
+                        <textarea
+                            id="refund-description"
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-[#022B23]"
+                            placeholder="Please provide additional details about your refund request..."
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="flex justify-end gap-3 mt-6">
+                        <button
+                            onClick={onClose}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={!reason.trim()}
+                            className={`px-4 py-2 text-sm font-medium text-white rounded-md ${!reason.trim() ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#022B23] hover:bg-[#033a30]'
+                                }`}
+                        >
+                            Submit Refund Request
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const OrderActionsDropdown = ({
-                                  order,
-                                  onMarkDelivered,
-                                  onViewOrder,
-                                  children
-                              }: {
+    order,
+    onMarkDelivered,
+    onViewOrder,
+    children
+}: {
     order: BuyerOrderResponse;
     onMarkDelivered: (orderNumber: string) => void;
     onViewOrder: (order: BuyerOrderResponse) => void;
@@ -415,7 +567,7 @@ const OrderActionsDropdown = ({
             {isOpen && (
                 <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg z-50 border border-[#ededed] w-[125px]">
                     <ul className="py-1">
-                        {order.status === 'PENDING_DELIVERY' ? (
+                        {(order.status === 'SHIPPED' || order.status === 'PENDING_DELIVERY') ? (
                             <li
                                 className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
                                 onClick={(e) => handleAction(e, 'mark')}
@@ -448,7 +600,12 @@ const Orders = () => {
     const [disputeImage, setDisputeImage] = useState<File | null>(null);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [reviewItem, setReviewItem] = useState<OrderItemDto | null>(null);
+    const [refundModalOpen, setRefundModalOpen] = useState(false);
+    const [refundItem, setRefundItem] = useState<OrderItemDto | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [debugInfo, setDebugInfo] = useState<string>('');
+    const [showDebug, setShowDebug] = useState(false);
+    const { isLoading, withLoading } = useLoading();
     const ordersPerPage = 6;
     // Calculate pagination
     const indexOfLastOrder = currentPage * ordersPerPage;
@@ -464,6 +621,16 @@ const Orders = () => {
     const handleCloseReviewModal = () => {
         setReviewModalOpen(false);
         setReviewItem(null);
+    };
+
+    const handleOpenRefundModal = (item: OrderItemDto) => {
+        setRefundItem(item);
+        setRefundModalOpen(true);
+    };
+
+    const handleCloseRefundModal = () => {
+        setRefundModalOpen(false);
+        setRefundItem(null);
     };
 
     const handleSubmitReview = async (rating: number, comment: string) => {
@@ -504,6 +671,98 @@ const Orders = () => {
         }
     };
 
+    const handleSubmitRefund = async (reason: string, description: string) => {
+        if (!refundItem || !selectedOrder) return;
+
+        try {
+            const userEmail = localStorage.getItem('userEmail');
+            const userName = localStorage.getItem('userName') || 'Unknown User';
+            if (!userEmail) {
+                router.push('/login');
+                return;
+            }
+
+            // Get shop info from the order - we need to find which shop this item belongs to
+            let shopId: number | null = null;
+            let shopName = '';
+            let vendorEmail = '';
+            let vendorName = '';
+
+            // Find the shop for this item
+            if (selectedOrder.shopOrders) {
+                for (const shopOrder of selectedOrder.shopOrders) {
+                    if (shopOrder.items.some(item => item.id === refundItem.id)) {
+                        shopId = shopOrder.shopId;
+                        shopName = shopOrder.shopName;
+                        vendorEmail = shopOrder.vendorEmail;
+                        vendorName = shopOrder.vendorName;
+                        break;
+                    }
+                }
+            } else {
+                // Fallback to old structure
+                for (const [shopIdStr, items] of Object.entries(selectedOrder.itemsByShop || {})) {
+                    if (items.some(item => item.id === refundItem.id)) {
+                        shopId = parseInt(shopIdStr);
+                        // You might need to fetch shop details here or store them in the order
+                        // For now, we'll use placeholder values
+                        shopName = `Shop ${shopId}`;
+                        vendorEmail = `vendor${shopId}@example.com`;
+                        vendorName = `Vendor ${shopId}`;
+                        break;
+                    }
+                }
+            }
+
+            if (!shopId) {
+                toast.error('Unable to identify shop for this item');
+                return;
+            }
+
+            const refundRequest = {
+                orderId: parseInt(selectedOrder.orderNumber.replace(/\D/g, '')) || 1, // Extract numeric ID from order number
+                orderNumber: selectedOrder.orderNumber,
+                buyerEmail: userEmail,
+                buyerName: userName,
+                vendorEmail: vendorEmail,
+                vendorName: vendorName,
+                shopId: shopId,
+                shopName: shopName,
+                refundAmount: refundItem.unitPrice * refundItem.quantity,
+                reason: reason,
+                description: description
+            };
+
+            await toast.promise(
+                axios.post(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/refunds`,
+                    refundRequest,
+                    {
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                ),
+                {
+                    pending: 'Submitting refund request...',
+                    success: 'Refund request submitted successfully!',
+                    error: {
+                        render({ data }) {
+                            if (axios.isAxiosError(data) && data.response?.data) {
+                                return data.response.data;
+                            }
+                            return 'Failed to submit refund request. Please try again.';
+                        }
+                    }
+                }
+            );
+
+            handleCloseRefundModal();
+        } catch (error) {
+            console.error('Error submitting refund request:', error);
+        }
+    };
+
     const handleOpenDisputeModal = (item: OrderItemDto) => {
         setDisputeItem(item);
         setDisputeModalOpen(true);
@@ -528,50 +787,44 @@ const Orders = () => {
             return;
         }
 
-        try {
-            const userEmail = localStorage.getItem('userEmail');
-            if (!userEmail) {
-                router.push('/login');
-                return;
-            }
+        await withLoading('submitDispute', async () => {
+            try {
+                const userEmail = localStorage.getItem('userEmail');
+                if (!userEmail) {
+                    router.push('/login');
+                    return;
+                }
 
-            const formData = new FormData();
-            formData.append('buyerEmail', userEmail);
-            formData.append('orderNumber', selectedOrder.orderNumber);
-            formData.append('itemId', disputeItem.id.toString());
-            if (disputeImage) {
-                formData.append('itemImage', disputeImage);
-            }
-            formData.append('reason', disputeReason);
+                const formData = new FormData();
+                formData.append('buyerEmail', userEmail);
+                formData.append('orderNumber', selectedOrder.orderNumber);
+                formData.append('itemId', disputeItem.id.toString());
+                if (disputeImage) {
+                    formData.append('itemImage', disputeImage);
+                }
+                formData.append('reason', disputeReason);
 
-            await toast.promise(
-                axios.post(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/add`,
+                await axios.post(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/dispute/add`,
                     formData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
                         },
                     }
-                ),
-                {
-                    pending: 'Submitting dispute...',
-                    success: 'Dispute submitted successfully!',
-                    error: {
-                        render({data}) {
-                            // Handle axios error response
-                            if (axios.isAxiosError(data) && data.response?.data?.message) {
-                                return data.response.data.message;
-                            }
-                            return 'Dispute already in queue.';
-                        }
-                    }
+                );
+                
+                toast.success('Dispute submitted successfully!');
+                handleCloseDisputeModal();
+            } catch (error) {
+                console.error('Error submitting dispute:', error);
+                if (axios.isAxiosError(error) && error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error('Failed to submit dispute. Please try again.');
                 }
-            );
-            handleCloseDisputeModal();
-        } catch (error) {
-            console.error('Error submitting dispute:', error);
-        }
+            }
+        });
     };
 
     useEffect(() => {
@@ -581,27 +834,82 @@ const Orders = () => {
                 router.push('/login');
                 return;
             }
-            try {
-                const response = await axios.get<BuyerOrderResponse[]>(
-                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/user`,
-                    { params: { buyerEmail: userEmail } }
-                );
+            
+            await withLoading('fetchOrders', async () => {
+                try {
+                    console.log('🔍 Fetching orders for:', userEmail);
+                    const response = await axios.get<BuyerOrderResponse[]>(
+                        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/orders/user`,
+                        { params: { buyerEmail: userEmail } }
+                    );
 
-                // Sort orders by createdAt in descending order (newest first)
-                const sortedOrders = response.data.sort((a, b) =>
-                    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-                );
+                    console.log('📦 Raw orders data:', response.data);
+                    
+                    // Process orders to ensure items are properly populated
+                    const processedOrders = response.data.map((order: BuyerOrderResponse) => {
+                        console.log(`📦 Processing order ${order.orderNumber}:`, {
+                            items: order.items?.length || 0,
+                            shopOrders: order.shopOrders?.length || 0,
+                            itemsByShop: Object.keys(order.itemsByShop || {}).length
+                        });
+                        
+                        // If items is empty but shopOrders has items, flatten them
+                        if ((!order.items || order.items.length === 0) && order.shopOrders && order.shopOrders.length > 0) {
+                            const flattenedItems = order.shopOrders.flatMap(shop => shop.items || []);
+                            console.log(`📦 Flattened ${flattenedItems.length} items from shopOrders`);
+                            return { ...order, items: flattenedItems };
+                        }
+                        
+                        // If items is empty but itemsByShop has items, flatten them
+                        if ((!order.items || order.items.length === 0) && order.itemsByShop) {
+                            const flattenedItems = Object.values(order.itemsByShop).flat();
+                            console.log(`📦 Flattened ${flattenedItems.length} items from itemsByShop`);
+                            return { ...order, items: flattenedItems };
+                        }
+                        
+                        return order;
+                    });
 
-                setOrders(sortedOrders);
-                console.log("orders:: ", sortedOrders);
-            } catch (error) {
-                console.error('Error fetching orders:', error);
-            } finally {
-                setLoading(false);
-            }
+                    // Sort orders by createdAt in descending order (newest first)
+                    const sortedOrders = processedOrders.sort((a, b) =>
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    );
+
+                    setOrders(sortedOrders);
+                    console.log("📦 Final processed orders:", sortedOrders);
+                } catch (error) {
+                    console.error('Error fetching orders:', error);
+                } finally {
+                    setLoading(false);
+                }
+            });
         };
         fetchOrders();
-    }, [router]);
+    }, [router, withLoading]);
+
+    const fetchDebugInfo = async () => {
+        const userEmail = localStorage.getItem('userEmail');
+        if (!userEmail) {
+            setDebugInfo('No user email found in localStorage');
+            setShowDebug(true);
+            return;
+        }
+        
+        await withLoading('debugInfo', async () => {
+            try {
+                const response = await axios.get(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/orders/user/debug`,
+                    { params: { buyerEmail: userEmail } }
+                );
+                
+                setDebugInfo(response.data);
+                setShowDebug(true);
+            } catch (error) {
+                setDebugInfo('Error fetching debug info: ' + (error instanceof Error ? error.message : String(error)));
+                setShowDebug(true);
+            }
+        });
+    };
 
     const handleMarkDelivered = async (orderNumber: string) => {
         const toastId = toast.loading('Marking order as delivered...', {
@@ -655,7 +963,7 @@ const Orders = () => {
     };
 
     const getAllItemsFromOrder = (order: BuyerOrderResponse): OrderItemDto[] => {
-        return Object.values(order.itemsByShop).flat();
+        return order.items || Object.values(order.itemsByShop || {}).flat();
     };
 
     const getProductDisplayName = (order: BuyerOrderResponse) => {
@@ -692,11 +1000,17 @@ const Orders = () => {
         switch (status) {
             case 'DELIVERED':
                 return 'bg-[#F9FDE8] text-[#0C4F24]';
+            case 'SHIPPED':
             case 'IN_TRANSIT':
                 return 'bg-[#FFFAEB] text-[#F99007]';
+            case 'PROCESSING':
+                return 'bg-[#E1F5FE] text-[#0277BD]';
             case 'RETURNED':
+            case 'CANCELLED':
+            case 'DECLINED':
                 return 'bg-[#FFEBEB] text-[#F90707]';
             case 'PENDING_DELIVERY':
+            case 'PENDING':
                 return 'bg-[#FFFAEB] text-[#B54708]';
             default:
                 return 'bg-[#E7E7E7] text-[#1E1E1E]';
@@ -707,10 +1021,17 @@ const Orders = () => {
         switch (status) {
             case 'DELIVERED':
                 return 'Delivered';
+            case 'SHIPPED':
+                return 'Shipped';
             case 'IN_TRANSIT':
                 return 'In-transit';
+            case 'PROCESSING':
+                return 'Processing';
             case 'RETURNED':
                 return 'Returned';
+            case 'CANCELLED':
+            case 'DECLINED':
+                return 'Cancelled';
             case 'PENDING_DELIVERY':
                 return 'Pending Delivery';
             case 'PENDING':
@@ -724,8 +1045,36 @@ const Orders = () => {
         return (
             <>
                 <MarketPlaceHeader />
-                <div className="flex justify-center items-center h-screen">
-                    <p>Loading...</p>
+                <div className="h-[48px] w-full border-y-[0.5px] border-[#EDEDED]">
+                    <div className="h-[48px] px-4 sm:px-6 lg:px-25 gap-[8px] items-center flex">
+                        <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                        <div className="w-32 h-4 bg-gray-200 rounded animate-pulse"></div>
+                    </div>
+                </div>
+                <div className="px-4 sm:px-6 lg:px-[100px] py-[10px] border-b border-[#ededed]">
+                    <div className="w-full max-w-[182px] h-[46px] flex border-[0.5px] border-[#ededed] rounded-[4px] p-[2px]">
+                        <div className="flex justify-center gap-[2px] items-center bg-[#F9F9F9] w-full h-[40px]">
+                            <div className="w-5 h-5 bg-gray-200 rounded animate-pulse"></div>
+                            <div className="w-16 h-4 bg-gray-200 rounded animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+                <div className="px-4 sm:px-6 lg:px-[100px] py-8">
+                    <div className="space-y-4">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="border border-[#ededed] rounded-lg p-4 animate-pulse">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-gray-200 rounded"></div>
+                                    <div className="flex-1 space-y-2">
+                                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                        <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                                    </div>
+                                    <div className="w-20 h-6 bg-gray-200 rounded"></div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </>
         );
@@ -746,16 +1095,16 @@ const Orders = () => {
                     <div className="flex flex-col lg:block">
                         <div className="w-full lg:w-[381px] text-[#022B23] text-[12px] font-medium h-[44px] bg-[#f8f8f8] rounded-[10px] flex items-center px-[8px] justify-between mb-2 lg:mb-0">
                             <p>Go to profile</p>
-                            <Image src={arrowRight} alt={'image'}/>
+                            <Image src={arrowRight} alt={'image'} />
                         </div>
                         <div className="flex flex-row lg:flex-col h-auto w-full lg:w-[381px] mt-0 lg:mt-[6px] rounded-[12px] border border-[#eeeeee] overflow-hidden">
-                            <div onClick={() => {router.push("/buyer/wishlist")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] lg:rounded-t-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
+                            <div onClick={() => { router.push("/buyer/wishlist") }} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] lg:rounded-t-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
                                 <p>Wishlist</p>
                             </div>
-                            <div onClick={() => {router.push("/buyer/orders")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] font-medium bg-[#f8f8f8] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer">
+                            <div onClick={() => { router.push("/buyer/orders") }} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] font-medium bg-[#f8f8f8] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer">
                                 <p>My orders</p>
                             </div>
-                            <div onClick={() => {router.push("/buyer/disputes")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] lg:rounded-b-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
+                            <div onClick={() => { router.push("/buyer/disputes") }} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] lg:rounded-b-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
                                 <p>Order disputes</p>
                             </div>
                         </div>
@@ -763,7 +1112,18 @@ const Orders = () => {
 
                     {/* Main content */}
                     <div className="flex flex-col w-full lg:w-[779px] gap-4 lg:gap-[24px]">
-                        <p className="text-[#000000] text-[14px] sm:text-[16px] font-medium">My orders ({orders.length})</p>
+                        <div className="flex items-center justify-between">
+                            <p className="text-[#000000] text-[14px] sm:text-[16px] font-medium">My orders ({orders.length})</p>
+                            <LoadingButton
+                                onClick={fetchDebugInfo}
+                                isLoading={isLoading('debugInfo')}
+                                loadingText="Loading Debug..."
+                                className="text-sm"
+                                size="sm"
+                            >
+                                Debug Orders
+                            </LoadingButton>
+                        </div>
                         <div className="border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
                             {currentOrders.length === 0 ? (
                                 <div className="flex items-center justify-center h-[100px] sm:h-[151px] text-[#3D3D3D] text-[14px]">
@@ -773,55 +1133,115 @@ const Orders = () => {
                                 currentOrders
                                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                                     .map((order, index) => {
-                                    const isLastItem = index === orders.length - 1;
-                                    const firstItem = getFirstItem(order);
-                                    const statusText = getStatusDisplayText(order.status);
+                                        const isLastItem = index === orders.length - 1;
+                                        const firstItem = getFirstItem(order);
+                                        const statusText = getStatusDisplayText(order.status);
 
-                                    return (
-                                        <div key={order.orderNumber} className={`flex flex-col sm:flex-row items-start sm:items-center ${!isLastItem ? "border-b border-[#ededed]" : "border-none"} p-3 sm:p-0`}>
-                                            {/* Mobile layout */}
-                                            <div className="flex w-full sm:hidden gap-3 mb-3">
-                                                <div className="w-[80px] h-[80px] rounded-[8px] overflow-hidden flex-shrink-0">
-                                                    {firstItem.productImage ? (
-                                                        <Image
-                                                            src={firstItem.productImage}
-                                                            alt={`product`}
-                                                            width={80}
-                                                            height={80}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs">
-                                                            No image
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-[12px] sm:text-[14px] text-[#1E1E1E] font-medium mb-1 truncate">
-                                                        {getProductDisplayName(order)}
-                                                    </p>
-                                                    <p className="text-[10px] font-normal text-[#3D3D3D] uppercase mb-2">
-                                                        Order #{order.orderNumber}
-                                                    </p>
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <p className="font-medium text-[#1E1E1E] text-[14px]">
-                                                                ₦{formatPrice(order.totalAmount)}
-                                                            </p>
-                                                            <p className="text-[#3D3D3D] text-[10px]">
-                                                                {formatDate(order.createdAt)}
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`flex h-[32px] px-2 items-center text-[12px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`}>
-                                                                <p>{statusText}</p>
+                                        return (
+                                            <div key={order.orderNumber} className={`flex flex-col sm:flex-row items-start sm:items-center ${!isLastItem ? "border-b border-[#ededed]" : "border-none"} p-3 sm:p-0`}>
+                                                {/* Mobile layout */}
+                                                <div className="flex w-full sm:hidden gap-3 mb-3">
+                                                    <div className="w-[80px] h-[80px] rounded-[8px] overflow-hidden flex-shrink-0">
+                                                        {firstItem.productImage ? (
+                                                            <Image
+                                                                src={firstItem.productImage}
+                                                                alt={`product`}
+                                                                width={80}
+                                                                height={80}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs">
+                                                                No image
                                                             </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[12px] sm:text-[14px] text-[#1E1E1E] font-medium mb-1 truncate">
+                                                            {getProductDisplayName(order)}
+                                                        </p>
+                                                        <p className="text-[10px] font-normal text-[#3D3D3D] uppercase mb-2">
+                                                            Order #{order.orderNumber}
+                                                        </p>
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <p className="font-medium text-[#1E1E1E] text-[14px]">
+                                                                    ₦{formatPrice(order.totalAmount)}
+                                                                </p>
+                                                                <p className="text-[#3D3D3D] text-[10px]">
+                                                                    {formatDate(order.createdAt)}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`flex h-[32px] px-2 items-center text-[12px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`}>
+                                                                    <p>{statusText}</p>
+                                                                </div>
+                                                                <OrderActionsDropdown
+                                                                    order={order}
+                                                                    onMarkDelivered={handleMarkDelivered}
+                                                                    onViewOrder={handleViewOrder}
+                                                                >
+                                                                    <div className="flex flex-col gap-[2px] items-center justify-center p-2">
+                                                                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                        <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                                                                    </div>
+                                                                </OrderActionsDropdown>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Desktop layout */}
+                                                <div className="hidden sm:flex items-center w-full h-[151px]">
+                                                    <div className="flex border-r border-[#ededed] w-[120px] sm:w-[169px] h-[151px] overflow-hidden">
+                                                        {firstItem.productImage ? (
+                                                            <Image
+                                                                src={firstItem.productImage}
+                                                                alt={`product`}
+                                                                width={168}
+                                                                height={150}
+                                                                className="w-full h-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-sm">
+                                                                No image
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <div className="flex items-center w-full px-3 sm:px-[20px] justify-between">
+                                                        <div className="flex flex-col w-[40%] sm:w-[30%]">
+                                                            <div className="mb-[13px]">
+                                                                <p className="text-[12px] sm:text-[14px] text-[#1E1E1E] font-medium mb-[4px] line-clamp-2">
+                                                                    {getProductDisplayName(order)}
+                                                                </p>
+                                                                <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
+                                                                    Order #{order.orderNumber}
+                                                                </p>
+                                                            </div>
+
+                                                            <div className="flex flex-col">
+                                                                <p className="font-medium text-[#1E1E1E] text-[14px] sm:text-[16px]">
+                                                                    ₦{formatPrice(order.totalAmount)}
+                                                                </p>
+                                                                <p className="text-[#3D3D3D] text-[10px]">
+                                                                    {formatDate(order.createdAt)}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className={`flex h-[36px] sm:h-[42px] px-2 sm:px-3 items-center text-[12px] sm:text-[14px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`} style={{ width: 'fit-content' }}>
+                                                            <p>{statusText}</p>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-center">
                                                             <OrderActionsDropdown
                                                                 order={order}
                                                                 onMarkDelivered={handleMarkDelivered}
                                                                 onViewOrder={handleViewOrder}
                                                             >
-                                                                <div className="flex flex-col gap-[2px] items-center justify-center p-2">
+                                                                <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
                                                                     <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                                                                     <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                                                                     <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -831,68 +1251,8 @@ const Orders = () => {
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            {/* Desktop layout */}
-                                            <div className="hidden sm:flex items-center w-full h-[151px]">
-                                                <div className="flex border-r border-[#ededed] w-[120px] sm:w-[169px] h-[151px] overflow-hidden">
-                                                    {firstItem.productImage ? (
-                                                        <Image
-                                                            src={firstItem.productImage}
-                                                            alt={`product`}
-                                                            width={168}
-                                                            height={150}
-                                                            className="w-full h-full object-cover"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-sm">
-                                                            No image
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="flex items-center w-full px-3 sm:px-[20px] justify-between">
-                                                    <div className="flex flex-col w-[40%] sm:w-[30%]">
-                                                        <div className="mb-[13px]">
-                                                            <p className="text-[12px] sm:text-[14px] text-[#1E1E1E] font-medium mb-[4px] line-clamp-2">
-                                                                {getProductDisplayName(order)}
-                                                            </p>
-                                                            <p className="text-[10px] font-normal text-[#3D3D3D] uppercase">
-                                                                Order #{order.orderNumber}
-                                                            </p>
-                                                        </div>
-
-                                                        <div className="flex flex-col">
-                                                            <p className="font-medium text-[#1E1E1E] text-[14px] sm:text-[16px]">
-                                                                ₦{formatPrice(order.totalAmount)}
-                                                            </p>
-                                                            <p className="text-[#3D3D3D] text-[10px]">
-                                                                {formatDate(order.createdAt)}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className={`flex h-[36px] sm:h-[42px] px-2 sm:px-3 items-center text-[12px] sm:text-[14px] font-medium justify-center rounded-[100px] ${getStatusStyle(order.status)}`} style={{ width: 'fit-content' }}>
-                                                        <p>{statusText}</p>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-center">
-                                                        <OrderActionsDropdown
-                                                            order={order}
-                                                            onMarkDelivered={handleMarkDelivered}
-                                                            onViewOrder={handleViewOrder}
-                                                        >
-                                                            <div className="flex flex-col gap-[3px] items-center justify-center p-2 -m-2">
-                                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                                                <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                                                            </div>
-                                                        </OrderActionsDropdown>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    );
-                                })
+                                        );
+                                    })
                             )}
                         </div>
                     </div>
@@ -904,7 +1264,8 @@ const Orders = () => {
                     order={selectedOrder}
                     onClose={closeModal}
                     onDispute={handleOpenDisputeModal}
-                    onReview={handleOpenReviewModal}  // Add this prop
+                    onReview={handleOpenReviewModal}
+                    onRefund={handleOpenRefundModal}
                 />
             )}
 
@@ -937,7 +1298,7 @@ const Orders = () => {
                                             ) : (
                                                 <>
                                                     <svg className="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/>
+                                                        <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
                                                     </svg>
                                                     <p className="mb-2 text-sm text-gray-500">
                                                         <span className="font-semibold">Click to upload</span> or drag and drop
@@ -986,17 +1347,19 @@ const Orders = () => {
                                 >
                                     Cancel
                                 </button>
-                                <button
+                                <LoadingButton
                                     onClick={handleSubmitDispute}
                                     disabled={!disputeReason}
-                                    className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
-                                        !disputeReason
-                                            ? 'bg-gray-400 cursor-not-allowed'
-                                            : 'bg-[#022B23] hover:bg-[#033a30]'
-                                    }`}
+                                    isLoading={isLoading('submitDispute')}
+                                    loadingText="Submitting..."
+                                    className={!disputeReason
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-[#022B23] hover:bg-[#033a30]'
+                                    }
+                                    size="sm"
                                 >
                                     Submit Dispute
-                                </button>
+                                </LoadingButton>
                             </div>
                         </div>
                     </div>
@@ -1042,6 +1405,15 @@ const Orders = () => {
                     onSubmit={handleSubmitReview}
                 />
             )}
+
+            {refundModalOpen && refundItem && selectedOrder && (
+                <RefundModal
+                    product={refundItem}
+                    order={selectedOrder}
+                    onClose={handleCloseRefundModal}
+                    onSubmit={handleSubmitRefund}
+                />
+            )}
             <ToastContainer
                 position="top-right"
                 autoClose={5000}
@@ -1053,6 +1425,26 @@ const Orders = () => {
                 draggable
                 pauseOnHover
             />
+
+            {/* Debug Modal */}
+            {showDebug && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-hidden">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-xl font-semibold">Debug Information</h2>
+                            <button
+                                onClick={() => setShowDebug(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="bg-gray-100 p-4 rounded max-h-96 overflow-y-auto">
+                            <pre className="text-sm whitespace-pre-wrap">{debugInfo}</pre>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

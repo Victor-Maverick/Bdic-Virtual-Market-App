@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useVoiceCall } from '@/hooks/useVoiceCall';
+import { useWebRTCVoiceCall } from '@/hooks/useWebRTCVoiceCall';
 import { useCallContext } from '@/contexts/CallContext';
 import { voiceCallService, VoiceCallRequest } from '@/services/voiceCallService';
 
@@ -43,17 +43,17 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
     leaveRoom,
     toggleAudio,
     audioRef
-  } = useVoiceCall({
+  } = useWebRTCVoiceCall({
     userEmail: buyerEmail,
     displayName: 'Buyer',
     onCallEnd: () => {
-      console.log('🎤 Twilio room disconnected - ending call in global context');
+      console.log('🎤 WebRTC room disconnected - ending call in global context');
       if (roomName) {
         endCall(roomName, 'ended');
       }
     },
     onError: (error) => {
-      console.error('Voice call error:', error);
+      console.error('WebRTC Voice call error:', error);
       setError(error);
     }
   });
@@ -70,11 +70,11 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
   useEffect(() => {
     if (activeCall && ['ended', 'declined', 'missed'].includes(activeCall.status)) {
       console.log('🎤 Call ended/declined/missed:', activeCall);
-      
+
       if (activeCall.message) {
         setEndingMessage(activeCall.message);
         setIsClosing(true);
-        
+
         // Auto-close after delay if specified
         if (activeCall.autoCloseDelay && activeCall.autoCloseDelay > 0) {
           setTimeout(() => {
@@ -93,8 +93,8 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
   // Listen for call status changes from the global context
   useEffect(() => {
     const cleanup = onCallStatusChange((call) => {
-      if (!call || (roomName && call.roomName === roomName && 
-          ['ended', 'declined', 'missed'].includes(call.status))) {
+      if (!call || (roomName && call.roomName === roomName &&
+        ['ended', 'declined', 'missed'].includes(call.status))) {
         console.log('🎤 SimpleVoiceCallModal: Call ended via global context, closing modal');
         onClose();
       }
@@ -103,12 +103,17 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
     return cleanup;
   }, [roomName, onClose, onCallStatusChange]);
 
-  // Manual call initiation - removed auto-initiation to prevent unwanted calls
+  // Auto-initiate call when modal opens
+  useEffect(() => {
+    if (isOpen && !callInitiated && !isInitiating) {
+      initiateCall();
+    }
+  }, [isOpen]);
 
   const initiateCall = async () => {
     setIsInitiating(true);
     setError(null);
-    
+
     try {
       const request: VoiceCallRequest = {
         buyerEmail,
@@ -122,7 +127,7 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
       const response = await voiceCallService.initiateCall(request);
       setRoomName(response.roomName);
       setCallInitiated(true);
-      
+
       // Set the active call in global context
       setActiveCall({
         roomName: response.roomName,
@@ -130,18 +135,18 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
         status: 'initiating',
         participants: [buyerEmail]
       });
-      
-      // Set up call timeout (30 seconds) - if no one joins, mark as missed
+
+      // Set up call timeout (60 seconds) - if no one joins, mark as missed
       const timeout = setTimeout(async () => {
         console.log('🎤 Call timeout - marking as missed');
         endCall(response.roomName, 'missed', buyerEmail);
-      }, 30000); // 30 seconds timeout
-      
+      }, 60000); // 60 seconds timeout
+
       setCallTimeout(timeout);
-      
-      // Join the Twilio room
+
+      // Join the WebRTC room
       await joinRoom(response.roomName);
-      
+
     } catch (error) {
       console.error('Error initiating voice call:', error);
       setError(error instanceof Error ? error.message : 'Failed to initiate call');
@@ -152,12 +157,12 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
 
   // Track call status and participants
   useEffect(() => {
-    if (isConnected && participants.length > 0) {
-      console.log('🎤 Both participants connected - voice call is now ACTIVE');
+    if (isConnected) {
+      console.log('🎤 Voice call is now ACTIVE');
       if (!callStartTime) {
         setCallStartTime(new Date());
       }
-      
+
       // Clear call timeout since call is now active
       if (callTimeout) {
         clearTimeout(callTimeout);
@@ -175,13 +180,13 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
       setCallInitiated(false);
       setRoomName(null);
       setError(null);
-      
+
       // Clear call timeout
       if (callTimeout) {
         clearTimeout(callTimeout);
         setCallTimeout(null);
       }
-      
+
       leaveRoom();
     }
   }, [isOpen, leaveRoom, callTimeout]);
@@ -202,23 +207,23 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
   const handleEndCall = useCallback(async () => {
     try {
       console.log('🎤 Ending call');
-      
+
       if (roomName) {
         // End call in global context - this will close all modals for this room
         endCall(roomName, 'ended', buyerEmail);
-        
+
         // Update backend call status
         try {
           await voiceCallService.endCall(roomName, buyerEmail);
-          console.log('🎤 Backend notified of call end');
+          console.log('🎤 Backend notified of WebRTC call end');
         } catch (error) {
-          console.error('🎤 Error updating backend call status:', error);
+          console.error('🎤 Error updating backend WebRTC call status:', error);
         }
       }
-      
-      // Leave the Twilio room
+
+      // Leave the WebRTC room
       await leaveRoom();
-      
+
     } catch (error) {
       console.error('🎤 Error ending call:', error);
       // Fallback: close modal directly
@@ -229,23 +234,23 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
   const handleDeclineCall = useCallback(async () => {
     try {
       console.log('🎤 Declining call');
-      
+
       if (roomName) {
         // Decline call in global context - this will close all modals for this room
         endCall(roomName, 'declined', buyerEmail);
-        
+
         // Update backend call status
         try {
           await voiceCallService.declineCall(roomName, buyerEmail);
-          console.log('🎤 Backend notified of call decline');
+          console.log('🎤 Backend notified of WebRTC call decline');
         } catch (error) {
-          console.error('🎤 Error updating backend call status:', error);
+          console.error('🎤 Error updating backend WebRTC call status:', error);
         }
       }
-      
-      // Leave the Twilio room if connected
+
+      // Leave the WebRTC room if connected
       await leaveRoom();
-      
+
     } catch (error) {
       console.error('🎤 Error declining call:', error);
       // Fallback: close modal directly
@@ -258,12 +263,12 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#808080]/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md h-[500px] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#808080]/40 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg w-full max-w-md h-[90vh] sm:h-[500px] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b h-16 flex-shrink-0">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-lg font-semibold">Voice Call</h2>
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b h-14 sm:h-16 flex-shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            <h2 className="text-base sm:text-lg font-semibold">Voice Call</h2>
           </div>
         </div>
 
@@ -271,12 +276,12 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
         <div className="flex-1 relative bg-gray-50 flex flex-col items-center justify-center">
           {/* Hidden audio element for remote audio */}
           <audio ref={audioRef} autoPlay playsInline style={{ display: 'none' }} />
-          
+
           {/* Error Display */}
           {error && !endingMessage && (
             <div className="absolute top-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
               <p className="text-sm">{error}</p>
-              <button 
+              <button
                 onClick={onClose}
                 className="mt-2 text-sm underline hover:no-underline"
               >
@@ -301,58 +306,40 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
               </div>
             </div>
           )}
-          
+
           {/* Voice Call Visual UI */}
           <div className="text-center">
-            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-12 h-12 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+            <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 sm:w-12 sm:h-12 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
             </div>
-            
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
               {shopName || vendorEmail.split('@')[0]}
             </h3>
-            
+
             <p className="text-sm text-gray-600 mb-4">
               {isInitiating ? 'Initiating call...' :
-               !callInitiated ? 'Ready to call' :
-               isConnected ? 
-                (participants.length > 0 ? 'In call' : 'Connected, waiting for vendor') :
-                isConnecting ? 'Connecting...' : 'Waiting to connect'
+                !callInitiated ? 'Ready to call' :
+                  isConnected ?
+                    (participants.length > 0 ? 'In call' : 'Connected, waiting for vendor') :
+                    isConnecting ? 'Connecting...' : 'Waiting for vendor to join'
               }
             </p>
 
-            {/* Start Call Button */}
-            {!callInitiated && !isInitiating && (
-              <button
-                onClick={initiateCall}
-                className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg mb-4 transition-colors"
-              >
-                Start Voice Call
-              </button>
-            )}
 
-            {/* Decline Call Button - shown when call is initiated but not yet connected */}
-            {callInitiated && !isConnected && !isConnecting && (
-              <button
-                onClick={handleDeclineCall}
-                className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg mb-4 transition-colors"
-              >
-                Decline Call
-              </button>
-            )}
 
             {/* Connection Status */}
             <div className="flex items-center justify-center space-x-2 mb-6">
-              <div className={`w-3 h-3 rounded-full ${
-                isConnected ? 'bg-green-500' : 
-                isConnecting || isInitiating ? 'bg-yellow-500' : 'bg-red-500'
-              }`}></div>
+              <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' :
+                isConnecting || isInitiating || callInitiated ? 'bg-yellow-500' : 'bg-gray-400'
+                }`}></div>
               <span className="text-sm text-gray-600">
-                {isConnected ? 
-                  `Connected (${participants.length + 1} participants)` : 
-                  isConnecting || isInitiating ? 'Connecting...' : 'Disconnected'
+                {isConnected ?
+                  `Connected (${participants.length + 1} participants)` :
+                  isConnecting || isInitiating ? 'Connecting...' : 
+                  callInitiated ? 'Waiting for vendor' : 'Ready'
                 }
               </span>
             </div>
@@ -381,16 +368,15 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
         </div>
 
         {/* Controls */}
-        <div className="p-4 bg-gray-100 flex items-center justify-center space-x-6 h-20 flex-shrink-0">
+        <div className="p-3 sm:p-4 bg-gray-100 flex items-center justify-center space-x-4 sm:space-x-6 h-16 sm:h-20 flex-shrink-0">
           {callInitiated && (
             <button
               onClick={toggleAudio}
-              className={`p-4 rounded-full ${
-                isAudioEnabled ? 'bg-gray-200 hover:bg-gray-300' : 'bg-red-500 hover:bg-red-600'
-              } transition-colors`}
+              className={`p-3 sm:p-4 rounded-full ${isAudioEnabled ? 'bg-gray-200 hover:bg-gray-300' : 'bg-red-500 hover:bg-red-600'
+                } transition-colors`}
               title={isAudioEnabled ? 'Mute' : 'Unmute'}
             >
-              <svg className={`w-6 h-6 ${isAudioEnabled ? 'text-gray-700' : 'text-white'}`} fill="currentColor" viewBox="0 0 20 20">
+              <svg className={`w-5 h-5 sm:w-6 sm:h-6 ${isAudioEnabled ? 'text-gray-700' : 'text-white'}`} fill="currentColor" viewBox="0 0 20 20">
                 {isAudioEnabled ? (
                   <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
                 ) : (
@@ -402,10 +388,10 @@ const SimpleVoiceCallModal: React.FC<SimpleVoiceCallModalProps> = ({
 
           <button
             onClick={handleEndCall}
-            className="p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
+            className="p-3 sm:p-4 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
             title="End call"
           >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
             </svg>
           </button>

@@ -12,6 +12,8 @@ import eyeClosed from "../../../../../public/assets/images/eye.svg";
 import AddLogMemberModal from "@/components/addLogMemberModal";
 import AddLogMemberSuccessModal from "@/components/addLogMemberSuccessModal";
 import VendorShopGuard from "@/components/VendorShopGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 import { useSession } from "next-auth/react";
 import axios from "axios";
 import Toast from "@/components/Toast";
@@ -543,6 +545,8 @@ const Settings = () => {
     if (loading) {
         return (
             <VendorShopGuard>
+                <DashboardHeader />
+                <DashboardOptions />
                 <div className="flex justify-center items-center h-screen">
                     <p>Loading profile...</p>
                 </div>
@@ -553,6 +557,8 @@ const Settings = () => {
     if (error) {
         return (
             <VendorShopGuard>
+                <DashboardHeader />
+                <DashboardOptions />
                 <div className="flex justify-center items-center h-screen">
                     <p className="text-red-500">Error: {error}</p>
                 </div>
@@ -562,6 +568,8 @@ const Settings = () => {
     if (!userProfile || !shopData) {
         return (
             <VendorShopGuard>
+                <DashboardHeader />
+                <DashboardOptions />
                 <div className="flex justify-center items-center h-screen">
                     <p>No profile data available</p>
                 </div>
@@ -570,6 +578,8 @@ const Settings = () => {
     }
     return (
         <VendorShopGuard showSubHeader={false}>
+            <DashboardHeader />
+            <DashboardOptions />
             <div className="flex flex-col px-4 sm:px-6 lg:px-25 mt-[20px] sm:mt-[30px] gap-[30px] sm:gap-[40px]">
                 <div className="flex flex-col">
                     <p className="text-[16px] sm:text-[18px] font-medium text-[#101828]">Settings</p>

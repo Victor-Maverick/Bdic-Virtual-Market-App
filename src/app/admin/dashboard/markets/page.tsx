@@ -1,13 +1,10 @@
 'use client'
 import Image from "next/image";
-import arrowUp from "../../../../../public/assets/images/green arrow up.png";
-import redArrow from "../../../../../public/assets/images/red arrow.svg";
-// import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from '@/../public/assets/images/arrow-down.svg'
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
 import axios from "axios";
-import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
+import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 
 interface Shop{
     id: number;
@@ -40,13 +37,16 @@ interface MarketData {
     inactiveChangePercent: number;
 }
 
+
 interface ProductActionsDropdownProps {
     marketId: number;
+    marketStatus: "ACTIVE" | "INACTIVE";
     children: React.ReactNode;
     onDelete: () => void;
+    onToggleStatus: () => void;
 }
 
-const ProductActionsDropdown = ({ marketId, children, onDelete }: ProductActionsDropdownProps) => {
+const ProductActionsDropdown = ({ marketId, marketStatus, children, onDelete, onToggleStatus }: ProductActionsDropdownProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const router = useRouter();
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -65,6 +65,11 @@ const ProductActionsDropdown = ({ marketId, children, onDelete }: ProductActions
 
     const handleCloseDeleteModal = () => {
         setIsDeleteModalOpen(false);
+    };
+
+    const handleToggleStatus = () => {
+        setIsOpen(false);
+        onToggleStatus();
     };
 
     useEffect(() => {
@@ -93,7 +98,16 @@ const ProductActionsDropdown = ({ marketId, children, onDelete }: ProductActions
                     <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
                         <ul className="py-1">
                             <li onClick={() => { router.push(`/admin/dashboard/markets/view-market/${marketId}`) }} className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer">View and edit market</li>
-                            <li className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px]  cursor-pointer">Deactivate market</li>
+                            {marketStatus === "ACTIVE" && (
+                                <li onClick={handleToggleStatus} className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:bg-[#f9f9f9] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer">
+                                    Deactivate market
+                                </li>
+                            )}
+                            {marketStatus === "INACTIVE" && (
+                                <li onClick={handleToggleStatus} className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:bg-[#f9f9f9] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer">
+                                    Activate market
+                                </li>
+                            )}
                             <li onClick={handleOpenDeleteModal} className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]">
                                 Delete
                             </li>
@@ -142,8 +156,13 @@ const Markets = () => {
             const shopsCount = shopsRes.data;
             const activeMarkets = activeMarketsRes.data;
             const marketSections = marketSectionsRes.data;
-            console.log("markets", markets);
 
+            // Calculate inactive markets count
+            const inactiveMarkets = markets.filter((market: Market) =>
+                market.status === "INACTIVE"
+            ).length;
+
+            console.log("Markets: ",markets);
             const marketLines = marketSections.length || 0;
 
             const data: MarketData = {
@@ -151,7 +170,7 @@ const Markets = () => {
                 activeMarkets: activeMarkets,
                 marketLines: marketLines,
                 shopsCount: shopsCount,
-                inactiveMarkets: 0,
+                inactiveMarkets: inactiveMarkets, // Use the calculated value
                 markets: markets.map((market: Market) => ({
                     id: market.id,
                     name: market.name || "Modern market",
@@ -188,6 +207,23 @@ const Markets = () => {
         }
     };
 
+    const handleToggleMarketStatus = async (marketId: number, currentStatus: "ACTIVE" | "INACTIVE") => {
+        try {
+            if (currentStatus === "ACTIVE") {
+                await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/deActivateMarket?id=${marketId}`);
+                console.log(`Market ${marketId} deactivated successfully`);
+            } else {
+                await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/markets/activateMarket?id=${marketId}`);
+                console.log(`Market ${marketId} activated successfully`);
+            }
+            // Refresh the market data after successful status change
+            await fetchMarketData();
+        } catch (err) {
+            console.error("Error toggling market status:", err);
+            // You might want to show an error message to the user here
+        }
+    };
+
     useEffect(() => {
         fetchMarketData();
     }, []);
@@ -197,6 +233,9 @@ const Markets = () => {
     if (!marketData) return <div className="h-[900px] flex items-center justify-center">No market data available</div>;
 
     const MarketTableRow = ({ market, isLast }: { market: Market; isLast: boolean }) => {
+        const handleOpen = () => {
+            router.push(`/admin/dashboard/markets/view-shops/${market.id}`)
+        }
         return (
             <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
                 <div className="flex flex-col justify-center w-[40%] pl-[24px] ">
@@ -218,11 +257,17 @@ const Markets = () => {
                 </div>
                 <div className="flex flex-col justify-center w-[22%] pl-[24px] ">
                     <p className="text-[#101828] text-[14px]">{market.numberOfShops}</p>
+                    {market.numberOfShops > 0 && (
+                        <p onClick={handleOpen} className="text-[#101828] cursor-pointer text-[12px] underline">View shops</p>
+                    )}
                 </div>
+
                 <div className="flex items-center justify-center w-[3%]">
                     <ProductActionsDropdown
                         marketId={market.id}
+                        marketStatus={market.status}
                         onDelete={() => handleDeleteMarket(market.id)}
+                        onToggleStatus={() => handleToggleMarketStatus(market.id, market.status)}
                     >
                         <div>
                             <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -248,20 +293,6 @@ const Markets = () => {
                     </div>
                     <div className="h-[80px] flex justify-center flex-col p-[14px]">
                         <p className="text-[20px] text-[#022B23] font-medium">{marketData.totalMarkets}</p>
-                        <div className="flex items-center">
-                            <Image
-                                src={marketData.marketsChangePercent >= 0 ? arrowUp : redArrow}
-                                width={12}
-                                height={12}
-                                alt={'image'}
-                                className="h-[12px] w-[12px]"
-                            />
-                            <p className="text-[10px] text-[#707070]">
-                                <span className={marketData.marketsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                                    {marketData.marketsChangePercent >= 0 ? '+' : ''}{marketData.marketsChangePercent}%
-                                </span> from yesterday
-                            </p>
-                        </div>
                     </div>
                 </div>
 
@@ -272,20 +303,6 @@ const Markets = () => {
                     </div>
                     <div className="h-[80px] flex justify-center flex-col p-[14px]">
                         <p className="text-[20px] text-[#022B23] font-medium">{marketData.activeMarkets}</p>
-                        <div className="flex items-center">
-                            <Image
-                                src={marketData.activeChangePercent >= 0 ? arrowUp : redArrow}
-                                width={12}
-                                height={12}
-                                alt={'image'}
-                                className="h-[12px] w-[12px]"
-                            />
-                            <p className="text-[10px] text-[#707070]">
-                                <span className={marketData.activeChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                                    {marketData.activeChangePercent >= 0 ? '+' : ''}{marketData.activeChangePercent}%
-                                </span> from yesterday
-                            </p>
-                        </div>
                     </div>
                 </div>
 
@@ -296,20 +313,6 @@ const Markets = () => {
                     </div>
                     <div className="h-[80px] flex justify-center flex-col p-[14px]">
                         <p className="text-[20px] text-[#022B23] font-medium">{marketData.marketLines}</p>
-                        <div className="flex items-center">
-                            <Image
-                                src={marketData.linesChangePercent >= 0 ? arrowUp : redArrow}
-                                width={12}
-                                height={12}
-                                alt={'image'}
-                                className="h-[12px] w-[12px]"
-                            />
-                            <p className="text-[10px] text-[#707070]">
-                                <span className={marketData.linesChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                                    {marketData.linesChangePercent >= 0 ? '+' : ''}{marketData.linesChangePercent}%
-                                </span> from yesterday
-                            </p>
-                        </div>
                     </div>
                 </div>
 
@@ -320,20 +323,6 @@ const Markets = () => {
                     </div>
                     <div className="h-[80px] flex justify-center flex-col p-[14px]">
                         <p className="text-[20px] text-[#022B23] font-medium">{marketData.shopsCount.toLocaleString()}</p>
-                        <div className="flex items-center">
-                            <Image
-                                src={marketData.shopsChangePercent >= 0 ? arrowUp : redArrow}
-                                width={12}
-                                height={12}
-                                alt={'image'}
-                                className="h-[12px] w-[12px]"
-                            />
-                            <p className="text-[10px] text-[#707070]">
-                                <span className={marketData.shopsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                                    {marketData.shopsChangePercent >= 0 ? '+' : ''}{marketData.shopsChangePercent}%
-                                </span> from yesterday
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -345,20 +334,6 @@ const Markets = () => {
                 </div>
                 <div className="h-[80px] flex justify-center flex-col p-[14px]">
                     <p className="text-[20px] text-[#022B23] font-medium">{marketData.inactiveMarkets}</p>
-                    <div className="flex items-center">
-                        <Image
-                            src={marketData.inactiveChangePercent >= 0 ? arrowUp : redArrow}
-                            width={12}
-                            height={12}
-                            alt={'image'}
-                            className="h-[12px] w-[12px]"
-                        />
-                        <p className="text-[10px] text-[#707070]">
-                            <span className={marketData.inactiveChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                                {marketData.inactiveChangePercent >= 0 ? '+' : ''}{marketData.inactiveChangePercent}%
-                            </span> from yesterday
-                        </p>
-                    </div>
                 </div>
             </div>
 
@@ -381,10 +356,6 @@ const Markets = () => {
                                 <p className="text-[14px] text-[#667085]">View and manage markets here</p>
                             </div>
                         </div>
-                        {/*<div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">*/}
-                        {/*    <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>*/}
-                        {/*    <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none"/>*/}
-                        {/*</div>*/}
                     </div>
 
                     <div className="w-full h-[44px] flex bg-[#F9FAFB] border-b-[0.5px] border-[#EAECF0]">

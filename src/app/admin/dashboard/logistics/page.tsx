@@ -3,7 +3,7 @@ import Image from "next/image";
 import arrowUp from "../../../../../public/assets/images/green arrow up.png";
 import {useEffect, useRef, useState} from "react";
 import {useRouter} from "next/navigation";
-import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
+import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import searchImg from "../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import { logisticsService, LogisticsStats } from "@/services/logisticsService";

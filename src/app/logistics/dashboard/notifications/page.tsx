@@ -1,110 +1,218 @@
+'use client'
 import LogisticsCompanyGuard from "@/components/LogisticsCompanyGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import LogisticsDashboardOptions from "@/components/logisticsDashboardOptions";
 import Image from "next/image";
 import iPhone from "../../../../../public/assets/images/blue14.png";
+import { useEffect, useState, useCallback } from "react";
+import axios from "axios";
+import { useSession } from "next-auth/react";
 
+interface Notification {
+    id: number;
+    title: string;
+    message: string;
+    email: string;
+    type: string;
+    createdAt: string;
+}
 
-const Notifications = ()=>{
-    return(
+const Notifications = () => {
+    const { data: session } = useSession();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const notificationsPerPage = 6;
+
+    const fetchNotifications = useCallback(async () => {
+        if (session?.user?.email) {
+            try {
+                const response = await axios.get(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/getUserAll?email=${session.user.email}`
+                );
+                if (Array.isArray(response.data)) {
+                    // Sort notifications by createdAt in descending order (newest first)
+                    const sortedNotifications = [...response.data].sort((a, b) =>
+                        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+                    );
+                    setNotifications(sortedNotifications);
+                }
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+    }, [session?.user?.email]);
+
+    // Calculate current notifications to display
+    const indexOfLastNotification = currentPage * notificationsPerPage;
+    const indexOfFirstNotification = indexOfLastNotification - notificationsPerPage;
+    const currentNotifications = notifications.slice(indexOfFirstNotification, indexOfLastNotification);
+    const totalPages = Math.ceil(notifications.length / notificationsPerPage);
+
+    const clearNotifications = async () => {
+        if (session?.user?.email && notifications.length > 0) {
+            try {
+                await axios.delete(
+                    `${process.env.NEXT_PUBLIC_API_BASE_URL}/notification/deleteAllUser?email=${session.user.email}`
+                );
+                fetchNotifications();
+            } catch (error) {
+                console.error('Error deleting notifications:', error);
+            }
+        }
+    };
+
+    useEffect(() => {
+        fetchNotifications();
+        // Set up polling every 5 seconds
+        const interval = setInterval(fetchNotifications, 5000);
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
+
+    const getNotificationIcon = (type: string) => {
+        switch (type.toLowerCase()) {
+            case 'info':
+                return '✅';
+            case 'delay':
+                return '⚠️';
+            case 'delivered':
+                return '✅';
+            case 'system':
+                return '🔄';
+            default:
+                return '🔔';
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        const options: Intl.DateTimeFormatOptions = {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return date.toLocaleDateString('en-US', options).replace(',', ' //');
+    };
+
+    return (
         <LogisticsCompanyGuard>
-            <div className="flex px-25 mt-[30px] gap-[40px]">
+            <DashboardHeader />
+            <LogisticsDashboardOptions />
+            <div className="flex px-4 md:px-8 lg:px-25 mt-[30px] gap-[40px] flex-col md:flex-row">
                 <div className="flex flex-col gap-[14px]">
                     <div className="flex flex-col">
-                        <p className="text-[18px] font-medium text-[#101828]">All Notifications</p>
+                        <p className="text-[18px] font-medium text-[#101828]">All Notifications ({notifications.length})</p>
                         <p className="text-[#667085] text-[14px]">View all your notifications here</p>
                     </div>
-                    <p className="text-[#667085] text-[14px] underline cursor-pointer">Mark all as read</p>
+                    {notifications.length > 0 && (
+                        <p
+                            className="text-[#667085] text-[14px] underline cursor-pointer"
+                            onClick={clearNotifications}
+                        >
+                            Clear all notifications
+                        </p>
+                    )}
                 </div>
-                <div className="flex flex-col gap-[8px] mb-10 w-[645px]">
-                   <div className="flex px-[20px] rounded-[14px] py-[15px] h-auto w-full flex-col bg-[#F9F9F9] border-[0.5px] border-[#EDEDED]">
-                       <div className="flex flex-col ">
-                           <p className="text-[#101828] text-[14px] font-semibold">🚚 New Delivery Request (ORDR #13568)</p>
-                           <p className="text-[#667085] text-[12px] mt-[4px]">New delivery request from Vendor XYZ. </p>
-                           <div className="w-[548px] flex flex-col justify-between  py-[8px] px-[12px] border-[#F0F0F0] mt-[4px] border bg-[#fdfdfd] h-[104px] rounded-[12px]">
-                               <p className="text-[#54575D] text-[12px] ml-[8px]">Pickup at No. 4 Iye Street, High Level Makurdi...</p>
-                               <div className="w-[1px] h-[24px] bg-[#FF6644]">
 
-                               </div>
-                               <p className="text-[#54575D] ml-[8px] text-[12px]">Drop-off Shop A3, Market Line B, Modern market</p>
-                           </div>
-                       </div>
-                       <p className="mt-[10px] text-[10px] text-[#667085]">20th April, 2025 // 9:23 AM</p>
-                       <div className="w-[550px] gap-[12px] flex items-center mt-[20px] bg-white h-[72px] rounded-[14px] border-[1px] border-[#EAECF0]">
-                           <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden rounded-bl-[14px] rounded-tl-[14px]">
-                               <Image
-                                   src={iPhone}
-                                   alt={'image'}
-                                   width={70}
-                                   height={70}
-                                   className="object-cover"
-                               />
-                           </div>
-                           <div className="flex flex-col">
-                               <p className="text-[14px] text-[#101828] font-medium">iPhone 14 pro max</p>
-                               <p className="text-[14px] text-[#667085]">ID: #1234567887654</p>
-                           </div>
-                       </div>
-                       <p className="text-[12px] mt-[15px] mb-[8px] text-[#022B23] font-medium">View request</p>
-                   </div>
-                    <div className="flex px-[20px] rounded-[14px] py-[15px] h-auto w-full flex-col bg-[#FfFfFf] border-[0.5px] border-[#EDEDED]">
-                        <div className="flex flex-col ">
-                            <p className="text-[#101828] text-[14px] font-semibold">⚠️ Order disputes (ORDR #21456)</p>
-                            <p className="text-[#667085] text-[12px] mt-[4px]">A customer has requested a product return. </p>
-                            <div className="w-[548px] flex flex-col bg-[#FDFDFD] justify-between  py-[8px] px-[12px] border-[#F0F0F0] mt-[4px] border  h-[104px] rounded-[12px]">
-                                <p className="text-[#54575D] text-[12px] ml-[8px]">Pickup at No. 4 Iye Street, High Level Makurdi...</p>
-                                <div className="w-[1px] h-[24px] bg-[#FF6644]">
+                <div className="flex flex-col w-full md:w-[645px]">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center w-full">
+                            <p>Loading notifications...</p>
+                        </div>
+                    ) : notifications.length === 0 ? (
+                        <div className="flex items-center justify-center w-full">
+                            <p>No notifications found</p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex flex-col gap-[8px] mb-4 w-full">
+                                {currentNotifications.map((notification) => (
+                                    <div
+                                        key={notification.id}
+                                        className="flex px-[20px] rounded-[14px] py-[15px] h-auto w-full flex-col bg-[#F9F9F9] border-[0.5px] border-[#EDEDED]"
+                                    >
+                                        <div className="flex flex-col">
+                                            <p className="text-[#101828] text-[14px] font-semibold">
+                                                {getNotificationIcon(notification.type)} {notification.title}
+                                            </p>
+                                            <p className="text-[#667085] text-[12px] mt-[4px]">
+                                                {notification.message}
+                                            </p>
+                                        </div>
+                                        <p className="mt-[10px] text-[10px] text-[#667085]">
+                                            {formatDate(notification.createdAt)}
+                                        </p>
 
+                                        {notification.type.toLowerCase().includes('order') && (
+                                            <>
+                                                <div className="w-full md:w-[550px] gap-[12px] flex items-center mt-[20px] bg-white h-[72px] rounded-[14px] border-[1px] border-[#EAECF0]">
+                                                    <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden rounded-bl-[14px] rounded-tl-[14px]">
+                                                        <Image
+                                                            src={iPhone}
+                                                            alt={'product image'}
+                                                            width={70}
+                                                            height={70}
+                                                            className="object-cover"
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <p className="text-[14px] text-[#101828] font-medium">Product Name</p>
+                                                        <p className="text-[14px] text-[#667085]">ID: #{notification.id.toString().padStart(13, '0')}</p>
+                                                    </div>
+                                                </div>
+                                                <p className="text-[12px] mt-[15px] mb-[8px] text-[#022B23] font-medium">
+                                                    Track order
+                                                </p>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Pagination controls */}
+                            {notifications.length > notificationsPerPage && (
+                                <div className="flex justify-center mt-4 mb-10 w-full">
+                                    <div className="flex items-center gap-25">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                            disabled={currentPage === 1}
+                                            className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex gap-[2px] items-center">
+                                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                                <button
+                                                    key={page}
+                                                    onClick={() => setCurrentPage(page)}
+                                                    className={`px-3 py-1 rounded-md ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                                >
+                                                    {page}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                                            disabled={currentPage === totalPages}
+                                            className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
                                 </div>
-                                <p className="text-[#54575D] ml-[8px] text-[12px]">Drop-off Shop A3, Market Line B, Modern market</p>
-                            </div>
-                        </div>
-                        <p className="mt-[10px] text-[10px] text-[#667085]">20th April, 2025 // 9:23 AM</p>
-                        <div className="w-[550px] gap-[12px] flex items-center mt-[20px] bg-white h-[72px] rounded-[14px] border-[1px] border-[#EAECF0]">
-                            <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden rounded-bl-[14px] rounded-tl-[14px]">
-                                <Image
-                                    src={iPhone}
-                                    alt={'image'}
-                                    width={70}
-                                    height={70}
-                                    className="object-cover"
-                                />
-                            </div>
-                            <div className="flex flex-col">
-                                <p className="text-[14px] text-[#101828] font-medium">iPhone 14 pro max</p>
-                                <p className="text-[14px] text-[#667085]">ID: #1234567887654</p>
-                            </div>
-                        </div>
-                        <p className="text-[12px] mt-[15px] mb-[8px] text-[#022B23] font-medium">Begin pickup</p>
-                    </div>
-                    <div className="w-full py-[15px] flex flex-col gap-[8px] px-[20px] h-auto border-[#ededed] border-[0.5px] rounded-[14px]">
-                        <p className="text-[#101828] text-[14px] font-semibold">⚠️ Delay notification</p>
-                        <p className="text-[#667085] text-[12px] ">ORDR #13456 will be delayed due to traffic experienced by the rider</p>
-                        <p className="text-[10px] text-[#667085]">20th April, 2025 // 9:23 AM</p>
-                        <p className="text-[12px] mt-[8px]  text-[#022B23] font-medium">View order</p>
-                    </div>
-                    <div className="w-full py-[15px] flex flex-col gap-[8px] px-[20px] h-auto border-[#ededed] border-[0.5px] rounded-[14px]">
-                        <p className="text-[#101828] text-[14px] font-semibold">✅ Order Successfully Delivered</p>
-                        <p className="text-[#667085] text-[12px] ">ORDR #12345 has been successfully delivered to the customer</p>
-                        <p className="text-[10px] text-[#667085]">20th April, 2025 // 9:23 AM</p>
-                    </div>
-                    <div className="w-full py-[15px] flex flex-col gap-[8px] px-[20px] h-auto border-[#ededed] border-[0.5px] rounded-[14px]">
-                        <p className="text-[#101828] text-[14px] font-semibold">⭐ 4.2 Star rating & review</p>
-                        <p className="text-[#667085] text-[12px] ">ORDR #12345 you got a 4.2 rating your services on this order</p>
-                        <p className="text-[10px] text-[#667085]">20th April, 2025 // 9:23 AM</p>
-                    </div>
-                    <div className="w-full py-[15px] flex flex-col gap-[8px] px-[20px] h-auto border-[#ededed] border-[0.5px] rounded-[14px]">
-                        <p className="text-[#101828] text-[14px] font-semibold">💰 Payout successfully paid</p>
-                        <p className="text-[#667085] text-[12px] ">Your pay-out request of NGN 2,000,000.00 has been paid to your account successfully</p>
-                        <p className="text-[10px] text-[#667085]">20th April, 2025 // 9:23 AM</p>
-                    </div>
-                    <div className="w-full py-[15px] flex flex-col gap-[8px] px-[20px] h-auto border-[#ededed] border-[0.5px] rounded-[14px]">
-                        <p className="text-[#101828] text-[14px] font-semibold">🔄 System Update or Downtime Notification</p>
-                        <p className="text-[#667085] text-[12px] ">🛠️ The platform will be undergoing maintenance at midnight. You may experience brief service interruptions.</p>
-                        <p className="text-[10px] text-[#667085]">20th April, 2025 // 9:23 AM</p>
-                    </div>
+                            )}
+                        </>
+                    )}
                 </div>
             </div>
         </LogisticsCompanyGuard>
-    )
-}
+    );
+};
 
 export default Notifications;

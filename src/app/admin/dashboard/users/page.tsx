@@ -9,6 +9,7 @@ import BackButton from "@/components/BackButton";
 import axios from 'axios';
 import { UsersTableSkeleton, StatsCardsLoadingSkeleton } from "@/components/LoadingSkeletons";
 import { userService } from "@/services/userService";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 interface User {
     id: number;
@@ -21,65 +22,16 @@ interface User {
     active: boolean;
 }
 
-// const UserActionsDropdown = ({
-//     children
-// }: {
-//     children: React.ReactNode;
-// }) => {
-//     const [isOpen, setIsOpen] = useState(false);
-//     const dropdownRef = useRef<HTMLDivElement>(null);
-//     const triggerRef = useRef<HTMLDivElement>(null);
-//
-//     const handleToggle = (e: React.MouseEvent) => {
-//         e.stopPropagation();
-//         setIsOpen(!isOpen);
-//     };
-//     const router = useRouter();
-//
-//     useEffect(() => {
-//         const handleClickOutside = (event: MouseEvent) => {
-//             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-//                 setIsOpen(false);
-//             }
-//         };
-//
-//         document.addEventListener('click', handleClickOutside);
-//         return () => document.removeEventListener('click', handleClickOutside);
-//     }, []);
-//
-//     return (
-//         <>
-//             <div className="relative" ref={dropdownRef}>
-//                 <div
-//                     ref={triggerRef}
-//                     onClick={handleToggle}
-//                     className="cursor-pointer flex flex-col gap-[3px] items-center justify-center"
-//                 >
-//                     {children}
-//                 </div>
-//
-//                 {isOpen && (
-//                     <div className="absolute right-0 top-full mt-1 bg-white rounded-md shadow-lg z-50 border border-[#ededed] w-[125px]">
-//                         <ul className="py-1">
-//                             <li onClick={()=>{router.push("/admin/dashboard/users/view-user")}} className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer">View details</li>
-//                         </ul>
-//                     </div>
-//                 )}
-//             </div>
-//         </>
-//     );
-// };
-
 const UserTableRow = ({
     user,
-    isLast,
-    onDeleteUser
-}: {
+    isLast
+                      }: {
     user: User;
     isLast: boolean;
     onDeleteUser: (userId: number) => void;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [navigating, setNavigating] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -94,6 +46,7 @@ const UserTableRow = ({
     }, []);
 
     const handleRowClick = () => {
+        setNavigating(true);
         window.location.href = `/admin/dashboard/users/view-user/${encodeURIComponent(user.email)}`;
     };
 
@@ -164,32 +117,19 @@ const UserTableRow = ({
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setIsOpen(false);
+                                        setNavigating(true);
                                         window.location.href = `/admin/dashboard/users/view-user/${encodeURIComponent(user.email)}`;
                                     }}
-                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer flex items-center"
                                 >
-                                    View details
-                                </li>
-
-                                <li 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsOpen(false);
-                                        // Handle toggle suspension
-                                    }}
-                                    className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                                >
-                                    {user.active ? 'Suspend' : 'Activate'}
-                                </li>
-                                <li 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setIsOpen(false);
-                                        onDeleteUser(user.id);
-                                    }}
-                                    className="px-4 py-2 text-[12px] hover:bg-[#FEF3F2] cursor-pointer text-red-600"
-                                >
-                                    Delete user
+                                    {navigating ? (
+                                        <>
+                                            <LoadingSpinner size="sm" className="mr-2" />
+                                            Loading...
+                                        </>
+                                    ) : (
+                                        'View details'
+                                    )}
                                 </li>
                             </ul>
                         </div>

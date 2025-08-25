@@ -18,7 +18,7 @@ export default function FleetOnboardSuccessModal({ isOpen, onClose }: FleetOnboa
                 <div className="flex flex-col gap-[32px] text-center">
                     <div className="flex flex-col gap-[5px]">
                         <p className="text-[#022B23] text-[16px] font-medium">Fleet onboarded successfully</p>
-                        <p className="text-[#707070] text-[14px]">You’ve added 3 new vehicles to your fleet</p>
+                        <p className="text-[#707070] text-[14px]">You’ve added new vehicles to your fleet</p>
                     </div>
 
                     <button

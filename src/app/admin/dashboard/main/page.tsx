@@ -1,8 +1,5 @@
 // app/admin/dashboard/index.tsx
 'use client'
-import Image from "next/image";
-import arrowUp from '@/../public/assets/images/green arrow up.png'
-import redArrow from '@/../public/assets/images/red arrow.svg'
 import MarketPerformanceChart from "@/components/marketPerformanceChart";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -136,14 +133,6 @@ export default function DashboardOverview() {
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.marketsCount}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.marketsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.marketsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.marketsChangePercent >= 0 ? '+' : ''}{data.marketsChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/markets')}
@@ -162,14 +151,6 @@ export default function DashboardOverview() {
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.vendorsCount.toLocaleString()}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.vendorsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.vendorsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.vendorsChangePercent >= 0 ? '+' : ''}{data.vendorsChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/vendors')}
@@ -188,14 +169,6 @@ export default function DashboardOverview() {
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.logisticsCount}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.logisticsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.logisticsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.logisticsChangePercent >= 0 ? '+' : ''}{data.logisticsChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/logistics')}
@@ -209,19 +182,11 @@ export default function DashboardOverview() {
                 {/* Users Card */}
                 <div className="flex flex-col w-full lg:w-[25%] rounded-[14px] min-h-[110px] border-[#EAEAEA] border-[0.5px]">
                     <div className="w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] bg-[#F7F7F7]">
-                        <p className="text-[#707070] text-[12px] sm:text-[14px]">Users (customers)</p>
+                        <p className="text-[#707070] text-[12px] sm:text-[14px]">All Users</p>
                     </div>
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.usersCount.toLocaleString()}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.usersChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.usersChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.usersChangePercent >= 0 ? '+' : ''}{data.usersChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/users')}
@@ -243,14 +208,6 @@ export default function DashboardOverview() {
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[16px] sm:text-[18px] lg:text-[20px] text-[#022B23] font-medium">{formatCurrency(data.totalTransactions)}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.transactionsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.transactionsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.transactionsChangePercent >= 0 ? '+' : ''}{data.transactionsChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/transactions')}
@@ -269,14 +226,6 @@ export default function DashboardOverview() {
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[16px] sm:text-[18px] lg:text-[20px] text-[#022B23] font-medium">{formatCurrency(data.adsRevenue)}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.adsChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.adsChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.adsChangePercent >= 0 ? '+' : ''}{data.adsChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/ads')}
@@ -295,14 +244,7 @@ export default function DashboardOverview() {
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[16px] sm:text-[18px] lg:text-[20px] text-[#022B23] font-medium">{formatCurrency(data.shopSales)}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.salesChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.salesChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.salesChangePercent >= 0 ? '+' : ''}{data.salesChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
+
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/transactions')}
@@ -321,14 +263,6 @@ export default function DashboardOverview() {
                     <div className="flex-1 flex justify-center flex-col p-[14px]">
                         <p className="text-[18px] sm:text-[20px] text-[#022B23] font-medium">{data.disputesCount}</p>
                         <div className="flex flex-col sm:flex-row sm:justify-between gap-2">
-                            <div className="flex items-center">
-                                <Image src={data.disputesChangePercent >= 0 ? arrowUp : redArrow} width={12} height={12} alt="trend" className="h-[12px] w-[12px]"/>
-                                <p className="text-[10px] sm:text-[11px] text-[#707070] ml-1">
-                  <span className={data.disputesChangePercent >= 0 ? "text-[#52A43E]" : "text-[#FF5050]"}>
-                    {data.disputesChangePercent >= 0 ? '+' : ''}{data.disputesChangePercent}%
-                  </span> from yesterday
-                                </p>
-                            </div>
                             <p 
                                 className="text-[10px] sm:text-[11px] text-[#022B23] underline font-medium cursor-pointer hover:text-[#52A43E]"
                                 onClick={() => router.push('/admin/dashboard/disputes')}

@@ -36,16 +36,16 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, badge, href, isActive, o
     return (
         <Link
             href={href}
-            className={`flex items-center text-[#171719] text-sm cursor-pointer px-2 py-2.5 relative ${isActive ? 'text-[#00AA5B] font-medium' : ''}`}
+            className={`flex items-center text-[#171719] text-sm cursor-pointer px-2 py-2.5 relative hover:bg-gray-50 rounded-md transition-colors ${isActive ? 'text-[#00AA5B] font-medium bg-green-50' : ''}`}
             onClick={onClick}
         >
             {isActive && (
                 <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-1 h-5 bg-[#00AA5B] rounded-r"></div>
             )}
-            <div className="mr-1.5">{icon}</div>
-            <span className="grow">{label}</span>
+            <div className="mr-1.5 flex-shrink-0">{icon}</div>
+            <span className="grow text-[12px] md:text-sm truncate">{label}</span>
             {badge && (
-                <div className="text-white text-[8px] font-bold bg-[#FF5050] px-1.5 py-[3px] rounded-[10px]">
+                <div className="text-white text-[8px] font-bold bg-[#FF5050] px-1.5 py-[3px] rounded-[10px] flex-shrink-0">
                     {badge}
                 </div>
             )}
@@ -129,9 +129,9 @@ export function Sidebar({ className }: SidebarProps) {
 
     return (
         <div
-            className={`w-[298px] max-h-screen flex flex-col justify-between bg-[#FFFFFF] py-[6px] border-r-[#E5E5E5] border-r-[0.5px] ${className}`}
+            className={`w-[280px] md:w-[298px] max-h-screen flex flex-col justify-between bg-[#FFFFFF] py-[6px] border-r-[#E5E5E5] border-r-[0.5px] ${className}`}
         >
-            <div className="flex flex-col gap-[10px] px-10 py-0 overflow-y-auto scrollbar-hide">
+            <div className="flex flex-col gap-[10px] px-6 md:px-10 py-0 overflow-y-auto scrollbar-hide">
                 <div>
                     <NavItem
                         icon={<OverviewIcon />}
@@ -211,7 +211,7 @@ export function Sidebar({ className }: SidebarProps) {
             <div className="flex items-center justify-center relative" ref={dropdownRef}>
                 <div
                     onClick={() => setDropdownOpen(!dropdownOpen)}
-                    className="w-[186px] cursor-pointer px-[8px] py-[10px] h-[65px] rounded-[12px] border-[0.5px] border-[#EDEDED] flex items-center justify-between"
+                    className="w-[170px] md:w-[186px] cursor-pointer px-[8px] py-[10px] h-[65px] rounded-[12px] border-[0.5px] border-[#EDEDED] flex items-center justify-between mx-auto"
                 >
                     <div className="flex items-center gap-[8px]">
                         <div className="w-[28px] h-[28px] rounded-full bg-[#F2F2F2]"></div>
@@ -226,7 +226,7 @@ export function Sidebar({ className }: SidebarProps) {
                 </div>
 
                 {dropdownOpen && (
-                    <div className="absolute bottom-[65px] w-[186px] bg-white border border-[#EDEDED] rounded-[12px] shadow-lg z-50">
+                    <div className="absolute bottom-[65px] w-[170px] md:w-[186px] bg-white border border-[#EDEDED] rounded-[12px] shadow-lg z-50">
                         <button
                             className="w-full text-left px-[12px] py-[10px] text-[14px] text-[#FF4D4F] hover:bg-[#FFF0F0] rounded-[12px]"
                             onClick={handleLogout}

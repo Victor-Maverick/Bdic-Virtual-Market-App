@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useVideoCall } from '@/hooks/useVideoCall';
+import { useWebRTCVideoCall } from '@/hooks/useWebRTCVideoCall';
 import { useCallContext } from '@/contexts/CallContext';
 import { videoCallService, VideoCallRequest } from '@/services/videoCallService';
 
@@ -46,11 +46,11 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
     leaveRoom,
     toggleVideo,
     toggleAudio
-  } = useVideoCall({
+  } = useWebRTCVideoCall({
     userEmail: buyerEmail,
     displayName: 'Buyer',
     onCallEnd: () => {
-      console.log('🎥 Twilio room disconnected - ending call in global context');
+      console.log('🎥 WebRTC room disconnected - ending call in global context');
       if (roomName) {
         endCall(roomName, 'ended');
       }
@@ -106,7 +106,12 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
     return cleanup;
   }, [roomName, onClose, onCallStatusChange]);
 
-  // Manual call initiation - removed auto-initiation to prevent unwanted calls
+  // Auto-initiate call when modal opens
+  useEffect(() => {
+    if (isOpen && !callInitiated && !isInitiating) {
+      initiateCall();
+    }
+  }, [isOpen]);
 
   const initiateCall = async () => {
     setIsInitiating(true);
@@ -134,15 +139,15 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
         participants: [buyerEmail]
       });
       
-      // Set up call timeout (30 seconds) - if no one joins, mark as missed
+      // Set up call timeout (60 seconds) - if no one joins, mark as missed
       const timeout = setTimeout(async () => {
         console.log('🎥 Call timeout - marking as missed');
         endCall(response.roomName, 'missed', buyerEmail);
-      }, 30000); // 30 seconds timeout
+      }, 60000); // 60 seconds timeout
       
       setCallTimeout(timeout);
       
-      // Join the Twilio room
+      // Join the WebRTC room
       await joinRoom(response.roomName);
       
     } catch (error) {
@@ -213,13 +218,13 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
         // Update backend call status
         try {
           await videoCallService.endCall(roomName, buyerEmail);
-          console.log('🎥 Backend notified of call end');
+          console.log('🎥 Backend notified of WebRTC call end');
         } catch (error) {
-          console.error('🎥 Error updating backend call status:', error);
+          console.error('🎥 Error updating backend WebRTC call status:', error);
         }
       }
       
-      // Leave the Twilio room
+      // Leave the WebRTC room
       await leaveRoom();
       
     } catch (error) {
@@ -240,13 +245,13 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
         // Update backend call status
         try {
           await videoCallService.declineCall(roomName, buyerEmail);
-          console.log('🎥 Backend notified of call decline');
+          console.log('🎥 Backend notified of WebRTC call decline');
         } catch (error) {
-          console.error('🎥 Error updating backend call status:', error);
+          console.error('🎥 Error updating backend WebRTC call status:', error);
         }
       }
       
-      // Leave the Twilio room if connected
+      // Leave the WebRTC room if connected
       await leaveRoom();
       
     } catch (error) {
@@ -261,34 +266,40 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#808080]/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-5xl h-[600px] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#808080]/40 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg w-full max-w-5xl h-[90vh] sm:h-[600px] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b h-16 flex-shrink-0">
-          <div className="flex items-center space-x-4">
-            <h2 className="text-lg font-semibold">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b h-14 sm:h-16 flex-shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+            <h2 className="text-sm sm:text-lg font-semibold truncate">
               Video Call with {shopName || vendorEmail.split('@')[0]}
             </h2>
           </div>
-          <div className="flex items-center space-x-3">
-            <span className={`px-2 py-1 rounded text-xs ${
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+            <span className={`px-1 sm:px-2 py-1 rounded text-xs ${
               isConnected ? 'bg-green-100 text-green-800' :
               isConnecting || isInitiating ? 'bg-yellow-100 text-yellow-800' :
               'bg-red-100 text-red-800'
             }`}>
-              {isConnected ? `Connected (${participants.length + 1} participants)` :
-               isConnecting || isInitiating ? 'Connecting...' : 'Disconnected'}
+              <span className="hidden sm:inline">
+                {isConnected ? `Connected (${participants.length + 1} participants)` :
+                 isConnecting || isInitiating ? 'Connecting...' : 'Waiting for vendor'}
+              </span>
+              <span className="sm:hidden">
+                {isConnected ? 'Connected' :
+                 isConnecting || isInitiating ? 'Connecting' : 'Waiting'}
+              </span>
             </span>
             <button
               onClick={handleEndCall}
-              className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors flex items-center space-x-1"
+              className="px-2 sm:px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors flex items-center space-x-1"
               title="End call"
             >
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 <path d="M4 4l12 12" stroke="currentColor" strokeWidth="2"/>
               </svg>
-              <span>End Call</span>
+              <span className="hidden sm:inline">End Call</span>
             </button>
           </div>
         </div>
@@ -317,7 +328,7 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
           />
           
           {/* Local Video (Picture-in-Picture) */}
-          <div className="absolute top-4 right-4 w-48 h-36 bg-gray-800 rounded-lg overflow-hidden">
+          <div className="absolute top-2 sm:top-4 right-2 sm:right-4 w-24 h-18 sm:w-48 sm:h-36 bg-gray-800 rounded-lg overflow-hidden">
             <video
               ref={localVideoRef}
               autoPlay
@@ -355,32 +366,12 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
                 </div>
                 <p className="text-lg font-medium">
                   {isInitiating ? 'Initiating call...' :
-                   !callInitiated ? 'Ready to call' :
-                   isConnecting ? 'Connecting to call...' : 'Waiting for vendor to join...'}
+                   isConnecting ? 'Connecting to call...' : 
+                   callInitiated ? 'Waiting for vendor to join...' : 'Preparing call...'}
                 </p>
                 <p className="text-sm text-gray-400 mt-2">
-                  {!callInitiated ? 'Click Start Video Call to begin' : 'Call will start when both participants are connected'}
+                  Call will start when both participants are connected
                 </p>
-
-                {/* Start Call Button */}
-                {!callInitiated && !isInitiating && (
-                  <button
-                    onClick={initiateCall}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg mt-4 transition-colors"
-                  >
-                    Start Video Call
-                  </button>
-                )}
-
-                {/* Decline Call Button - shown when call is initiated but not yet connected */}
-                {callInitiated && !isConnected && !isConnecting && (
-                  <button
-                    onClick={handleDeclineCall}
-                    className="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg mt-4 transition-colors"
-                  >
-                    Decline Call
-                  </button>
-                )}
                 
                 {/* Call Info */}
                 {productName && (
@@ -398,17 +389,17 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
         </div>
 
         {/* Controls */}
-        <div className="p-4 bg-gray-100 flex items-center justify-center space-x-4 h-20 flex-shrink-0">
+        <div className="p-3 sm:p-4 bg-gray-100 flex items-center justify-center space-x-3 sm:space-x-4 h-16 sm:h-20 flex-shrink-0">
           {callInitiated && (
             <>
               <button
                 onClick={toggleAudio}
-                className={`p-3 rounded-full ${
+                className={`p-2 sm:p-3 rounded-full ${
                   isAudioEnabled ? 'bg-gray-200 hover:bg-gray-300' : 'bg-red-500 hover:bg-red-600'
                 } transition-colors`}
                 title={isAudioEnabled ? 'Mute' : 'Unmute'}
               >
-                <svg className={`w-6 h-6 ${isAudioEnabled ? 'text-gray-700' : 'text-white'}`} fill="currentColor" viewBox="0 0 20 20">
+                <svg className={`w-5 h-5 sm:w-6 sm:h-6 ${isAudioEnabled ? 'text-gray-700' : 'text-white'}`} fill="currentColor" viewBox="0 0 20 20">
                   {isAudioEnabled ? (
                     <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
                   ) : (
@@ -419,12 +410,12 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
 
               <button
                 onClick={toggleVideo}
-                className={`p-3 rounded-full ${
+                className={`p-2 sm:p-3 rounded-full ${
                   isVideoEnabled ? 'bg-gray-200 hover:bg-gray-300' : 'bg-red-500 hover:bg-red-600'
                 } transition-colors`}
                 title={isVideoEnabled ? 'Turn off camera' : 'Turn on camera'}
               >
-                <svg className={`w-6 h-6 ${isVideoEnabled ? 'text-gray-700' : 'text-white'}`} fill="currentColor" viewBox="0 0 20 20">
+                <svg className={`w-5 h-5 sm:w-6 sm:h-6 ${isVideoEnabled ? 'text-gray-700' : 'text-white'}`} fill="currentColor" viewBox="0 0 20 20">
                   {isVideoEnabled ? (
                     <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                   ) : (
@@ -437,10 +428,10 @@ const SimpleVideoCallModal: React.FC<SimpleVideoCallModalProps> = ({
 
           <button
             onClick={handleEndCall}
-            className="p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
+            className="p-2 sm:p-3 rounded-full bg-red-500 hover:bg-red-600 text-white transition-colors"
             title="End call"
           >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 20 20">
               <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
             </svg>
           </button>

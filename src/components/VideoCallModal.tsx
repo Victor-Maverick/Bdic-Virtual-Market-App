@@ -171,7 +171,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         }
       }
       
-      // Leave the Twilio room
+      // Leave the WebRTC room
       await leaveRoom();
       
       // Close modal
@@ -192,10 +192,10 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
   if (!isOpen || !call) return null;
 
   return (
-    <div className="fixed inset-0 bg-[#808080]/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-5xl h-[600px] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 bg-[#808080]/40 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg w-full max-w-5xl h-[90vh] sm:h-[600px] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b h-16 flex-shrink-0">
+        <div className="flex items-center justify-between p-3 sm:p-4 border-b h-14 sm:h-16 flex-shrink-0">
           <div className="flex items-center space-x-4">
             <h2 className="text-lg font-semibold">
               Video Call with {userType === 'buyer' ? 'Vendor' : 'Buyer'}
@@ -269,7 +269,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({
         </div>
 
         {/* Controls */}
-        <div className="p-4 bg-gray-100 flex items-center justify-center space-x-4 h-20 flex-shrink-0">
+        <div className="p-3 sm:p-4 bg-gray-100 flex items-center justify-center space-x-3 sm:space-x-4 h-16 sm:h-20 flex-shrink-0">
           <button
             onClick={toggleAudio}
             className={`p-3 rounded-full ${

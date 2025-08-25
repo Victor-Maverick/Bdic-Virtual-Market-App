@@ -1,10 +1,8 @@
 'use client'
 import Image from "next/image";
-import arrowUp from "../../../../../public/assets/images/green arrow up.png";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import DeleteConfirmationModal from "@/components/deleteConfirmationModal";
-import searchImg from "../../../../../public/assets/images/search-normal.png";
+import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -42,48 +40,20 @@ const VendorActionsDropdown = ({
                                    shopId,
                                    status,
                                    onToggleStatus,
-                                   onDelete,
                                }: {
     shopId: number;
     children: React.ReactNode;
     status: string;
     onToggleStatus: (shopId: number) => void;
-    onDelete: (shopId: number) => void;
 }) => {
     const [isOpen, setIsOpen] = useState(false);
     const router = useRouter();
     const dropdownRef = useRef<HTMLDivElement>(null);
     const triggerRef = useRef<HTMLDivElement>(null);
 
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(!isOpen);
-    };
-
-    const handleOpenDeleteModal = () => {
-        setIsOpen(false);
-        console.log(status)
-        setIsDeleteModalOpen(true);
-    };
-
-    const handleCloseDeleteModal = () => {
-        setIsDeleteModalOpen(false);
-    };
-
-    const handleCloseRejectModal = () => {
-        setIsRejectModalOpen(false);
-    };
-
-    const handleDelete = () => {
-        onDelete(shopId);
-        setIsDeleteModalOpen(false);
-    };
-
-    const handleReject = () => {
-        setIsRejectModalOpen(false);
     };
 
     const handleViewVendor = () => {
@@ -118,24 +88,19 @@ const VendorActionsDropdown = ({
             {status === 'VERIFIED' ? (
                 <li
                     onClick={handleDeactivate}
-                    className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
+                    className="px-[8px] py-[4px] h-[38px] text-[#8C8C8C] hover:bg-[#f9f9f9] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
                 >
                     Deactivate
                 </li>
             ) : (
                 <li
                     onClick={handleDeactivate}
-                    className="px-[8px] py-[4px] h-[38px] text-[#52A43E] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
+                    className="px-[8px] py-[4px] h-[38px] text-[#52A43E] hover:bg-[#f9f9f9] hover:border-b-[0.5px] hover:border-t-[0.5px] hover:border-[#F2F2F2] text-[12px] cursor-pointer"
                 >
                     Activate
                 </li>
             )}
-            <li
-                onClick={handleOpenDeleteModal}
-                className="px-[8px] rounded-bl-[8px] rounded-br-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#FFFAF9] hover:border-t-[0.5px] hover:border-[#F2F2F2] cursor-pointer text-[#FF5050]"
-            >
-                Delete
-            </li>
+
         </>
     );
 
@@ -151,37 +116,21 @@ const VendorActionsDropdown = ({
                 </div>
 
                 {isOpen && (
-                    <div className="absolute right-0 top-full mt-1 h-[114px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
+                    <div className="absolute right-0 top-full mt-1 h-[76px] bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[134px]">
                         <ul className="">{renderOptions()}</ul>
                     </div>
                 )}
             </div>
 
-            <DeleteConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={handleCloseDeleteModal}
-                onDelete={handleDelete}
-                title="Delete Vendor"
-                message="Are you sure you want to delete this vendor? This action cannot be undone."
-            />
 
-            <DeleteConfirmationModal
-                isOpen={isRejectModalOpen}
-                onClose={handleCloseRejectModal}
-                onDelete={handleReject}
-                title="Reject Vendor"
-                message="Are you sure you want to reject this vendor? This action cannot be undone."
-                confirmText="Reject"
-            />
         </>
     );
 };
 
-const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: {
+const VendorTableRow = ({ shop, isLast, onToggleStatus }: {
     shop: ShopResponse;
     isLast: boolean;
     onToggleStatus: (shopId: number) => void;
-    onDelete: (shopId: number) => void;
 }) => {
     const getStatusText = (status: string) => {
         switch (status) {
@@ -227,7 +176,7 @@ const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: {
             </div>
 
             <div className="flex items-center justify-center w-[3%]">
-                <VendorActionsDropdown shopId={shop.id} status={shop.status} onToggleStatus={onToggleStatus} onDelete={onDelete}>
+                <VendorActionsDropdown shopId={shop.id} status={shop.status} onToggleStatus={onToggleStatus}>
                     <div className="flex flex-col gap-1">
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
                         <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
@@ -239,7 +188,7 @@ const VendorTableRow = ({ shop, isLast, onToggleStatus, onDelete }: {
     );
 };
 
-const StatsCard = ({ title, value, percentage, isPending = false, isWarning = false }: { title: string; value: string; percentage: string; isPending: boolean; isWarning?: boolean }) => {
+const StatsCard = ({ title, value,  isPending = false, isWarning = false }: { title: string; value: string; isPending: boolean; isWarning?: boolean }) => {
     return (
         <div className={`flex flex-col w-[25%] rounded-[14px] h-full ${isWarning ? 'border-[#FF2121]' : 'border-[#EAEAEA]'} border-[0.5px]`}>
             <div className={`w-full px-[14px] flex items-center rounded-tl-[14px] rounded-tr-[14px] h-[30px] ${isWarning ? 'bg-[#FFE8E8]' : isPending ? 'bg-[#FFB320]' : 'bg-[#F7F7F7]'}`}>
@@ -247,10 +196,6 @@ const StatsCard = ({ title, value, percentage, isPending = false, isWarning = fa
             </div>
             <div className="h-[80px] flex justify-center flex-col p-[14px]">
                 <p className="text-[20px] text-[#022B23] font-medium">{value}</p>
-                <div className="flex items-center">
-                    <Image src={arrowUp} width={12} height={12} alt={'image'} className="h-[12px] w-[12px]" />
-                    <p className="text-[10px] text-[#707070]"><span className="text-[#52A43E]">{percentage}</span> from yesterday</p>
-                </div>
             </div>
         </div>
     );
@@ -324,34 +269,29 @@ const Vendors = () => {
 
     const handleToggleStatus = async (shopId: number) => {
         try {
-            await axios.put(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/deactivateShop`, null, {
-                params: { shopId }
-            });
+            // Find the current shop to determine its status
+            const currentShop = shops.find(shop => shop.id === shopId);
+            if (!currentShop) return;
+
+            const endpoint = currentShop.status === 'VERIFIED'
+                ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/deactivateShop?shopId=${shopId}`
+                : `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/activateShop?shopId=${shopId}`;
+
+            await axios.put(endpoint);
             
             // Refresh the shops data after successful toggle
             const shopsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/all`);
             setShops(shopsRes.data);
             
-            toast.success('Vendor status updated successfully');
+            const action = currentShop.status === 'VERIFIED' ? 'deactivated' : 'activated';
+            toast.success(`Vendor ${action} successfully`);
         } catch (error) {
             console.error('Error toggling shop status:', error);
             toast.error('Failed to update vendor status');
         }
     };
 
-    const handleDeleteShop = async (shopId: number) => {
-        try {
-            await axios.delete(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/delete/${shopId}`);
-            
-            // Remove the deleted shop from the local state
-            setShops(prevShops => prevShops.filter(shop => shop.id !== shopId));
-            
-            toast.success('Vendor deleted successfully');
-        } catch (error) {
-            console.error('Error deleting shop:', error);
-            toast.error('Failed to delete vendor');
-        }
-    };
+
 
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
@@ -369,10 +309,9 @@ const Vendors = () => {
                     <StatsCardsLoadingSkeleton />
                 ) : (
                     <div className="flex w-full gap-[20px] h-[110px] justify-between">
-                        <StatsCard title="Total vendors" value={vendorStats.totalVendors.toString()} percentage="+15.6%" isPending={false} />
-                        <StatsCard title="Active Vendor shops" value={vendorStats.activeVendors.toString()} percentage="+15.6%" isPending={false} />
-                        <StatsCard title="Inactive vendor shops" value={vendorStats.inactiveVendors.toString()} percentage="+15.6%" isWarning isPending={false} />
-                        <StatsCard title="Daily signups" value={vendorStats.dailySignups.toString()} percentage="+15.6%" isPending />
+                        <StatsCard title="Total vendors" value={vendorStats.totalVendors.toString()} isPending={false} />
+                        <StatsCard title="Active Vendor shops" value={vendorStats.activeVendors.toString()} isPending={false} />
+                        <StatsCard title="Inactive vendor shops" value={vendorStats.inactiveVendors.toString()} isWarning isPending={false} />
                     </div>
                 )}
 
@@ -386,15 +325,6 @@ const Vendors = () => {
                                 <div className="flex h-[20px] items-center">
                                     <p className="text-[14px] text-[#667085]">View and manage vendors here</p>
                                 </div>
-                            </div>
-                            <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                                <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
-                                <input
-                                    placeholder="Search vendors..."
-                                    value={searchTerm}
-                                    onChange={handleSearchChange}
-                                    className="w-[175px] text-[#707070] text-[14px] focus:outline-none"
-                                />
                             </div>
                         </div>
 
@@ -430,7 +360,6 @@ const Vendors = () => {
                                         shop={shop}
                                         isLast={index === currentVendors.length - 1}
                                         onToggleStatus={handleToggleStatus}
-                                        onDelete={handleDeleteShop}
                                     />
                                 ))
                             )}

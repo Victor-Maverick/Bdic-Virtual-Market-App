@@ -3,7 +3,7 @@ import Image from "next/image";
 import arrowBack from "../../../../../../../public/assets/images/arrow-right.svg";
 import { useRouter, useParams } from "next/navigation";
 import arrowDown from "../../../../../../../public/assets/images/arrow-down.svg";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -60,6 +60,141 @@ interface ProductResponse {
     city: string;
 }
 
+const ProductActionsDropdown = ({ product }: { product: ProductResponse }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const handleToggle = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+    };
+
+    const handleViewProduct = () => {
+        setIsOpen(false);
+        setIsViewModalOpen(true);
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, []);
+
+    return (
+        <>
+            <div className="relative" ref={dropdownRef}>
+                <div
+                    onClick={handleToggle}
+                    className="cursor-pointer flex flex-col gap-[3px] items-center justify-center"
+                >
+                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
+                </div>
+
+                {isOpen && (
+                    <div className="absolute right-0 top-full mt-1 bg-white rounded-[8px] shadow-lg z-50 border border-[#ededed] w-[100px]">
+                        <ul>
+                            <li
+                                onClick={handleViewProduct}
+                                className="px-[8px] py-[4px] h-[38px] text-[12px] hover:bg-[#f9f9f9] text-[#1E1E1E] cursor-pointer rounded-[8px]"
+                            >
+                                View
+                            </li>
+                        </ul>
+                    </div>
+                )}
+            </div>
+
+            {/* Product View Modal */}
+            {isViewModalOpen && (
+                <div className="fixed inset-0 z-50 bg-[#808080]/20 flex items-center justify-center ">
+                    <div className="bg-white rounded-[12px] p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-[18px] font-semibold text-[#101828]">Product Details</h3>
+                            <button
+                                onClick={() => setIsViewModalOpen(false)}
+                                className="text-[#667085] hover:text-[#101828] text-[20px]"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <div className="w-full h-[200px] bg-gray-100 rounded-[8px] overflow-hidden mb-4">
+                                    <Image
+                                        src={product.mainImageUrl || "/placeholder.svg"}
+                                        alt={product.name}
+                                        width={300}
+                                        height={200}
+                                        className="w-full h-full object-cover"
+                                    />
+                                </div>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[product.sideImage1Url, product.sideImage2Url, product.sideImage3Url, product.sideImage4Url].map((img, idx) => (
+                                        img && (
+                                            <div key={idx} className="w-full h-[60px] bg-gray-100 rounded-[4px] overflow-hidden">
+                                                <Image
+                                                    src={img}
+                                                    alt={`${product.name} ${idx + 1}`}
+                                                    width={60}
+                                                    height={60}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+                                        )
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <div>
+                                    <h4 className="text-[16px] font-semibold text-[#101828] mb-2">{product.name}</h4>
+                                    <p className="text-[14px] text-[#667085]">{product.description}</p>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-[12px] font-medium text-[#667085] mb-1">Price</label>
+                                        <p className="text-[14px] text-[#101828]">₦{product.price.toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[12px] font-medium text-[#667085] mb-1">Sales Price</label>
+                                        <p className="text-[14px] text-[#101828]">₦{product.salesPrice.toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[12px] font-medium text-[#667085] mb-1">Stock</label>
+                                        <p className="text-[14px] text-[#101828]">{product.quantity}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[12px] font-medium text-[#667085] mb-1">Sold</label>
+                                        <p className="text-[14px] text-[#101828]">{product.quantitySold}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[12px] font-medium text-[#667085] mb-1">Category</label>
+                                        <p className="text-[14px] text-[#101828]">{product.category}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[12px] font-medium text-[#667085] mb-1">Sub Category</label>
+                                        <p className="text-[14px] text-[#101828]">{product.subCategory}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+
 const ProductTableRow = ({
     product,
     isLast
@@ -70,7 +205,7 @@ const ProductTableRow = ({
     const salesAmount = product.salesPrice * product.quantitySold;
 
     return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
+        <div className={`flex  h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[40%] pr-[24px] gap-3">
                 <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
                     <Image
@@ -88,9 +223,7 @@ const ProductTableRow = ({
             </div>
 
             <div className="flex items-center w-[10%] px-[24px]">
-                <div className="w-[55px] h-[22px] rounded-[8px] flex items-center justify-center bg-[#ECFDF3] text-[#027A48]">
-                    <p className="text-[12px] font-medium">Active</p>
-                </div>
+                <p className="text-[14px] text-[#101828]">{product.quantity}</p>
             </div>
 
             <div className="flex flex-col justify-center w-[11%] px-[15px]">
@@ -112,11 +245,7 @@ const ProductTableRow = ({
             </div>
 
             <div className="flex items-center justify-center w-[40px]">
-                <div className="flex flex-col gap-1">
-                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                    <div className="w-[3px] h-[3px] bg-[#98A2B3] rounded-full"></div>
-                </div>
+                <ProductActionsDropdown product={product} />
             </div>
         </div>
     );
@@ -339,7 +468,7 @@ const ViewVendor = () => {
                 </div>
 
                 {/* Products Table */}
-                <div className="flex flex-col mt-[30px] rounded-[24px] border-[1px] border-[#EAECF0]">
+                <div className="flex flex-col mb-[50px] mt-[30px] rounded-[24px] border-[1px] border-[#EAECF0]">
                     <div className="my-[20px] mx-[25px] flex flex-col">
                         <p className="text-[#101828] font-medium">Inventory ({products.length})</p>
                         <p className="text-[#667085] text-[14px]">View and manage products</p>
@@ -351,7 +480,7 @@ const ViewVendor = () => {
                             <Image src={arrowDown} alt="Sort" width={12} height={12} />
                         </div>
                         <div className="flex items-center px-[24px] w-[10%] py-[12px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                            <p className="text-[#667085] font-medium text-[12px]">Stock</p>
                         </div>
                         <div className="flex items-center px-[15px] w-[11%] py-[12px]">
                             <p className="text-[#667085] font-medium text-[12px]">Performance (Qty)</p>

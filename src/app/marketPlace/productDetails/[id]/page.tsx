@@ -441,7 +441,7 @@ return (
                             shopName={product.shopName}
                             productId={product.id}
                             productName={product.name}
-                            className="bg-[#ffeebe] text-[#461602] hover:bg-[#ffd700] w-full sm:w-[165px] h-[48px] rounded-[14px]"
+                            className="bg-[#ffeebe] text-[#461602] hover:bg-[#ffd700] w-full sm:w-[165px] h-[44px] sm:h-[48px] rounded-[14px] text-sm sm:text-base"
                         />
                         <CallDropdown
                             vendorEmail={product.vendorEmail}
@@ -449,30 +449,30 @@ return (
                             shopName={product.shopName}
                             productId={product.id}
                             productName={product.name}
-                            className="w-full sm:w-[140px] h-[48px] text-[14px] font-medium"
+                            className="w-full sm:w-[140px] h-[44px] sm:h-[48px] text-[13px] sm:text-[14px] font-medium"
                         />
                     </div>
                 </div>
-                <div className='flex flex-col sm:flex-row items-center gap-4 lg:gap-[30px] mt-6 lg:mt-[25px]'>
+                <div className='flex flex-col sm:flex-row items-center gap-3 sm:gap-4 lg:gap-[30px] mt-6 lg:mt-[25px]'>
                     <div
                         onClick={handleBuyNow}
-                        className='flex items-center bg-[#022B23] w-full sm:w-[209px] h-[48px] justify-center rounded-[12px] cursor-pointer'
+                        className='flex items-center bg-[#022B23] w-full sm:w-[209px] h-[44px] sm:h-[48px] justify-center rounded-[12px] cursor-pointer'
                     >
-                        <p className='text-[#C6EB5F] text-[14px] font-semibold'>{isLoading ? 'Processing...' : 'Buy now'}</p>
+                        <p className='text-[#C6EB5F] text-[13px] sm:text-[14px] font-semibold'>{isLoading ? 'Processing...' : 'Buy now'}</p>
                     </div>
-                    <div className='flex items-center gap-4'>
+                    <div className='flex items-center gap-3 sm:gap-4 w-full sm:w-auto'>
                         <div
                             onClick={handleAddToCart}
-                            className='w-full sm:w-[127px] cursor-pointer flex items-center justify-center h-[48px] gap-[10px] rounded-[12px] border-[2px] border-[#022B23]'
+                            className='flex-1 sm:w-[127px] cursor-pointer flex items-center justify-center h-[44px] sm:h-[48px] gap-[8px] sm:gap-[10px] rounded-[12px] border-[2px] border-[#022B23]'
                         >
-                            <p className='text-[#022B23] text-[15px] font-bold'>Add to cart</p>
-                            <Image src={bag || '/placeholder.svg'} alt='cart' width={18} height={18} />
+                            <p className='text-[#022B23] text-[13px] sm:text-[15px] font-bold'>Add to cart</p>
+                            <Image src={bag || '/placeholder.svg'} alt='cart' width={16} height={16} className="sm:w-[18px] sm:h-[18px]" />
                         </div>
                         <div
                             onClick={handleAddToWishlist}
-                            className='h-[48px] w-[48px] border-[2px] border-[#022B23] rounded-[12px] flex items-center justify-center cursor-pointer'
+                            className='h-[44px] w-[44px] sm:h-[48px] sm:w-[48px] border-[2px] border-[#022B23] rounded-[12px] flex items-center justify-center cursor-pointer flex-shrink-0'
                         >
-                            <Image src={wishlist || '/placeholder.svg'} alt='wishlist' width={26} height={26} />
+                            <Image src={wishlist || '/placeholder.svg'} alt='wishlist' width={22} height={22} className="sm:w-[26px] sm:h-[26px]" />
                         </div>
                     </div>
                 </div>

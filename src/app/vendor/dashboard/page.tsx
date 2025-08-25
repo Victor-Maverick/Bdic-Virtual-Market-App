@@ -1,6 +1,6 @@
 'use client'
-// import DashboardHeader from "@/components/dashboardHeader";
-// import DashboardSubHeader from "@/components/dashboardSubHeader";
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 import archiveImg from '../../../../public/assets/images/archive.svg'
 import Image from "next/image";
 import biArrows from '../../../../public/assets/images/biArrows.svg'
@@ -91,8 +91,6 @@ const DashBoard = () => {
     const [activeView, setActiveView] = useState('orders');
     const [, setShopData] = useState<ShopData>();
     const [, setLoading] = useState(true);
-    // const [, setActivating] = useState(false);
-    // const [, setPaymentError] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const {data: session} = useSession();
@@ -236,7 +234,9 @@ const DashBoard = () => {
     return (
         <VendorVideoCallWrapper>
             <VendorShopGuard>
-                <div className="h-12 sm:h-[58px] px-4 sm:px-6 lg:px-25 border-b-[0.5px] border-[#EDEDED] items-center flex">
+                <DashboardHeader />
+                <DashboardOptions />
+                <div className="h-12 sm:h-[58px] px-4 sm:px-6 lg:px-25 border-b-[0.5px] border-[#EDEDED] items-center flex mt-16 md:mt-0">
                 <p className="text-[#022B23] font-medium text-base sm:text-[18px] lg:text-[20px]">Dashboard overview</p>
             </div>
             <div className="flex flex-col gap-4 sm:gap-6 lg:gap-[32px] py-4 sm:py-[10px]">
