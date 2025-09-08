@@ -2,7 +2,8 @@
 import {Suspense, useCallback, useEffect, useState} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import VendorShopGuard from "@/components/VendorShopGuard";
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import arrowBack from "../../../../../public/assets/images/arrowBack.svg";
 import arrowFoward from "../../../../../public/assets/images/arrowFoward.svg";
@@ -45,12 +46,12 @@ interface TierResponse {
 }
 
 const ProductTableRow = ({
-    product,
-        isLast,
-        shopData,
-        tierData,
-        onPromoteAction
-}: {
+                             product,
+                             isLast,
+                             shopData,
+                             tierData,
+                             onPromoteAction
+                         }: {
     product: Product;
     isLast: boolean;
     shopData: ShopData | null;
@@ -271,7 +272,7 @@ const ReviewTab = () => {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-expect-error
             const errorSubMessage = err.response?.data;
-            
+
             setToast({
                 show: true,
                 type: "error",
@@ -459,7 +460,9 @@ const ReviewsContent = () => {
     };
 
     return (
-        <VendorShopGuard showSubHeader={false}>
+        <>
+            <DashboardHeader />
+            <DashboardOptions />
             <div className="flex flex-col py-[30px] px-25">
                 <div className="w-[359px] h-[52px] gap-[24px] flex items-end">
                     <button
@@ -488,7 +491,7 @@ const ReviewsContent = () => {
                     {activeTab === 'coupons' && <Coupons />}
                 </div>
             </div>
-        </VendorShopGuard>
+        </>
     );
 }
 

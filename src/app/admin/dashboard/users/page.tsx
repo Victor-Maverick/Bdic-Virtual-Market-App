@@ -2,7 +2,6 @@
 import Image from "next/image";
 import arrowUp from "../../../../../public/assets/images/green arrow up.png";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
-import searchImg from "../../../../../public/assets/images/search-normal.png";
 import {useEffect, useRef, useState} from "react";
 
 import BackButton from "@/components/BackButton";
@@ -56,30 +55,19 @@ const UserTableRow = ({
                 className={`flex h-[72px] cursor-pointer hover:bg-[#F9FAFB] transition-colors ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}
                 onClick={handleRowClick}
             >
-                <div className="flex items-center w-[25%] pl-[24px]">
+                <div className="flex items-center w-[35%] pl-[24px]">
                     <div className="flex flex-col">
                         <p className="text-[14px] text-[#101828] font-medium">{user.firstName} {user.lastName}</p>
                         <p className="text-[12px] text-[#667085]">{user.email}</p>
                     </div>
                 </div>
 
-                <div className="flex flex-col justify-center w-[20%] px-[15px]">
+                <div className="flex flex-col justify-center w-[25%] px-[15px]">
                     <p className="text-[14px] text-[#101828]">{user.phone || 'None'}</p>
-                    <p className="text-[12px] text-[#667085]">Phone</p>
                 </div>
 
-                <div className="flex flex-col justify-center w-[20%] px-[15px]">
-                    <div className="flex flex-wrap gap-1 mt-1">
-                        {user.roles.map((role, index) => (
-                            <span key={index} className="px-1 py-0.5 bg-[#F9FAFB] text-[#667085] text-[10px] rounded border">
-                                {role.replace(/[^a-zA-Z]/g, '')}
-                            </span>
-                        ))}
-                    </div>
-                    <p className="text-[12px] text-[#667085]">Roles</p>
-                </div>
 
-                <div className="flex items-center w-[15%] justify-center">
+                <div className="flex items-center w-[20%] justify-center">
                     <p className="text-[14px] font-medium text-[#101828]">
                         {new Date(user.createdAt).toLocaleDateString()}
                     </p>
@@ -146,7 +134,6 @@ const Users = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const [searchTerm, setSearchTerm] = useState('');
     const usersPerPage = 5;
 
     const fetchUsers = async () => {
@@ -167,7 +154,6 @@ const Users = () => {
     useEffect(() => {
         fetchUsers();
     }, []);
-
     // Calculate stats from actual data
     const stats = {
         totalUsers: users.length,
@@ -188,10 +174,6 @@ const Users = () => {
     const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
     const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
-        setCurrentPage(1); // Reset to first page when searching
-    };
 
     const handlePageChange = (page: number) => {
         setCurrentPage(page);
@@ -273,32 +255,18 @@ const Users = () => {
                             <p className="text-[#667085] text-[12px] sm:text-[14px]">View and manage users here</p>
                         </div>
 
-                        <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-3 sm:px-4 py-2 shadow-sm rounded-sm w-full sm:w-auto">
-                            <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-                            <input 
-                                placeholder="Search users..." 
-                                value={searchTerm}
-                                onChange={handleSearchChange}
-                                className="w-full sm:w-[175px] text-[#707070] text-[14px] focus:outline-none"
-                            />
-                        </div>
                     </div>
 
                     <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                        <div className="flex items-center px-[24px] w-[25%] py-[12px] gap-[4px]">
+                        <div className="flex items-center px-[24px] w-[35%] py-[12px] gap-[4px]">
                             <p className="text-[#667085] font-medium text-[12px]">User</p>
                             <Image src={arrowDown} alt="Sort" width={12} height={12} />
                         </div>
-                        <div className="flex items-center px-[24px] w-[20%] py-[12px] gap-[4px]">
+                        <div className="flex items-center px-[24px] w-[25%] py-[12px] gap-[4px]">
                             <p className="text-[#667085] font-medium text-[12px]">Phone</p>
                             <Image src={arrowDown} alt="Sort" width={12} height={12} />
                         </div>
-                        <div className="flex items-center px-[24px] w-[20%] py-[12px] gap-[4px]">
-                            <p className="text-[#667085] font-medium text-[12px]">Roles</p>
-                            <Image src={arrowDown} alt="Sort" width={12} height={12} />
-                        </div>
-
-                        <div className="flex items-center justify-center w-[15%]">
+                        <div className="flex items-center justify-center w-[20%]">
                             <p className="text-[#667085] font-medium text-[12px]">Joined</p>
                         </div>
 

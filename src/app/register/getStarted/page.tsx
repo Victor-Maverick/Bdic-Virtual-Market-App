@@ -250,11 +250,10 @@ const GetStarted = () => {
                 message: "Registration successful",
                 subMessage: "Redirecting to verification page"
             });
-
-            // Store email for verification flow
             localStorage.setItem('verifyEmail', form.email);
+
             setTimeout(() => {
-                router.push(`/verify-email/confirm?email=${encodeURIComponent(form.email)}`);
+                router.push(`/verify-email/confirm?email=${encodeURIComponent(form.email)}&source=register`);
             }, 1500);
         }
 

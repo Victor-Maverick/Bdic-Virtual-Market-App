@@ -2,8 +2,6 @@
 
 import React, { use } from 'react';
 
-import VideoCallButton from '@/components/VideoCallButton';
-
 interface PageParams {
   id: string;
 }
@@ -115,13 +113,13 @@ const StorePage = ({ params }: { params: Promise<PageParams> }) => {
                 Chat with Store
               </button>
 
-              <VideoCallButton
-                vendorEmail={mockStore.email}
-                shopId={mockStore.id}
-                shopName={mockStore.name}
-                variant="primary"
-                className="w-full"
-              />
+              {/*<VideoCallButton*/}
+              {/*  vendorEmail={mockStore.email}*/}
+              {/*  shopId={mockStore.id}*/}
+              {/*  shopName={mockStore.name}*/}
+              {/*  variant="primary"*/}
+              {/*  className="w-full"*/}
+              {/*/>*/}
 
               <button className="inline-flex items-center px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white font-medium rounded-lg transition-colors">
                 <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">

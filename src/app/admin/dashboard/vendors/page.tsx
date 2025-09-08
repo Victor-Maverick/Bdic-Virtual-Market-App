@@ -2,7 +2,6 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import DeleteConfirmationModal from "@/components/DeleteConfirmationModal";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -278,7 +277,6 @@ const Vendors = () => {
                 : `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/activateShop?shopId=${shopId}`;
 
             await axios.put(endpoint);
-            
             // Refresh the shops data after successful toggle
             const shopsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/all`);
             setShops(shopsRes.data);
@@ -289,13 +287,6 @@ const Vendors = () => {
             console.error('Error toggling shop status:', error);
             toast.error('Failed to update vendor status');
         }
-    };
-
-
-
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
-        setCurrentPage(1); // Reset to first page when searching
     };
 
     return (

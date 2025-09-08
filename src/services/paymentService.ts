@@ -1,6 +1,6 @@
 interface PaymentTransactionResponse {
     id: number;
-    credoReference: string;
+    reference: string;
     email: string;
     amount: number;
     status: string;

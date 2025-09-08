@@ -8,6 +8,7 @@ import headerImg from "../../../public/assets/images/headerImg.png";
 import { useSession } from "next-auth/react";
 import { useLogoutHandler } from "@/hooks/useLogoutHandler";
 
+
 const DashboardHeader = () => {
     const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
     const { smartNavigate } = useSmartNavigation();
@@ -60,11 +61,12 @@ const DashboardHeader = () => {
             </div>
 
             {status === 'authenticated' && userProfile && (
-                <div className="relative profile-dropdown-container">
-                    <div
-                        className="flex items-center gap-1 sm:gap-2 cursor-pointer p-1 rounded-lg hover:bg-gray-50 transition-colors"
-                        onClick={handleProfileClick}
-                    >
+                <div className="flex items-center gap-3">
+                    <div className="relative profile-dropdown-container">
+                        <div
+                            className="flex items-center gap-1 sm:gap-2 cursor-pointer p-1 rounded-lg hover:bg-gray-50 transition-colors"
+                            onClick={handleProfileClick}
+                        >
                         <Image
                             src={profileImage}
                             alt="Profile"
@@ -103,6 +105,7 @@ const DashboardHeader = () => {
                             </button>
                         </div>
                     )}
+                    </div>
                 </div>
             )}
         </div>

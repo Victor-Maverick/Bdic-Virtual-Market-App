@@ -13,16 +13,16 @@ export const useTokenVerification = () => {
         setVerificationStatus('verifying');
         try {
             const result = await userService.verifyEmail(token);
-            
+
             if (result.success) {
                 setVerificationStatus('success');
                 setMessage('Email verified successfully');
-                
+
                 // Clean up localStorage
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('unverifiedEmail');
                 }
-                
+
                 // Redirect to login after a short delay
                 setTimeout(() => {
                     router.push('/login');

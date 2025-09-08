@@ -251,48 +251,115 @@ const DisputeTableRow = ({
     onViewDispute: () => void;
     onAcceptResolution: () => void;
 }) => {
+    const getStatusStyle = (status: string) => {
+        switch (status) {
+            case 'PROCESSING':
+                return 'bg-[#ECFDF3] text-[#027A48]';
+            case 'PENDING':
+                return 'bg-[#FFFAEB] text-[#F99007]';
+            case 'PENDING_RESOLUTION':
+                return 'bg-[#FFFAEB] text-[#B54708]';
+            case 'RESOLVED':
+                return 'bg-[#F9FDE8] text-[#0C4F24]';
+            default:
+                return 'bg-[#EDEDED] text-[#707070]';
+        }
+    };
+
     return (
-        <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
-            <div className="flex items-center w-[30%] pr-[24px] gap-3">
-                <div className="bg-[#f9f9f9] h-full w-[70px] overflow-hidden mt-[2px]">
-                    <Image
-                        src={dispute.orderItem.productImage}
-                        alt={'product image'}
-                        width={70}
-                        height={70}
-                        className="object-cover"
+        <div className={`flex flex-col sm:flex-row items-start sm:items-center ${!isLast ? "border-b border-[#ededed]" : "border-none"} p-3 sm:p-0`}>
+            {/* Mobile layout */}
+            <div className="flex w-full sm:hidden gap-3 mb-3">
+                <div className="w-[80px] h-[80px] rounded-[8px] overflow-hidden flex-shrink-0">
+                    {dispute.orderItem.productImage ? (
+                        <Image
+                            src={dispute.orderItem.productImage}
+                            alt={`product`}
+                            width={80}
+                            height={80}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs">
+                            No image
+                        </div>
+                    )}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <p className="text-[12px] sm:text-[14px] text-[#1E1E1E] font-medium mb-1 truncate">
+                        {dispute.orderItem.productName}
+                    </p>
+                    <p className="text-[10px] font-normal text-[#3D3D3D] uppercase mb-2">
+                        Order #{dispute.orderNumber}
+                    </p>
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <p className="font-medium text-[#1E1E1E] text-[14px]">
+                                ₦{Number(dispute.orderItem.totalPrice || 0).toLocaleString()}
+                            </p>
+                            <p className="text-[#3D3D3D] text-[10px]">
+                                {dispute.orderItem.vendorName || "Unknown"}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className={`flex h-[32px] px-2 items-center text-[12px] font-medium justify-center rounded-[100px] ${getStatusStyle(dispute.status)}`}>
+                                <p>{dispute.status}</p>
+                            </div>
+                            <DisputeActionsDropdown
+                                onViewDispute={onViewDispute}
+                                disputeStatus={dispute.status}
+                                onAcceptResolution={onAcceptResolution}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop layout */}
+            <div className="hidden sm:flex items-center w-full h-[72px]">
+                <div className="flex items-center w-[30%] pr-[24px] gap-3">
+                    <div className="bg-[#f9f9f9] h-[60px] w-[70px] overflow-hidden rounded-[8px] flex-shrink-0">
+                        {dispute.orderItem.productImage ? (
+                            <Image
+                                src={dispute.orderItem.productImage}
+                                alt={'product image'}
+                                width={70}
+                                height={60}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs">
+                                No image
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex flex-col flex-1 min-w-0">
+                        <p className="text-[14px] font-medium text-[#101828] truncate">{dispute.orderItem.productName}</p>
+                        <p className="text-[12px] text-[#667085]">Amount: ₦{Number(dispute.orderItem.totalPrice || 0).toLocaleString()}</p>
+                    </div>
+                </div>
+
+                <div className="flex items-center w-[25%] px-[24px]">
+                    <div className={`px-3 py-1 rounded-[8px] flex items-center justify-center ${getStatusStyle(dispute.status)}`}>
+                        <p className="text-[10px] font-medium">{dispute.status}</p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center text-[#344054] text-[14px] w-[15%] px-[24px]">
+                    <p className="truncate">{dispute.orderItem.vendorName || "Unknown"}</p>
+                </div>
+                
+                <div className="flex items-center justify-center text-[#101828] text-[14px] w-[25%] px-[24px]">
+                    <p className="text-[#101828] text-[12px] truncate">{dispute.reason}</p>
+                </div>
+
+                <div className="flex items-center justify-center w-[5%]">
+                    <DisputeActionsDropdown
+                        onViewDispute={onViewDispute}
+                        disputeStatus={dispute.status}
+                        onAcceptResolution={onAcceptResolution}
                     />
                 </div>
-                <div className="flex flex-col">
-                    <p className="text-[14px] font-medium text-[#101828]">{dispute.orderItem.productName}</p>
-                    <p className="text-[12px] text-[#667085]">Amount: N {dispute.orderItem.totalPrice?.toLocaleString() || "0"}</p>
-                </div>
-            </div>
-
-            <div className="flex items-center w-[25%] px-[24px]">
-                <div className={`w-auto p-3 h-[22px] rounded-[8px] flex items-center justify-center ${
-                    dispute.status === 'PROCESSING'
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : dispute.status === 'PENDING'
-                            ? 'bg-[#FFFAEB] text-[#F99007]'
-                            : 'w-[69px] bg-[#EDEDED] text-[#707070]'
-                }`}>
-                    <p className="text-[10px] font-medium">{dispute.status}</p>
-                </div>
-            </div>
-            <div className="flex items-center text-[#344054] text-[14px] w-[15%] px-[24px]">
-                <p>{dispute.orderItem.vendorName || "Unknown"}</p>
-            </div>
-            <div className="flex items-center justify-center text-[#101828] text-[14px] w-[25%] px-[24px]">
-                <p className="text-[#101828] text-[14px]">{dispute.reason}</p>
-            </div>
-
-            <div className="flex items-center justify-center w-[5%]">
-                <DisputeActionsDropdown
-                    onViewDispute={onViewDispute}
-                    disputeStatus={dispute.status}
-                    onAcceptResolution={onAcceptResolution}
-                />
             </div>
         </div>
     );
@@ -385,126 +452,124 @@ const Disputes = () => {
 
     if (loading) {
         return (
-            <div className="flex flex-col text-center h-64">
-                <MarketPlaceHeader/>
-                <p>Loading disputes...</p>
-            </div>
-        );
-    }
-
-    if (!disputes || disputes.length === 0) {
-        return (
-
-            <div className="flex flex-col text-center h-64">
-                <MarketPlaceHeader/>
-                <p className="mt-10">No disputes found.</p>
-            </div>
+            <>
+                <MarketPlaceHeader />
+                <div className="flex justify-center items-center h-screen">
+                    <p>Loading...</p>
+                </div>
+            </>
         );
     }
 
     return (
         <>
             <MarketPlaceHeader />
-            <div className="h-[48px] w-full border-b-[0.5px] border-[#EDEDED]">
-                <div className="h-[48px] px-25 gap-[8px] items-center flex">
+            <div className="h-[48px] w-full border-y-[0.5px] border-[#EDEDED]">
+                <div className="h-[48px] px-4 sm:px-6 lg:px-25 gap-[8px] items-center flex">
                     <BackButton variant="default" text="Go back" />
-                    <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Disputes</span></p>
+                    <p className="text-[12px] sm:text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Disputes</span></p>
                 </div>
             </div>
-            <div className="px-25 pt-[62px] h-auto w-full">
-                <div className="flex gap-[30px]">
-                    <div className="flex flex-col">
-                        <div className="w-[381px] text-[#022B23] text-[12px] font-medium h-[44px] bg-[#f8f8f8] rounded-[10px] flex items-center px-[8px] justify-between cursor-pointer">
+            <div className="px-4 sm:px-6 lg:px-25 pt-4 sm:pt-8 lg:pt-[62px] h-auto w-full">
+                <div className="flex flex-col lg:flex-row gap-4 lg:gap-[30px]">
+                    {/* Sidebar - Hidden on mobile, shown as horizontal tabs on tablet */}
+                    <div className="flex flex-col lg:block">
+                        <div className="w-full lg:w-[381px] text-[#022B23] text-[12px] font-medium h-[44px] bg-[#f8f8f8] rounded-[10px] flex items-center px-[8px] justify-between mb-2 lg:mb-0">
                             <p>Go to profile</p>
-                            <Image src={arrowRight} alt={'arrow right'}/>
+                            <Image src={arrowRight} alt={'image'}/>
                         </div>
-                        <div className="flex flex-col h-auto w-[381px] mt-[6px] rounded-[12px] border border-[#eeeeee]">
-                            <div
-                                onClick={() => router.push("/buyer/wishlist")}
-                                className="w-full text-[#022B23] text-[12px] h-[40px] rounded-t-[12px] flex items-center px-[8px] cursor-pointer">
+                        <div className="flex flex-row lg:flex-col h-auto w-full lg:w-[381px] mt-0 lg:mt-[6px] rounded-[12px] border border-[#eeeeee] overflow-hidden">
+                            <div onClick={() => {router.push("/buyer/wishlist")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] lg:rounded-t-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
                                 <p>Wishlist</p>
                             </div>
-                            <div
-                                onClick={() => router.push("/buyer/orders")}
-                                className="w-full text-[#022B23] text-[12px] h-[40px] flex items-center px-[8px] cursor-pointer"
-                            >
+                            <div onClick={() => {router.push("/buyer/orders")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer hover:bg-gray-50">
                                 <p>My orders</p>
                             </div>
-                            <div
-                                onClick={() => router.push("/buyer/disputes")}
-                                className="w-full bg-[#f8f8f8] font-medium text-[#022B23] text-[12px] h-[40px] rounded-b-[12px] flex items-center px-[8px] cursor-pointer"
-                            >
+                            <div onClick={() => {router.push("/buyer/disputes")}} className="flex-1 lg:w-full text-[#022B23] text-[12px] h-[40px] font-medium bg-[#f8f8f8] lg:rounded-b-[12px] flex items-center justify-center lg:justify-start px-[8px] cursor-pointer">
                                 <p>Order disputes</p>
                             </div>
                         </div>
                     </div>
-                    <div className="flex flex-col w-[80%] gap-[24px]">
-                        <p className="text-[#000000] text-[16px] font-medium">My Order disputes</p>
 
+                    {/* Main content */}
+                    <div className="flex flex-col w-full lg:w-[779px] gap-4 lg:gap-[24px]">
+                        <p className="text-[#000000] text-[14px] sm:text-[16px] font-medium">My disputes ({disputes.length})</p>
                         <div className="border-[0.5px] border-[#ededed] rounded-[12px] mb-[50px]">
-                            <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                                <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
-                                    <p className="text-[#667085] font-medium text-[12px]">Products</p>
+                            {currentDisputes.length === 0 ? (
+                                <div className="flex items-center justify-center h-[100px] sm:h-[151px] text-[#3D3D3D] text-[14px]">
+                                    <p>No disputes yet</p>
                                 </div>
-                                <div className="flex justify-center items-center px-[24px] w-[25%] py-[12px]">
-                                    <p className="text-[#667085] font-medium text-[12px]">Status</p>
-                                </div>
-                                <div className="flex items-center px-[24px] w-[15%] py-[12px]">
-                                    <p className="text-[#667085] font-medium text-[12px]">Customer</p>
-                                </div>
-                                <div className="flex items-center justify-center px-[15px] w-[25%] py-[12px]">
-                                    <p className="text-[#667085] font-medium text-[12px]">Reason</p>
-                                </div>
-                                <div className="w-[5%]"></div>
-                            </div>
-
-                            <div className="flex flex-col">
-                                {currentDisputes.map((dispute, index) => (
-                                    <DisputeTableRow
-                                        key={dispute.id}
-                                        dispute={dispute}
-                                        isLast={index === currentDisputes.length - 1}
-                                        onViewDispute={() => handleViewDispute(dispute)}
-                                        onAcceptResolution={() => handleAcceptResolution(dispute.id)}
-                                    />
-                                ))}
-                            </div>
-                            {/* Pagination controls */}
-                            {disputes.length > disputesPerPage && (
-                                <div className="flex justify-center mt-4 mb-[50px]">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                                            disabled={currentPage === 1}
-                                            className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
-                                        >
-                                            Previous
-                                        </button>
-
-                                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                            <button
-                                                key={page}
-                                                onClick={() => setCurrentPage(page)}
-                                                className={`px-3 py-1 rounded-md ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
-                                            >
-                                                {page}
-                                            </button>
-                                        ))}
-
-                                        <button
-                                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                                            disabled={currentPage === totalPages}
-                                            className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
-                                        >
-                                            Next
-                                        </button>
+                            ) : (
+                                <>
+                                    {/* Desktop table header */}
+                                    <div className="hidden sm:flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
+                                        <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
+                                            <p className="text-[#667085] font-medium text-[12px]">Products</p>
+                                        </div>
+                                        <div className="flex justify-center items-center px-[24px] w-[25%] py-[12px]">
+                                            <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                                        </div>
+                                        <div className="flex items-center px-[24px] w-[15%] py-[12px]">
+                                            <p className="text-[#667085] font-medium text-[12px]">Vendor</p>
+                                        </div>
+                                        <div className="flex items-center justify-center px-[15px] w-[25%] py-[12px]">
+                                            <p className="text-[#667085] font-medium text-[12px]">Reason</p>
+                                        </div>
+                                        <div className="w-[5%]"></div>
                                     </div>
-                                </div>
+
+                                    <div className="flex flex-col">
+                                        {currentDisputes.map((dispute, index) => (
+                                            <DisputeTableRow
+                                                key={dispute.id}
+                                                dispute={dispute}
+                                                isLast={index === currentDisputes.length - 1}
+                                                onViewDispute={() => handleViewDispute(dispute)}
+                                                onAcceptResolution={() => handleAcceptResolution(dispute.id)}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Pagination controls */}
+            {disputes.length > disputesPerPage && (
+                <div className="flex justify-center mb-4 px-4">
+                    <div className="flex items-center gap-4 sm:gap-8 lg:gap-[70px] justify-between w-full max-w-md">
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className={`px-2 sm:px-3 py-1 rounded-md text-sm ${currentPage === 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                        >
+                            Previous
+                        </button>
+
+                        <div className="flex items-center gap-1 sm:gap-[5px] overflow-x-auto">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`px-2 sm:px-3 py-1 rounded-md text-sm flex-shrink-0 ${currentPage === page ? 'bg-[#022B23] text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className={`px-2 sm:px-3 py-1 rounded-md text-sm ${currentPage === totalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#022B23] text-white hover:bg-[#033a30]'}`}
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {selectedDispute && (
                 <DisputeDetailsModal

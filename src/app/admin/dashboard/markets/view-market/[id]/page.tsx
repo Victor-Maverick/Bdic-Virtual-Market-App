@@ -1,7 +1,6 @@
 'use client'
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import searchImg from "../../../../../../../public/assets/images/search-normal.png";
 import arrowDown from "../../../../../../../public/assets/images/arrow-down.svg";
 import { use, useCallback, useEffect, useRef, useState } from "react";
 import EditMarketLineModal from "@/components/editMarketLineModal";
@@ -212,7 +211,6 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
     const [isUpdateMarketModalOpen, setIsUpdateMarketModalOpen] = useState(false);
     const [isDeactivateModalOpen, setIsDeactivateModalOpen] = useState(false);
     const [transactionCount, setTransactionCount] = useState<number>(0);
-    const [transactionLoading, setTransactionLoading] = useState(false);
     const { id } = use<PageParams>(params);
     const [currentSectionPage, setCurrentSectionPage] = useState(1);
     const SECTIONS_PER_PAGE = 5;
@@ -252,17 +250,14 @@ const ViewMarket = ({ params }: { params: Promise<PageParams> }) => {
 
     const fetchTransactionCount = useCallback(async () => {
         try {
-            setTransactionLoading(true);
             const response = await axios.get(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/getMarketTransactionCount?marketId=${id}`
             );
             setTransactionCount(response.data);
-            console.log("Transaction count: ", response.data)
+            console.log("Transaction count: ", transactionCount);
         } catch (err) {
             console.error("Error fetching market transaction count:", err);
             toast.error("Failed to fetch transaction count");
-        } finally {
-            setTransactionLoading(false);
         }
     }, [id]);
 

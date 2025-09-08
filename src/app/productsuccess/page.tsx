@@ -133,17 +133,19 @@ const SuccessPage = () => {
                     `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/buy-product?productId=${transactionData.productId}`,
                     {
                         buyerEmail: session?.user.email,
-                        deliveryMethod: 'pickup',
-                        address: 'Shop',
-                        transRef: transRef
+                        deliveryMethod: transactionData.deliveryMethod || 'pickup',
+                        deliveryFee: 0,
+                        address: transactionData.address || 'Shop',
+                        transRef: transRef,
+                        phoneNumber: transactionData.phoneNumber || ''
                     }
                 );
 
                 setOrderDetails({
-                    orderId: orderResponse.data.orderNumber,
+                    orderId: orderResponse.data.orderNumber || orderResponse.data,
                     productName: transactionData.productName,
-                    deliveryOption: 'Pickup at market',
-                    deliveryAddress: 'Shop 2C, Modern market, Makurdi',
+                    deliveryOption: transactionData.deliveryMethod === 'pickup' ? 'Pickup at shop' : 'Home delivery',
+                    deliveryAddress: transactionData.address || 'Shop address',
                     amountPaid: verificationResponse.data.data.transAmount
                 });
 

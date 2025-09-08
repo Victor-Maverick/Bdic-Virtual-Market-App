@@ -1,7 +1,8 @@
 'use client'
 import {useEffect, useRef, useState} from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 import Image from "next/image";
 import { Toaster, toast } from 'react-hot-toast';
 import arrowDown from "../../../public/assets/images/arrow-down.svg";
@@ -45,128 +46,6 @@ interface ProductActionsDropdownProps {
     onViewOrder: (orderNumber: string) => void;
 }
 
-const OrderModal = ({
-                        order,
-                        onClose,
-                    }: {
-    order: OrderResponse | null;
-    onClose: () => void;
-}) => {
-    if (!order) return null;
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'DELIVERED':
-                return 'bg-green-100 text-green-800';
-            case 'SHIPPED':
-                return 'bg-blue-100 text-blue-800';
-            case 'PROCESSING':
-                return 'bg-yellow-100 text-yellow-800';
-            case 'PENDING':
-                return 'bg-gray-100 text-gray-800';
-            case 'DECLINED':
-                return 'bg-red-100 text-red-800';
-            default:
-                return 'bg-gray-200 text-gray-800';
-        }
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
-            <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                <div className="flex justify-between items-center border-b pb-4 mb-4">
-                    <h2 className="text-xl font-semibold">Order Details</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
-                        &times;
-                    </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <h3 className="text-lg font-medium mb-2">Order #{order.orderNumber}</h3>
-                        <p className="text-gray-600 mb-4">
-                            {new Date(order.createdAt).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                            })}
-                        </p>
-
-                        <div className="mb-6">
-                            <h4 className="font-semibold mb-2">Products</h4>
-                            <div className="space-y-3">
-                                {order.items.map((item) => (
-                                    <div key={item.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden">
-                                                <Image
-                                                    src={item.productImage}
-                                                    alt={item.productName}
-                                                    width={64}
-                                                    height={64}
-                                                    className="w-full h-full object-cover"
-                                                />
-                                            </div>
-                                            <div>
-                                                <p className="font-medium">{item.productName}</p>
-                                                <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                                            </div>
-                                        </div>
-                                        <p className="font-medium">₦{item.totalPrice.toLocaleString()}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <div className="space-y-4 mb-6">
-                            <div className="flex justify-between">
-                                <p className="text-gray-600">Status:</p>
-                                <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(order.status)}`}>
-                                    {order.status}
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-gray-600">Delivery Method:</p>
-                                <p className="font-medium capitalize">{order.deliveryInfo?.method || 'N/A'}</p>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-gray-600">Order Amount:</p>
-                                <p className="font-medium">₦{order.totalAmount.toLocaleString()}</p>
-                            </div>
-                            <div className="flex justify-between">
-                                <p className="text-gray-600">Delivery Fee:</p>
-                                <p className="font-medium">₦{order.deliveryFee.toLocaleString()}</p>
-                            </div>
-                            <div className="flex justify-between border-t pt-3">
-                                <p className="text-gray-600 font-medium">Total:</p>
-                                <p className="font-bold">₦{order.grandTotal.toLocaleString()}</p>
-                            </div>
-                        </div>
-
-                        {order.deliveryInfo?.address && (
-                            <div className="border-t pt-4">
-                                <h4 className="font-semibold mb-2">Delivery Address</h4>
-                                <p className="text-gray-600">{order.deliveryInfo.address}</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-
-                <div className="flex justify-end mt-6">
-                    <button
-                        onClick={onClose}
-                        className="px-4 py-2 bg-[#022B23] text-white rounded-md hover:bg-[#033a30]"
-                    >
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
 const ProductActionsDropdown = ({
                                     children,
                                     orderNumber,
@@ -175,12 +54,10 @@ const ProductActionsDropdown = ({
                                     onProcessOrder,
                                     onDeclineOrder,
                                     onShipOrder,
-                                    onViewOrder // eslint-disable-line @typescript-eslint/no-unused-vars
+                                    onViewOrder
                                 }: ProductActionsDropdownProps) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [showOrderModal, setShowOrderModal] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const [currentOrder, setCurrentOrder] = useState<OrderResponse | null>(null);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -200,27 +77,7 @@ const ProductActionsDropdown = ({
 
             // For view action, we don't need itemIds
             if (action === 'view') {
-                // Find the full order details (you might need to fetch this or pass it down)
-                const orderDetails: OrderResponse = {
-                    id: 0, // Example - should be passed from parent
-                    orderNumber,
-                    status: orderStatus,
-                    items,
-                    buyerEmail: '', // Example - should be passed from parent
-                    // Add other necessary order details here
-                    // This is a simplified version - you should pass the full order object
-                    // or fetch it when needed
-                    deliveryInfo: { method: 'Standard', address: '' }, // Example
-                    totalAmount: items.reduce((sum, item) => sum + item.totalPrice, 0),
-                    deliveryFee: 0, // Example
-                    grandTotal: items.reduce((sum, item) => sum + item.totalPrice, 0), // Example
-                    createdAt: new Date().toISOString(), // Example
-                    isParentOrder: false, // Example
-                    shopId: 0, // Example
-                    shopOrdersCount: 0 // Example
-                };
-                setCurrentOrder(orderDetails);
-                setShowOrderModal(true);
+                onViewOrder(orderNumber);
                 setIsOpen(false);
                 return;
             }
@@ -313,7 +170,15 @@ const ProductActionsDropdown = ({
                                 Ship order
                             </li>
                         )}
-                        {(orderStatus === OrderStatus.SHIPPED || orderStatus === OrderStatus.DELIVERED) && (
+                        {orderStatus === OrderStatus.SHIPPED && (
+                            <li
+                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                                onClick={(e) => handleActionClick(e, 'view')}
+                            >
+                                View order
+                            </li>
+                        )}
+                        {orderStatus === OrderStatus.DELIVERED && (
                             <li
                                 className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
                                 onClick={(e) => handleActionClick(e, 'view')}
@@ -324,17 +189,9 @@ const ProductActionsDropdown = ({
                     </ul>
                 </div>
             )}
-
-            {showOrderModal && currentOrder && (
-                <OrderModal
-                    order={currentOrder}
-                    onClose={() => setShowOrderModal(false)}
-                />
-            )}
         </div>
     );
 };
-
 
 
 const DisputeDetailsModal = ({
@@ -997,7 +854,19 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
         return <div className="p-4 text-center">No orders found.</div>;
     }
 
-
+    if (filteredOrders.length === 0) {
+        return (
+            <div className="p-4 text-center">
+                No orders found for the selected filter.
+                <button
+                    onClick={() => setFilter('all')}
+                    className="mt-2 text-[#022B23] hover:underline"
+                >
+                    Clear filters
+                </button>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-col gap-[50px]">
@@ -1042,17 +911,13 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
                 <div className="flex flex-col">
                     {filteredOrders.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-10">
-                            <p className="text-[#667085] text-[14px] mb-4">
-                                {filter === 'all' ? 'No orders found' : 'No orders found for the selected filter'}
-                            </p>
-                            {filter !== 'all' && (
-                                <button
-                                    onClick={() => setFilter('all')}
-                                    className="text-[#022B23] text-[14px] font-medium hover:underline"
-                                >
-                                    Clear filters
-                                </button>
-                            )}
+                            <p className="text-[#667085] text-[14px] mb-4">No orders</p>
+                            <button
+                                onClick={() => setFilter('all')}
+                                className="text-[#022B23] text-[14px] font-medium hover:underline"
+                            >
+                                Clear filters
+                            </button>
                         </div>
                     ) : (
                         currentOrders.map((order, index) => (
@@ -1282,6 +1147,8 @@ const OrderClient = () => {
 
     return (
         <>
+            <DashboardHeader />
+            <DashboardOptions />
             <div className="flex flex-col">
                 <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
                     <div className="w-[359px] h-[52px] gap-[24px] flex items-end">

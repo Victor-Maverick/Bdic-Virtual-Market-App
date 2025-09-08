@@ -2,8 +2,6 @@
 
 import React, { use } from 'react';
 
-import VideoCallButton from '@/components/VideoCallButton';
-
 interface PageParams {
   id: string;
 }
@@ -96,14 +94,14 @@ const ProductDetailsPage = ({ params }: { params: Promise<PageParams> }) => {
                       </button>
 
                       {/* Video Call Button */}
-                      <VideoCallButton
-                        vendorEmail={mockProduct.vendor.email}
-                        productId={mockProduct.id}
-                        shopId={mockProduct.vendor.shopId}
-                        productName={mockProduct.name}
-                        shopName={mockProduct.vendor.name}
-                        variant="primary"
-                      />
+                      {/*<VideoCallButton*/}
+                      {/*  vendorEmail={mockProduct.vendor.email}*/}
+                      {/*  productId={mockProduct.id}*/}
+                      {/*  shopId={mockProduct.vendor.shopId}*/}
+                      {/*  productName={mockProduct.name}*/}
+                      {/*  shopName={mockProduct.vendor.name}*/}
+                      {/*  variant="primary"*/}
+                      {/*/>*/}
                     </div>
                   </div>
                 </div>

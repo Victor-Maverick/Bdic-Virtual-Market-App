@@ -16,6 +16,8 @@ interface CheckoutData {
     deliveryMethod: 'pickup' | 'delivery';
     address: string;
     transRef: string;
+    phoneNumber?: string;
+    deliveryFee?: number;
 }
 
 interface CartContextType {

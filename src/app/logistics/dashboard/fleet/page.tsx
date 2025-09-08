@@ -217,6 +217,7 @@ const Fleet = () => {
                         logisticsService.getAllCompanyRiders(session.user.email),
                     ])
                     setTotalFleetCount(totalFleet)
+                    console.log("Fleet count: ",totalFleetCount);
                     setBikesCount(bikes)
                     setTrucksCount(trucks)
                     setRidersCount(riders)

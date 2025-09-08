@@ -2,7 +2,10 @@
 
 import React from 'react';
 import { useSession } from 'next-auth/react';
-import VendorCallNotifications from './VendorCallNotifications';
+import { useTwilioCall } from '../hooks/useTwilioCall';
+import CallNotificationBadge from './CallNotificationBadge';
+import TwilioCallModal from './TwilioCallModal';
+import { twilioCallService } from '../services/twilioCallService';
 
 interface VendorVideoCallWrapperProps {
   children: React.ReactNode;
@@ -10,25 +13,68 @@ interface VendorVideoCallWrapperProps {
 
 const VendorVideoCallWrapper: React.FC<VendorVideoCallWrapperProps> = ({ children }) => {
   const { data: session } = useSession();
+  const {
+    incomingCall,
+    currentCall,
+    isCallModalOpen,
+    dismissIncomingCall,
+    closeCallModal
+  } = useTwilioCall();
 
-  // Only show for vendors
-  const isVendor = session?.user?.roles?.includes('VENDOR');
+  const handleAcceptCall = async () => {
+    if (!incomingCall || !session?.user?.email) return;
 
-  // Debug logging
-  React.useEffect(() => {
-    if (session?.user) {
-      console.log('👤 User session:', {
-        email: session.user.email,
-        roles: session.user.roles,
-        isVendor: isVendor
-      });
+    try {
+      const response = await twilioCallService.answerCall(incomingCall.id, session.user.email);
+      
+      // Open call modal with vendor's access token
+      window.dispatchEvent(new CustomEvent('openTwilioCall', {
+        detail: {
+          call: response,
+          isInitiator: false
+        }
+      }));
+
+      dismissIncomingCall();
+    } catch (error) {
+      console.error('Failed to answer call:', error);
+      dismissIncomingCall();
     }
-  }, [session, isVendor]);
+  };
+
+  const handleRejectCall = async () => {
+    if (!incomingCall || !session?.user?.email) return;
+
+    try {
+      await twilioCallService.rejectCall(incomingCall.id, session.user.email);
+    } catch (error) {
+      console.error('Failed to reject call:', error);
+    }
+
+    dismissIncomingCall();
+  };
 
   return (
     <>
       {children}
-      {isVendor && <VendorCallNotifications />}
+      
+      {/* Call Notifications - Show badge for vendor pages */}
+      {incomingCall && (
+        <CallNotificationBadge
+          incomingCall={incomingCall}
+          onAccept={handleAcceptCall}
+          onReject={handleRejectCall}
+        />
+      )}
+      
+      {/* Call Modal */}
+      {isCallModalOpen && currentCall && (
+        <TwilioCallModal
+          call={currentCall}
+          isInitiator={currentCall.isInitiator || false}
+          onClose={closeCallModal}
+        />
+      )}
     </>
   );
 };

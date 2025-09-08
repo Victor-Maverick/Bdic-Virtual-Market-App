@@ -1,4 +1,5 @@
 'use client'
+import DashboardHeader from "@/components/dashboardHeader";
 import Image from "next/image";
 import biArrows from "../../../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../../../public/assets/images/arrow-up.svg";
@@ -8,7 +9,7 @@ import archiveImg from "../../../../../public/assets/images/archive.svg";
 import { useCallback, useEffect, useState } from "react";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
-import VendorShopGuard from "@/components/VendorShopGuard";
+import DashboardOptions from "@/components/dashboardOptions";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import FilterDropdown from "@/components/filterDropdown";
@@ -324,7 +325,9 @@ const Transactions = () => {
     };
 
     return (
-        <VendorShopGuard showSubHeader={false}>
+        <>
+            <DashboardHeader />
+            <DashboardOptions />
             <div className="flex flex-col py-[30px] px-25">
                 <div className="flex flex-col gap-[12px]">
                     <p className="text-[#022B23] text-[16px] font-medium">Transaction summary</p>
@@ -456,28 +459,8 @@ const Transactions = () => {
 
                             <div className="flex flex-col">
                                 {loading ? (
-                                    <div className="space-y-4 p-4">
-                                        {[...Array(5)].map((_, i) => (
-                                            <div key={i} className="flex h-[72px] border-b border-[#EAECF0] animate-pulse">
-                                                <div className="flex items-center w-[35%] pr-[24px] gap-3">
-                                                    <div className="bg-gray-200 h-[60px] w-[70px] rounded"></div>
-                                                    <div className="flex flex-col space-y-2">
-                                                        <div className="h-4 bg-gray-200 rounded w-32"></div>
-                                                        <div className="h-3 bg-gray-200 rounded w-20"></div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center w-[30%] px-[20px]">
-                                                    <div className="w-16 h-6 bg-gray-200 rounded"></div>
-                                                </div>
-                                                <div className="flex flex-col w-[15%] px-[16px] justify-center space-y-1">
-                                                    <div className="h-4 bg-gray-200 rounded w-16"></div>
-                                                    <div className="h-3 bg-gray-200 rounded w-12"></div>
-                                                </div>
-                                                <div className="flex flex-col gap-[4px] justify-center w-[20%] px-[16px]">
-                                                    <div className="h-4 bg-gray-200 rounded w-20"></div>
-                                                </div>
-                                            </div>
-                                        ))}
+                                    <div className="flex justify-center items-center h-[200px]">
+                                        <p>Loading transactions...</p>
                                     </div>
                                 ) : currentData.length > 0 ? (
                                     currentData.map((item, index) => (
@@ -604,7 +587,7 @@ const Transactions = () => {
                 isOpen={isSuccessModalOpen}
                 onClose={handleCloseSuccessModal}
             />
-        </VendorShopGuard>
+        </>
     );
 };
 

@@ -7,7 +7,7 @@ import { OnboardingProvider } from '@/context/LogisticsOnboardingContext';
 
 import { UserPresenceProvider } from '@/providers/UserPresenceProvider';
 import { EmailVerificationProvider } from '@/providers/EmailVerificationProvider';
-import { CallProvider } from '@/contexts/CallContext';
+
 import { LogoutProvider } from '@/contexts/LogoutContext';
 import { NavigationProvider } from '@/contexts/NavigationContext';
 import { LoadingProvider } from '@/contexts/LoadingContext';
@@ -16,6 +16,7 @@ import DraggableCartIndicator from "@/components/cartIndicator";
 import LogoutSpinner from "@/components/LogoutSpinner";
 import NavigationSpinner from "@/components/NavigationSpinner";
 import CallManager from "@/components/CallManager";
+
 import { GlobalLoadingOverlay } from "@/components/GlobalLoadingOverlay";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -25,21 +26,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 <LogoutProvider>
                     <NavigationProvider>
                         <EmailVerificationProvider>
-                            <CallProvider>
-                                <OnboardingProvider>
+                            <OnboardingProvider>
                                     <CartProvider>
                                         <UserPresenceProvider>
-                                            <CallManager>
-                                                {children}
-                                                <DraggableCartIndicator />
-                                                <LogoutSpinner />
-                                                <NavigationSpinner />
-                                                <GlobalLoadingOverlay />
-                                            </CallManager>
+                                            {children}
+                                            <DraggableCartIndicator />
+                                            <LogoutSpinner />
+                                            <NavigationSpinner />
+                                            <GlobalLoadingOverlay />
+                                            <CallManager />
                                         </UserPresenceProvider>
                                     </CartProvider>
-                                </OnboardingProvider>
-                            </CallProvider>
+                            </OnboardingProvider>
                         </EmailVerificationProvider>
                     </NavigationProvider>
                 </LogoutProvider>

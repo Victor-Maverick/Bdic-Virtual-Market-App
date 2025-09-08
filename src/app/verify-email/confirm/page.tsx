@@ -67,23 +67,19 @@ const VerifyEmailConfirm = () => {
 
         try {
             const result = await userService.verifyOTP(userEmail, otpValue);
-            
-            if (result.success) {
+             if (result.success) {
                 setToast({
                     show: true,
                     type: "success",
                     message: "Email Verified Successfully",
                     subMessage: "Your account has been verified. Redirecting..."
                 });
-                
-                // Clean up and redirect based on source
                 localStorage.removeItem('verifyEmail');
                 localStorage.removeItem('unverifiedEmail');
-                
-                const from = searchParams.get('from') || 'login';
+                const source = searchParams.get('source');
                 setTimeout(() => {
-                    if (from === 'register') {
-                        router.push('/register/userType');
+                    if (source === 'register') {
+                        router.push(`/register/userType?email=${encodeURIComponent(userEmail)}`);
                     } else {
                         router.push('/login');
                     }

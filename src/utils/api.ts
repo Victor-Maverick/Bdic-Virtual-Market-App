@@ -1,9 +1,21 @@
+//api.ts
 import axios, { AxiosError } from 'axios';
 
 // Initialize axios with proper base URL
 const api = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
 });
+
+export interface Bank {
+    name: string;
+    code: string;
+}
+
+export interface BankListResponse {
+    status: boolean;
+    message: string;
+    data: Bank[];
+}
 
 // Utility function for handling errors
 const handleApiError = (error: unknown, context: string) => {
@@ -32,6 +44,21 @@ const handleApiError = (error: unknown, context: string) => {
     } else {
         console.error(`Unexpected error ${context}:`, error);
         throw new Error(`Failed to ${context} due to an unexpected error`);
+    }
+};
+
+export const fetchBanks = async (): Promise<Bank[]> => {
+    try {
+        const response = await api.get<BankListResponse>('payments/banks');
+
+        if (response.data.status && response.data.data) {
+            return response.data.data;
+        } else {
+            throw new Error(response.data.message || 'Failed to fetch banks');
+        }
+    } catch (error) {
+        handleApiError(error, 'fetching banks');
+        return [];
     }
 };
 
@@ -92,6 +119,7 @@ export const addShop = async (shopData: {
     };
     bankInfo: {
         bankName: string;
+        bankCode: string;
         accountNumber: string;
     };
     email: string;
@@ -112,8 +140,9 @@ export const addShop = async (shopData: {
         formData.append('nin', shopData.personalInfo.NIN);
         formData.append('phone', shopData.personalInfo.phone);
 
-        // Bank details
+        // Bank details - now including bank code
         formData.append('bankName', shopData.bankInfo.bankName);
+        formData.append('code', shopData.bankInfo.bankCode); // Add bank code
         formData.append('accountNumber', shopData.bankInfo.accountNumber);
 
         // IDs
@@ -139,5 +168,3 @@ export const addShop = async (shopData: {
         handleApiError(error, 'add shop');
     }
 };
-
-// Add more API functions as needed

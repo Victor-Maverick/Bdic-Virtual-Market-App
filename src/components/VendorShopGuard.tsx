@@ -9,6 +9,7 @@ import DashboardSubHeader from "@/components/dashboardSubHeader";
 import dashSlideImg from "../../public/assets/images/dashSlideImg.png";
 import Toast from "@/components/Toast";
 import { useSearchParams } from "next/navigation";
+import Script from 'next/script';
 
 interface ShopData {
     id: number;
@@ -33,7 +34,7 @@ interface ShopData {
 interface PaymentData {
     authorizationUrl: string;
     reference: string;
-    credoReference: string;
+    accessCode: string;
 }
 
 interface InitializePaymentResponse {
@@ -63,20 +64,50 @@ interface VendorShopGuardProps {
     showSubHeader?: boolean;
 }
 
-const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({ 
-    children, 
-    showHeader = false, 
-    showDashboardOptions = false, 
-    showSubHeader = false 
-}) => {
+// Store the expected payment amount
+const storeActivationAmount = (amount: number) => {
+    const paymentData = {
+        amount,
+        timestamp: new Date().getTime()
+    };
+    localStorage.setItem('expectedActivationPayment', JSON.stringify(paymentData));
+};
+
+// Get the stored payment amount
+const getStoredActivationAmount = (): number | null => {
+    const paymentData = localStorage.getItem('expectedActivationPayment');
+    if (!paymentData) return null;
+
+    const { amount, timestamp } = JSON.parse(paymentData);
+
+    if (new Date().getTime() - timestamp > 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('expectedActivationPayment');
+        return null;
+    }
+
+    return amount;
+};
+
+// Clear the stored amount
+const clearStoredActivationAmount = () => {
+    localStorage.removeItem('expectedActivationPayment');
+};
+
+const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({
+                                                                    children,
+                                                                    showHeader = false,
+                                                                    showDashboardOptions = false,
+                                                                    showSubHeader = false
+                                                                }) => {
     const [shopData, setShopData] = useState<ShopData | null>(null);
     const [loading, setLoading] = useState(true);
     const [activating, setActivating] = useState(false);
+    const [isVerifying, setIsVerifying] = useState(false);
     const [paymentError, setPaymentError] = useState<string | null>(null);
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session } = useSession();
-    
+
     // Toast state
     const [showToast, setShowToast] = useState(false);
     const [toastType, setToastType] = useState<"success" | "error">("success");
@@ -136,24 +167,78 @@ const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({
             console.error('Error verifying shop status:', error);
             return false;
         }
-        finally {
-            router.replace("/vendor/dashboard", undefined)
+    }, []);
+
+    const initializePayment = async (): Promise<PaymentData> => {
+        if (!session?.user?.email) {
+            throw new Error('User session not available. Please try again.');
         }
-    }, [router]);
+
+        try {
+            const requestData = {
+                email: session.user.email,
+                amount: 5000,
+                currency: 'NGN',
+                callbackUrl: `${window.location.origin}/vendor/dashboard`,
+                paymentType: "SHOP_ACTIVATION"
+            };
+
+            storeActivationAmount(5000);
+
+            const response = await axios.post<InitializePaymentResponse>(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
+                requestData,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    timeout: 30000,
+                }
+            );
+
+            const paymentResponse = response.data;
+
+            if (paymentResponse.status === 'true') {
+                if (!paymentResponse.data?.accessCode) {
+                    throw new Error('Payment initialization successful but access code not found');
+                }
+                return paymentResponse.data;
+            } else {
+                throw new Error(paymentResponse.message || 'Payment initialization failed');
+            }
+        } catch (error) {
+            console.error('Payment initialization error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+            showErrorToast('Payment Error', errorMessage);
+            throw error;
+        }
+    };
 
     const verifyPayment = useCallback(async (transRef: string) => {
+        setIsVerifying(true);
+        setPaymentError(null);
+
         try {
             const response = await axios.get<VerifyPaymentResponse>(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify/${transRef}`,
-                {timeout: 30000}
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify?reference=${transRef}`,
+                { timeout: 20000 }
             );
 
             if (response.data.data) {
-                if (session?.user.email) {
+                const paymentData = response.data.data;
+                const expectedAmount = getStoredActivationAmount();
+
+                if (expectedAmount && Math.abs(paymentData.amount - expectedAmount) > 0.01) {
+                    throw new Error('Payment amount does not match expected amount');
+                }
+
+                if (session?.user?.email) {
                     const shopVerified = await verifyShopStatus(session.user.email);
                     if (shopVerified) {
+                        clearStoredActivationAmount();
                         showSuccessToast('Payment Successful', 'Your shop has been activated successfully');
                         await fetchShopData();
+                        router.replace("/vendor/dashboard", undefined);
                     } else {
                         throw new Error('Shop verification failed');
                     }
@@ -168,72 +253,48 @@ const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({
             const errorMessage = error instanceof Error ? error.message : 'Payment verification failed';
             setPaymentError(errorMessage);
             showErrorToast('Payment Error', errorMessage);
+        } finally {
+            setIsVerifying(false);
         }
-    }, [session, fetchShopData, verifyShopStatus]);
+    }, [session, fetchShopData, verifyShopStatus, router]);
 
-    useEffect(() => {
-        const transRef = searchParams.get('transRef');
-        if (transRef) {
-            verifyPayment(transRef);
-        }
-    }, [searchParams, verifyPayment]);
-
-    const initializePayment = async () => {
-        if (!session?.user?.email) {
-            showErrorToast('Error', 'User email not found');
+    const handleActivateShop = async () => {
+        if (!session) {
+            showErrorToast('Authentication Error', 'Please log in to proceed with payment');
+            localStorage.setItem('preAuthUrl', window.location.pathname);
+            router.push('/login');
             return;
         }
 
         setActivating(true);
-        setPaymentError(null);
 
         try {
-            const requestData = {
-                email: session.user.email,
-                amount: 500000,
-                currency: 'NGN',
-                callbackUrl: `${window.location.origin}/vendor/dashboard`,
-                paymentType: 'SHOP_ACTIVATION'
-            };
+            const paymentData = await initializePayment();
 
-            const response = await axios.post<InitializePaymentResponse>(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/initialize`,
-                requestData,
-                {
-                    headers: {'Content-Type': 'application/json'},
-                    timeout: 30000,
-                }
-            );
-
-            const paymentResponse = response.data;
-
-            if (paymentResponse.status === '200' || paymentResponse.message === 'Successfully processed') {
-                const authorizationUrl = paymentResponse.data?.authorizationUrl;
-
-                if (!authorizationUrl) {
-                    throw new Error('Authorization URL not found');
-                }
-
-                showSuccessToast('Payment Initialized', 'Redirecting to payment page...');
-                setTimeout(() => {
-                    window.location.href = authorizationUrl;
-                }, 2000);
-            } else {
-                throw new Error(paymentResponse.message || 'Payment initialization failed');
-            }
+            // Use Paystack InlineJS to resume the transaction
+            const paystack = new window.PaystackPop();
+            paystack.resumeTransaction(paymentData.accessCode, {
+                onSuccess: (transaction: { reference: string }) => {
+                    verifyPayment(transaction.reference);
+                },
+                onCancel: () => {
+                    showErrorToast('Payment Cancelled', 'You cancelled the payment. Please try again.');
+                    setActivating(false);
+                },
+            });
         } catch (error) {
-            console.error('Payment initialization error:', error);
             const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
-            setPaymentError(errorMessage);
             showErrorToast('Payment Error', errorMessage);
-        } finally {
             setActivating(false);
         }
     };
 
-    const handleActivateShop = async () => {
-        await initializePayment();
-    };
+    useEffect(() => {
+        const transRef = searchParams.get('reference');
+        if (transRef && session) {
+            verifyPayment(transRef);
+        }
+    }, [searchParams, verifyPayment, session]);
 
     if (loading) {
         return (
@@ -250,14 +311,14 @@ const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({
     if (!shopData) {
         return (
             <>
-                {showHeader && <DashboardHeader/>}
-                {showDashboardOptions && <DashboardOptions/>}
+                <DashboardHeader/>
+                <DashboardOptions/>
                 {showSubHeader && (
-                    <DashboardSubHeader 
-                        welcomeText={"Hey, welcome"} 
+                    <DashboardSubHeader
+                        welcomeText={"Hey, welcome"}
                         description={"Explore your shop, products, sales and orders"}
-                        background={'#ECFDF6'} 
-                        image={dashSlideImg} 
+                        background={'#ECFDF6'}
+                        image={dashSlideImg}
                         textColor={'#05966F'}
                     />
                 )}
@@ -278,16 +339,26 @@ const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({
     if (shopData.status === 'NOT_VERIFIED') {
         return (
             <>
+                <Script src="https://js.paystack.co/v2/inline.js" strategy="afterInteractive" />
                 {showHeader && <DashboardHeader/>}
                 {showDashboardOptions && <DashboardOptions/>}
                 {showSubHeader && (
-                    <DashboardSubHeader 
-                        welcomeText={"Hey, welcome"} 
+                    <DashboardSubHeader
+                        welcomeText={"Hey, welcome"}
                         description={"Explore your shop, products, sales and orders"}
-                        background={'#ECFDF6'} 
-                        image={dashSlideImg} 
+                        background={'#ECFDF6'}
+                        image={dashSlideImg}
                         textColor={'#05966F'}
                     />
+                )}
+                {isVerifying && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+                        <div className="bg-white p-6 shadow-lg max-w-md w-full mx-4 text-center">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">Verifying Payment</h3>
+                            <p className="text-gray-600">Please wait while we verify your payment...</p>
+                        </div>
+                    </div>
                 )}
                 <div className="flex flex-col items-center justify-center h-screen">
                     <p className="mb-4">Your shop is not yet activated</p>
@@ -322,11 +393,11 @@ const VendorShopGuardContent: React.FC<VendorShopGuardProps> = ({
             {showHeader && <DashboardHeader/>}
             {showDashboardOptions && <DashboardOptions/>}
             {showSubHeader && (
-                <DashboardSubHeader 
-                    welcomeText={"Hey, welcome"} 
+                <DashboardSubHeader
+                    welcomeText={"Hey, welcome"}
                     description={"Explore your shop, products, sales and orders"}
-                    background={'#ECFDF6'} 
-                    image={dashSlideImg} 
+                    background={'#ECFDF6'}
+                    image={dashSlideImg}
                     textColor={'#05966F'}
                 />
             )}

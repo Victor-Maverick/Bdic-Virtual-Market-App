@@ -1,6 +1,7 @@
 // components/header.tsx
 import Image from "next/image";
 import headerIcon from "@/../public/assets/images/headerImg.png";
+import PendingCallsBadge from "@/components/PendingCallsBadge";
 
 
 export function Header() {
@@ -13,6 +14,7 @@ export function Header() {
                     <p className="text-[#022B23] text-[12px] md:text-[14px] font-medium">Admin</p>
                 </div>
             </div>
+            <PendingCallsBadge className="hidden sm:flex" />
         </div>
     );
 }

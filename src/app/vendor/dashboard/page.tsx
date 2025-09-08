@@ -11,8 +11,6 @@ import arrowUp from '../../../../public/assets/images/arrow-up.svg'
 import {useRouter} from "next/navigation";
 import {useSession} from "next-auth/react";
 import {useEffect, useState, useCallback} from "react";
-// import DashboardOptions from "@/components/dashboardOptions";
-// import dashSlideImg from "../../../../public/assets/images/dashSlideImg.png";
 import axios from "axios";
 import {useSearchParams} from "next/navigation";
 import Toast from "@/components/Toast";
@@ -38,18 +36,6 @@ interface ShopData {
     firstName: string;
     status: string;
 }
-
-// interface PaymentData {
-//     authorizationUrl: string;
-//     reference: string;
-//     credoReference: string;
-// }
-
-// interface InitializePaymentResponse {
-//     status: string;
-//     message: string;
-//     data?: PaymentData;
-// }
 
 interface VerifyPaymentResponse {
     status: string;
@@ -129,7 +115,6 @@ const DashBoard = () => {
                 const response = await axios.get(`${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`);
                 const data = response.data;
                 setShopData(data);
-
                 // Fetch all related data after shop data is loaded
                 if (data.id) {
                     const [

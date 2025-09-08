@@ -2,7 +2,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-
+import DashboardHeader from "@/components/dashboardHeader";
+import DashboardOptions from "@/components/dashboardOptions";
 import ShopInformation from '@/components/productsView';
 import NewProductView from '@/components/newProductView';
 import ReviewsView from '@/components/reviewsView';
@@ -23,6 +24,7 @@ interface ShopData {
     bankName: string;
     accountNumber: string;
     marketId: number;
+    marketSectionId: number;
     firstName: string;
     status: string;
     vendorName?: string;
@@ -83,41 +85,55 @@ const ShopClient = () => {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <p>Loading...</p>
-            </div>
+            <>
+                <DashboardHeader />
+                <div className="flex justify-center items-center h-screen">
+                    <p>Loading...</p>
+                </div>
+            </>
         );
     }
 
     if (!shopData) {
         return (
-            <div className="flex flex-col items-center justify-center h-screen">
-                <p className="mb-4">You need to set up your shop first</p>
-                <button
-                    onClick={() => router.push('/vendor/setup-shop/shop-info')}
-                    className="h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px]"
-                >
-                    Setup Shop
-                </button>
-            </div>
+            <>
+                <DashboardHeader />
+                <DashboardOptions />
+                <div className="flex flex-col items-center justify-center h-screen">
+                    <p className="mb-4">You need to set up your shop first</p>
+                    <button
+                        onClick={() => router.push('/vendor/setup-shop/shop-info')}
+                        className="h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px]"
+                    >
+                        Setup Shop
+                    </button>
+                </div>
+            </>
         );
     }
 
     if (shopData.status === 'NOT_VERIFIED') {
         return (
-            <div className="flex flex-col items-center justify-center h-screen">
-                <p className="mb-4">Your shop needs to be verified before you can access this page</p>
-                <button
-                    onClick={() => router.push('/vendor/dashboard')}
-                    className="h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px]"
-                >
-                    Go to Dashboard
-                </button>
-            </div>
+            <>
+                <DashboardHeader />
+                <DashboardOptions />
+                <div className="flex flex-col items-center justify-center h-screen">
+                    <p className="mb-4">Your shop needs to be verified before you can access this page</p>
+                    <button
+                        onClick={() => router.push('/vendor/dashboard')}
+                        className="h-[48px] w-[200px] flex items-center justify-center cursor-pointer bg-[#022B23] text-white rounded-[10px]"
+                    >
+                        Go to Dashboard
+                    </button>
+                </div>
+            </>
         );
     }
     return (
         <>
+            <DashboardHeader />
+            <DashboardOptions />
+
             <div className="flex flex-col">
                 <div className="flex border-b border-[#ededed] mb-6 px-[100px]">
                     <div className="w-[273px] h-[52px] gap-[24px] flex items-end">

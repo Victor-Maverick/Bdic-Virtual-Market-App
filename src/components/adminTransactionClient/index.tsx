@@ -301,7 +301,7 @@ const TransactionDetailsModal = ({
 
                 <div className="w-full flex flex-col h-[430px] pt-[20px] pb-[2px]  gap-[30px]">
                     <div className="flex flex-col h-[79px] gap-[6px]">
-                        <p className="text-[16px] font-semibold text-[#022B23]">ID: <span>{transaction.credoReference}</span></p>
+                        <p className="text-[16px] font-semibold text-[#022B23]">ID: <span>{transaction.reference}</span></p>
                         <p className="text-[14px] font-medium text-[#707070]">User: <span className="text-[#000000] underline">{transaction.email}</span></p>
                         <p className="text-[14px] font-medium text-[#707070]">Type: <span className="text-[#000000] underline">{cleanPaymentType(transaction.paymentType)}</span></p>
                     </div>
@@ -329,7 +329,7 @@ const TransactionDetailsModal = ({
                     <div className="w-[97%] px-[22px] flex flex-col gap-[9px] py-[14px] h-[130px] rounded-[24px] border-[1px]  border-[#ededed] ">
                         <p className="text-[16px] text-[#000000] font-medium">Transaction Reference</p>
                         <div className="flex flex-col gap-[5px]">
-                            <p className="text-[14px] text-[#707070]">REFERENCE: {transaction.credoReference}</p>
+                            <p className="text-[14px] text-[#707070]">REFERENCE: {transaction.reference}</p>
                             <p className="text-[14px] text-[#707070]">STATUS: {transaction.status === '0' ? 'Successful' : transaction.status}</p>
                         </div>
                     </div>
@@ -453,7 +453,7 @@ const TransactionTableRow = ({ transaction, isLast }: { transaction: PaymentTran
     return (
         <div className={`flex h-[72px] ${!isLast ? 'border-b border-[#EAECF0]' : ''}`}>
             <div className="flex items-center w-[12%] pl-[16px]">
-                <p className="text-[#101828] text-[10px] font-medium">{transaction.credoReference}</p>
+                <p className="text-[#101828] text-[10px] font-medium">{transaction.reference}</p>
             </div>
 
             <div className="flex items-center justify-center w-[18%] ">

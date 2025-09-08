@@ -1,7 +1,6 @@
 'use client'
 import MarketPlaceHeader from "@/components/marketPlaceHeader";
 import Image from "next/image";
-import marketIcon from "../../../../public/assets/images/market element.png";
 import React, {useState, useEffect, useCallback} from "react";
 
 import arrowRight from '@/../public/assets/images/greyforwardarrow.svg'
@@ -25,7 +24,6 @@ interface WishlistItem {
 }
 
 const Wishlist = () => {
-    const [selectedMarket, setSelectedMarket] = useState("Wurukum");
     const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -52,6 +50,7 @@ const Wishlist = () => {
 
                 const data = await response.json();
                 setWishlistItems(data?.wishList || []);
+                console.log("Wishlist: ", wishlistItems);
             } catch (error) {
                 console.error("Error fetching wishlist:", error);
                 setError("Failed to load wishlist. Please try again later.");
@@ -142,35 +141,7 @@ const Wishlist = () => {
     return (
         <>
             <MarketPlaceHeader />
-            <div className="h-[114px] w-full border-b-[0.5px] border-[#EDEDED]">
-                <div className="h-[66px] w-full flex justify-between items-center px-25 border-t-[0.5px] border-[#ededed]">
-
-
-                    <div className="flex ml-[10px] gap-[2px] p-[2px] h-[52px] items-center justify-between border border-[#ededed] rounded-[4px]">
-                        <div className="bg-[#F9F9F9] text-black px-[8px] rounded-[4px] flex items-center justify-center h-[48px]">
-                            <select className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] rounded-sm text-center w-full focus:outline-none">
-                                <option>Benue State</option>
-                                <option>Enugu State</option>
-                                <option>Lagos State</option>
-                            </select>
-                        </div>
-
-                        <div className="relative">
-                            <div className="flex items-center bg-[#F9F9F9] px-[8px] h-[48px] rounded-[4px]">
-                                <Image src={marketIcon} alt="Market Icon" width={20} height={20} />
-                                <select
-                                    className="bg-[#F9F9F9] text-[#1E1E1E] text-[14px] items-center pr-1 focus:outline-none"
-                                    onChange={(e) => setSelectedMarket(e.target.value)}
-                                    value={selectedMarket}
-                                >
-                                    <option>Wurukum market</option>
-                                    <option>Gboko Market</option>
-                                    <option>Otukpo Market</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div className="h-[48px] w-full border-b-[0.5px] border-[#EDEDED]">
                 <div className="h-[48px] px-25 gap-[8px] items-center flex">
                     <BackButton variant="default" text="Go back" />
                     <p className="text-[14px] text-[#3F3E3E]">Home // <span className="font-medium text-[#022B23]">Wishlist</span></p>

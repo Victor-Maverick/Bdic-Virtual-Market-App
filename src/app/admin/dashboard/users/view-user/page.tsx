@@ -1,8 +1,8 @@
 'use client'
 import iPhone from "../../../../../../public/assets/images/blue14.png";
-import Image, {StaticImageData} from "next/image";
-import {useEffect, useRef, useState} from "react";
-import {useRouter} from "next/navigation";
+import Image, { StaticImageData } from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import arrowBack from "../../../../../../public/assets/images/arrow-right.svg";
 import arrowDown from "../../../../../../public/assets/images/arrow-down.svg";
 import searchImg from "../../../../../../public/assets/images/search-normal.png";
@@ -10,14 +10,14 @@ import searchImg from "../../../../../../public/assets/images/search-normal.png"
 
 const products = [
     { id: 1, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
-    { id: 2, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Disabled", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi"},
+    { id: 2, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Disabled", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
     { id: 3, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
     { id: 4, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
-    { id: 5, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi"},
-    { id: 6, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi"},
-    { id: 7, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi"},
-    { id: 8, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi"},
-    { id: 9, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi"},
+    { id: 5, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
+    { id: 6, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
+    { id: 7, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
+    { id: 8, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
+    { id: 9, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" },
     { id: 10, image: iPhone, name: "iPhone 14 pro max", review: 4.2, status: "Active", salesQty: 72, unitPrice: "840000", salesAmount: "302013000", customerName: "Jude Tersoo", fee: 1200, deliveryAddress: "NO 22. Railway estate, Logo 1,Makurdi" }
 ];
 
@@ -37,8 +37,8 @@ type Product = {
 
 const ProductActionsDropdown = ({
 
-                                    children
-                                }: {
+    children
+}: {
     productId: number;
     children: React.ReactNode;
 }) => {
@@ -100,8 +100,8 @@ const ProductActionsDropdown = ({
 };
 
 const DisputeDetailsModal = ({
-                                 onClose,
-                             }: {
+    onClose,
+}: {
     onClose: () => void;
 }) => {
     return (
@@ -147,7 +147,7 @@ const DisputeDetailsModal = ({
                         <div className="w-[90%] justify-between items-center pr-[15px] h-[72px] flex border-[0.5px] rounded-[14px]  border-[#ededed]">
                             <div className="gap-[10px] flex items-center">
                                 <div className="bg-[#f9f9f9] w-[70px] h-full rounded-tl-[14px] rounded-bl-[14px]">
-                                    <Image src={iPhone} alt={'image'}/>
+                                    <Image src={iPhone} alt={'image'} />
                                 </div>
                                 <div className="flex flex-col">
                                     <p className="text-[#101828] text-[14px] font-medium">iPhone 14 pro max</p>
@@ -209,9 +209,9 @@ const DisputeDetailsModal = ({
 };
 
 const ProductTableRow = ({
-                             product,
-                             isLast
-                         }: {
+    product,
+    isLast
+}: {
     product: Product;
     isLast: boolean
 }) => {
@@ -236,11 +236,10 @@ const ProductTableRow = ({
 
 
                 <div className="flex items-center w-[10%] px-[24px]">
-                    <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${
-                        product.status === 'Active'
-                            ? 'bg-[#ECFDF3] text-[#027A48]'
-                            : 'bg-[#FEF3F2] text-[#FF5050]'
-                    }`}>
+                    <div className={`w-[55px] h-[22px] rounded-[8px] flex items-center justify-center ${product.status === 'Active'
+                        ? 'bg-[#ECFDF3] text-[#027A48]'
+                        : 'bg-[#FEF3F2] text-[#FF5050]'
+                        }`}>
                         <p className="text-[12px] font-medium">{product.status}</p>
                     </div>
                 </div>
@@ -283,14 +282,14 @@ const ProductTableRow = ({
 };
 
 
-const ViewUser = ()=>{
+const ViewUser = () => {
     const router = useRouter();
 
-    return(
+    return (
         <>
             <div className="text-[#707070] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[56px] w-full border-b-[0.5px] border-[#ededed]">
-                <Image src={arrowBack} alt={'image'} width={24} height={24} className="cursor-pointer" onClick={()=>{router.push("/admin/dashboard/markets/view-market")}}/>
-                <p className="cursor-pointer" onClick={()=>{router.push("/admin/dashboard/users")}}>Back to users</p>
+                <Image src={arrowBack} alt={'image'} width={24} height={24} className="cursor-pointer" onClick={() => { router.push("/admin/dashboard/markets/view-market") }} />
+                <p className="cursor-pointer" onClick={() => { router.push("/admin/dashboard/users") }}>Back to users</p>
             </div>
             <div className="text-[#022B23] text-[14px] px-[20px] font-medium gap-[8px] flex items-center h-[49px] w-full border-b-[0.5px] border-[#ededed]">
                 <p>Tersoo Peter</p>
@@ -399,8 +398,8 @@ const ViewUser = ()=>{
                         </div>
 
                         <div className="flex gap-2 items-center bg-[#FFFFFF] border-[0.5px] border-[#F2F2F2] text-black px-4 py-2 shadow-sm rounded-sm">
-                            <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]"/>
-                            <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none"/>
+                            <Image src={searchImg} alt="Search Icon" width={20} height={20} className="h-[20px] w-[20px]" />
+                            <input placeholder="Search" className="w-[175px] text-[#707070] text-[14px] focus:outline-none" />
                         </div>
                     </div>
 

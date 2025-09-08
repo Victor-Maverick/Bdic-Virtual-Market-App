@@ -1,6 +1,6 @@
 'use client';
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import { useState, useEffect } from "react";
 import axios from 'axios';
 import farmGoLogo from "../../../../public/assets/images/farmGoLogo.png";
@@ -18,6 +18,7 @@ type UserTypeOption = 'BUYER' | 'VENDOR';
 
 const UserType = () => {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [selectedUserType, setSelectedUserType] = useState<UserTypeOption | null>(null);
     const [email, setEmail] = useState<string | null>(null);
     const [password, setPassword] = useState<string | null>(null);
@@ -30,20 +31,26 @@ const UserType = () => {
     } | null>(null);
 
     useEffect(() => {
-        // Get email from local storage
+        // Get email from URL params first, then from local storage
+        const urlEmail = searchParams.get('email');
         const storedEmail = localStorage.getItem('userEmail');
         const storedPassword = localStorage.getItem('password');
-        if (storedEmail) {
+
+        if (urlEmail) {
+            setEmail(urlEmail);
+        } else if (storedEmail) {
             setEmail(storedEmail);
-            setPassword(storedPassword)
         }
-    }, [router]);
+
+        if (storedPassword) {
+            setPassword(storedPassword);
+        }
+    }, [router, searchParams]);
 
     const handleBack = () => {
-        // Get email from localStorage and redirect to verification
-        const email = localStorage.getItem('verifyEmail') || localStorage.getItem('userEmail') || '';
         if (email) {
-            router.push(`/verify-email/confirm?email=${encodeURIComponent(email)}`);
+            // Go back to verification with source=register
+            router.push(`/verify-email/confirm?email=${encodeURIComponent(email)}&source=register`);
         } else {
             router.push("/verify-email");
         }
@@ -67,7 +74,6 @@ const UserType = () => {
                 roleName: roleName
             });
 
-            // The backend returns a simple string response, not a structured JSON
             if (response.status === 201) {
                 setToast({
                     show: true,
@@ -76,7 +82,6 @@ const UserType = () => {
                     subMessage: "Redirecting to your dashboard"
                 });
             }
-
             // Redirect based on selected role
             setTimeout(() => {
                 switch(selectedUserType) {

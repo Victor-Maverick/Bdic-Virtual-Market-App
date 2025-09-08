@@ -25,6 +25,7 @@ type MenuOption =
     | 'transactions'
     | 'chats'
     | 'reviews'
+    | 'calls'
     | 'notifications'
     | 'settings';
 
@@ -102,6 +103,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
             '/vendor/dashboard/transactions': 'transactions',
             '/vendor/dashboard/chats': 'chats',
             '/vendor/dashboard/reviews': 'reviews',
+            '/vendor/dashboard/calls': 'calls',
             '/vendor/dashboard/notifications': 'notifications',
             '/vendor/dashboard/settings': 'settings',
         }),
@@ -116,6 +118,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
             transactions: '/vendor/dashboard/transactions',
             chats: '/vendor/dashboard/chats',
             reviews: '/vendor/dashboard/reviews',
+            calls: '/vendor/dashboard/calls',
             notifications: '/vendor/dashboard/notifications',
             settings: '/vendor/dashboard/settings',
         }),
@@ -176,6 +179,7 @@ const DashboardOptions = ({ initialSelected = 'dashboard' }: DashboardOptionsPro
                 isChat: true
             },
             { id: 'reviews', icon: star, label: 'Reviews and Campaigns', widthClass: 'w-[188px]' },
+            { id: 'calls', icon: chatImg, label: 'Calls', widthClass: 'w-[81px]' },
             {
                 id: 'notifications',
                 icon: notificationImg,

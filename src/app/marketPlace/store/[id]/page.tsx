@@ -16,7 +16,7 @@ import shopImg from "../../../../../public/assets/images/shop.png";
 
 import { Star } from 'lucide-react';
 import { toast } from 'react-toastify';
-import CallDropdown from '@/components/CallDropdown';
+import TwilioCallButtons from '@/components/TwilioCallButtons';
 import ChatButton from '@/components/ChatButton';
 import { ProductGridSkeleton } from '@/components/LoadingSkeletons';
 
@@ -315,7 +315,7 @@ const StorePage = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="w-full lg:w-[300px] gap-[10px] sm:gap-[14px] flex flex-col sm:flex-row items-center">
+                            <div className="w-full md:w-full lg:w-full gap-[10px] sm:gap-[14px] flex flex-col sm:flex-row items-center">
                                 <ChatButton
                                     vendorEmail={shopData.vendorEmail || (products.length > 0 ? products[0].vendorEmail : 'vendor@example.com')}
                                     vendorName={shopData.vendorName || shopData.name}
@@ -323,11 +323,12 @@ const StorePage = () => {
                                     shopName={shopData.name}
                                     className="bg-[#ffeebe] text-[#461602] hover:bg-[#ffd700] w-full sm:w-[165px] h-[44px] sm:h-[48px] rounded-[12px] sm:rounded-[14px] text-[14px]"
                                 />
-                                <CallDropdown
+                                <TwilioCallButtons
                                     vendorEmail={shopData.vendorEmail || (products.length > 0 ? products[0].vendorEmail : 'vendor@example.com')}
-                                    shopId={shopData.id}
+                                    vendorName={shopData.vendorName || shopData.name}
                                     shopName={shopData.name}
-                                    className="w-full sm:w-[121px] h-[44px] sm:h-[48px] text-[14px]"
+                                    shopId={shopData.id}
+                                    className="w-full sm:w-auto"
                                 />
                             </div>
                         </div>

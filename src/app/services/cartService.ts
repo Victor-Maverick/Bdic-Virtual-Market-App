@@ -33,6 +33,8 @@ export interface CheckoutData {
     deliveryMethod: 'pickup' | 'delivery';
     address: string;
     transRef: string;
+    phoneNumber?: string;
+    deliveryFee?: number;
 }
 
 // Helper function to get auth token from session

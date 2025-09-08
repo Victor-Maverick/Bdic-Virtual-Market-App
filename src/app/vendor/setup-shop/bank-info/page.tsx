@@ -9,26 +9,21 @@ import {useRouter} from "next/navigation";
 import limeArrow from "../../../../../public/assets/images/green arrow.png";
 import {useState, useEffect} from "react"
 import dashSlideImg from '@/../public/assets/images/dashSlideImg.png'
+import { fetchBanks, Bank } from "@/utils/api";
 
-const banks = [
-    { id: 1, label: "UNITED BANK 0F AFRICA" },
-    { id: 2, label: "FIRST BANK OF NIGERIA" },
-    { id: 3, label: "GT BANK" },
-    { id: 4, label: "FIDELITY BANK" },
-    { id: 5, label: "ZENITH BANK" },
-];
-
-interface BankOption {
+interface BankOption extends Bank {
     id: number;
-    label: string;
 }
 
+// Update DropDown component to accept banks as a prop
 const DropDown = ({
                       selectedOption,
-                      setSelectedOption
+                      setSelectedOption,
+                      banks // Add banks as a prop
                   }: {
     selectedOption: BankOption | null;
     setSelectedOption: (option: BankOption | null) => void;
+    banks: BankOption[]; // Add banks prop
 }) => {
     const [isOpen, setIsOpen] = useState(false);
 
@@ -39,7 +34,7 @@ const DropDown = ({
                 className="border-[1.5px] rounded-[14px] h-[58px] flex justify-between px-[18px] border-[#D1D1D1] items-center cursor-pointer"
             >
                 <p className={`${selectedOption ? "text-[#121212]" : "text-[#BDBDBD]"} text-[16px] font-medium`}>
-                    {selectedOption ? selectedOption.label : "Bank name"}
+                    {selectedOption ? selectedOption.name : "Bank name"}
                 </p>
                 <ChevronDown
                     size={24}
@@ -49,7 +44,7 @@ const DropDown = ({
             </div>
 
             {isOpen && (
-                <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed]">
+                <div className="absolute left-0 mt-2 w-full bg-white text-black rounded-md shadow-lg z-10 border border-[#ededed] max-h-60 overflow-y-auto">
                     <ul className="py-1">
                         {banks.map((option) => (
                             <li
@@ -60,7 +55,7 @@ const DropDown = ({
                                     setIsOpen(false);
                                 }}
                             >
-                                {option.label}
+                                {option.name}
                             </li>
                         ))}
                     </ul>
@@ -122,9 +117,35 @@ const InputField = ({
 const BankInfo = () => {
     const [accountNumber, setAccountNumber] = useState("");
     const [selectedBank, setSelectedBank] = useState<BankOption | null>(null);
+    const [banks, setBanks] = useState<BankOption[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [formValid, setFormValid] = useState(false);
 
     const router = useRouter();
+
+    useEffect(() => {
+        const loadBanks = async () => {
+            try {
+                setIsLoading(true);
+                const bankData = await fetchBanks();
+
+                // Convert bank data to include id for React keys
+                const banksWithIds: BankOption[] = bankData.map((bank, index) => ({
+                    ...bank,
+                    id: index + 1
+                }));
+
+                setBanks(banksWithIds);
+            } catch (error) {
+                console.error("Error loading banks:", error);
+                // You might want to show an error message to the user here
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadBanks();
+    }, []);
 
     // Validate the form whenever inputs change
     useEffect(() => {
@@ -137,9 +158,10 @@ const BankInfo = () => {
             return;
         }
 
-        // Save bank info to localStorage
+        // Save bank info to localStorage - now including bank code
         const bankInfo = {
-            bankName: selectedBank?.label,
+            bankName: selectedBank?.name || "",
+            bankCode: selectedBank?.code || "", // Include bank code
             accountNumber,
         };
 
@@ -182,25 +204,38 @@ const BankInfo = () => {
                     </p>
                 </div>
                 <div className="flex flex-col w-[400px] h-auto gap-[38px]">
-                    <div className="flex flex-col gap-[10px]">
-                        <DropDown selectedOption={selectedBank} setSelectedOption={setSelectedBank} />
-                        <InputField
-                            id="accountNumber"
-                            label="Account number"
-                            value={accountNumber}
-                            onChange={setAccountNumber}
-                            placeholder="Account number"
-                        />
-                    </div>
-                    <div
-                        className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] ${
-                            formValid ? "cursor-pointer hover:bg-[#033a30]" : "opacity-70 cursor-not-allowed"
-                        } transition-colors`}
-                        onClick={formValid ? handleContinue : undefined}
-                    >
-                        <p className="text-[#C6EB5F] font-semibold text-[14px]">Complete KYC & setup shop</p>
-                        <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
-                    </div>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#022B23]"></div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex flex-col gap-[10px]">
+                                {/* Pass banks array to DropDown component */}
+                                <DropDown
+                                    selectedOption={selectedBank}
+                                    setSelectedOption={setSelectedBank}
+                                    banks={banks}
+                                />
+                                <InputField
+                                    id="accountNumber"
+                                    label="Account number"
+                                    value={accountNumber}
+                                    onChange={setAccountNumber}
+                                    placeholder="Account number"
+                                />
+                            </div>
+                            <div
+                                className={`flex mb-[20px] gap-[9px] justify-center items-center bg-[#022B23] rounded-[12px] h-[52px] ${
+                                    formValid ? "cursor-pointer hover:bg-[#033a30]" : "opacity-70 cursor-not-allowed"
+                                } transition-colors`}
+                                onClick={formValid ? handleContinue : undefined}
+                            >
+                                <p className="text-[#C6EB5F] font-semibold text-[14px]">Complete KYC & setup shop</p>
+                                <Image src={limeArrow} alt="Continue arrow" width={18} height={18} />
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         </>
