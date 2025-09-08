@@ -484,7 +484,9 @@ const TransactionTableRow = ({ transaction, isLast }: { transaction: PaymentTran
                         : 'bg-[#FEF3F2] text-[#FF5050]'
                     }`}>
                     <p className="text-[12px] font-medium">
-                        {transaction.status === '0' ? 'Successful' : transaction.status}
+                        {transaction.status === '0' || transaction.status === 'success'
+                            ? 'Successful'
+                            : transaction.status}
                     </p>
                 </div>
             </div>
@@ -730,7 +732,7 @@ const OverviewTab = () => {
                 setTotalAmount(amountData);
                 setTotalPayoutAmount(payoutAmountData);
                 setAllTransactions(transactionsData);
-
+                console.log("All Transactions: ",transactionsData);
                 // Fetch total refund amount
                 try {
                     const refundResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/refund/total-processed-amount`);
@@ -746,6 +748,7 @@ const OverviewTab = () => {
                 const startIndex = (currentPage - 1) * itemsPerPage;
                 const endIndex = startIndex + itemsPerPage;
                 setTransactions(transactionsData.slice(startIndex, endIndex));
+
             } catch (error) {
                 console.error('Error fetching data:', error);
             } finally {

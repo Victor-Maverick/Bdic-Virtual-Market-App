@@ -1,13 +1,14 @@
 'use client'
-import {useEffect, useRef, useState} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardHeader from "@/components/dashboardHeader";
 import DashboardOptions from "@/components/dashboardOptions";
 import Image from "next/image";
 import { Toaster, toast } from 'react-hot-toast';
 import arrowDown from "../../../public/assets/images/arrow-down.svg";
-
 import FilterDropdown from "@/components/filterDropdown";
+import { useSession } from "next-auth/react";
+import axios from "axios";
 
 interface OrderItemDto {
     id: number;
@@ -35,20 +36,53 @@ interface DisputeResponse {
     orderItem: OrderItemDto;
 }
 
+interface OrderResponse {
+    id: number;
+    orderNumber: string;
+    buyerEmail: string;
+    status: OrderStatus;
+    deliveryInfo: DeliveryInfo;
+    totalAmount: number;
+    deliveryFee: number;
+    grandTotal: number;
+    createdAt: string;
+    items: OrderItemDto[];
+    isParentOrder: boolean;
+    shopId: number;
+    shopOrdersCount: number;
+}
+
+interface DeliveryInfo {
+    method: string;
+    address: string;
+}
+
+enum OrderStatus {
+    PAID = 'PAID',
+    PENDING = 'PENDING',
+    PROCESSING = 'PROCESSING',
+    PENDING_DELIVERY = 'PENDING_DELIVERY',
+    SHIPPED = 'SHIPPED',
+    DELIVERED = 'DELIVERED',
+    DECLINED = 'DECLINED',
+    CANCELLED = 'CANCELLED'
+}
+
 interface ProductActionsDropdownProps {
     children: React.ReactNode;
+    orderId: number;
     orderNumber: string;
     orderStatus: OrderStatus;
     items: OrderItemDto[];
-    onProcessOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
-    onDeclineOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
-    onShipOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
-    onViewOrder: (orderNumber: string) => void;
+    onProcessOrder: (orderId: number) => Promise<void>;
+    onDeclineOrder: (orderId: number) => Promise<void>;
+    onShipOrder: (orderId: number) => Promise<void>;
+    onViewOrder: () => void;
 }
 
 const ProductActionsDropdown = ({
                                     children,
-                                    orderNumber,
+                                    orderId,
                                     orderStatus,
                                     items,
                                     onProcessOrder,
@@ -70,37 +104,25 @@ const ProductActionsDropdown = ({
     ) => {
         e.stopPropagation();
         try {
-            // Validate we have items
             if (!items || items.length === 0) {
                 throw new Error('No items found in this order');
             }
 
-            // For view action, we don't need itemIds
             if (action === 'view') {
-                onViewOrder(orderNumber);
+                onViewOrder();
                 setIsOpen(false);
                 return;
             }
 
-            // Get all item IDs
-            const itemIds = items.map(item => item.id);
-            console.log("Item IDs: ", itemIds);
-
-            // Validate we have itemIds
-            if (itemIds.length === 0) {
-                throw new Error('No item IDs found');
-            }
-
-            // Call the appropriate handler
             switch (action) {
                 case 'process':
-                    await onProcessOrder(orderNumber, itemIds);
+                    await onProcessOrder(orderId);
                     break;
                 case 'decline':
-                    await onDeclineOrder(orderNumber, itemIds);
+                    await onDeclineOrder(orderId);
                     break;
                 case 'ship':
-                    await onShipOrder(orderNumber, itemIds);
+                    await onShipOrder(orderId);
                     break;
             }
 
@@ -170,29 +192,18 @@ const ProductActionsDropdown = ({
                                 Ship order
                             </li>
                         )}
-                        {orderStatus === OrderStatus.SHIPPED && (
-                            <li
-                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                                onClick={(e) => handleActionClick(e, 'view')}
-                            >
-                                View order
-                            </li>
-                        )}
-                        {orderStatus === OrderStatus.DELIVERED && (
-                            <li
-                                className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
-                                onClick={(e) => handleActionClick(e, 'view')}
-                            >
-                                View order
-                            </li>
-                        )}
+                        <li
+                            className="px-4 py-2 text-[12px] hover:bg-[#ECFDF6] cursor-pointer"
+                            onClick={(e) => handleActionClick(e, 'view')}
+                        >
+                            View order
+                        </li>
                     </ul>
                 </div>
             )}
         </div>
     );
 };
-
 
 const DisputeDetailsModal = ({
                                  dispute,
@@ -224,7 +235,6 @@ const DisputeDetailsModal = ({
             const response = await axios.put(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/process?disputeId=${dispute.id}`
             );
-            console.log("Response:", response);
             if (response.status === 200) {
                 toast.success('Dispute processed successfully', {
                     position: 'top-center',
@@ -239,9 +249,7 @@ const DisputeDetailsModal = ({
             }
         } catch (error) {
             console.error('Error processing dispute:', error);
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            toast.error(error.response?.data?.message || 'Failed to process dispute', {
+            toast.error((error as any).response?.data?.message || 'Failed to process dispute', {
                 position: 'top-center',
                 style: {
                     background: '#FF3333',
@@ -256,7 +264,6 @@ const DisputeDetailsModal = ({
             const response = await axios.put(
                 `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/send-resolve?disputeId=${dispute.id}`
             );
-            console.log("Resolve Response:", response);
             if (response.status === 200) {
                 toast.success('Dispute resolved successfully', {
                     position: 'top-center',
@@ -271,9 +278,7 @@ const DisputeDetailsModal = ({
             }
         } catch (error) {
             console.error('Error resolving dispute:', error);
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            toast.error(error.response?.data?.message || 'Failed to resolve dispute', {
+            toast.error((error as any).response?.data?.message || 'Failed to resolve dispute', {
                 position: 'top-center',
                 style: {
                     background: '#FF3333',
@@ -302,9 +307,7 @@ const DisputeDetailsModal = ({
             }
         } catch (error) {
             console.error('Error rejecting dispute:', error);
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            toast.error(error.response?.data?.message || 'Failed to reject dispute', {
+            toast.error((error as any).response?.data?.message || 'Failed to reject dispute', {
                 position: 'top-center',
                 style: {
                     background: '#FF3333',
@@ -345,11 +348,11 @@ const DisputeDetailsModal = ({
             />
             <div className="absolute inset-0" onClick={onClose} />
 
-            <div className="relative z-10 bg-white w-[1100px]  mx-4 px-[60px] py-[40px] shadow-lg">
-                <div className="flex justify-between border-b-[0.5px] border-[#ededed] pb-[14px] items-start ">
+            <div className="relative z-10 bg-white w-[1100px] mx-4 px-[60px] py-[40px] shadow-lg">
+                <div className="flex justify-between border-b-[0.5px] border-[#ededed] pb-[14px] items-start">
                     <div className="flex flex-col">
                         <p className="text-[16px] text-[#022B23] font-medium">Dispute request</p>
-                        <p className="text-[14px] text-[#707070] font-medium">View and process dispues on products with customers</p>
+                        <p className="text-[14px] text-[#707070] font-medium">View and process disputes on products with customers</p>
                     </div>
                     <div
                         className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
@@ -364,8 +367,8 @@ const DisputeDetailsModal = ({
                     </div>
                 </div>
 
-                <div className="w-full flex ">
-                    <div className="w-[50%] pt-[24px]  pr-[32px] border-r-[0.5px] border-[#ededed] pb-[2px] gap-[30px] flex flex-col">
+                <div className="w-full flex">
+                    <div className="w-[50%] pt-[24px] pr-[32px] border-r-[0.5px] border-[#ededed] pb-[2px] gap-[30px] flex flex-col">
                         <div className="flex flex-col gap-[14px]">
                             <p className="text-[#022B23] text-[16px] font-semibold">{dispute.orderNumber}</p>
                             <div>
@@ -403,7 +406,7 @@ const DisputeDetailsModal = ({
                                 <p className="text-[#707070] text-[14px] font-medium">Order date</p>
                                 <p className="text-[#000000] text-[14px] font-medium">{formattedOrderDate}</p>
                             </div>
-                            <div className="flex justify-between ">
+                            <div className="flex justify-between">
                                 <p className="text-[#707070] text-[14px] font-medium">Order time</p>
                                 <p className="text-[#000000] text-[14px] font-medium">{formattedOrderTime}</p>
                             </div>
@@ -453,7 +456,207 @@ const DisputeDetailsModal = ({
     );
 };
 
-const DisputeActionsDropdown = ({  onViewDispute }: { productId: number; onViewDispute: () => void }) => {
+const OrderDetailsModal = ({
+                               order,
+                               onClose,
+                               onProcessOrder,
+                               onDeclineOrder,
+                               onShipOrder
+                           }: {
+    order: OrderResponse;
+    onClose: () => void;
+    onProcessOrder: (orderId: number) => Promise<void>;
+    onDeclineOrder: (orderId: number) => Promise<void>;
+    onShipOrder: (orderId: number) => Promise<void>;
+}) => {
+    const orderDate = new Date(order.createdAt);
+    const formattedOrderDate = orderDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    const formattedOrderTime = orderDate.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+
+    const handleProcessOrder = async () => {
+        try {
+            await onProcessOrder(order.id);
+            onClose();
+        } catch (error) {
+            console.error('Error processing order:', error);
+        }
+    };
+
+    const handleDeclineOrder = async () => {
+        try {
+            await onDeclineOrder(order.id);
+            onClose();
+        } catch (error) {
+            console.error('Error declining order:', error);
+        }
+    };
+
+    const handleShipOrder = async () => {
+        try {
+            await onShipOrder(order.id);
+            onClose();
+        } catch (error) {
+            console.error('Error shipping order:', error);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#808080]/20">
+            <Toaster
+                position="top-center"
+                containerStyle={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: 0,
+                    right: 0,
+                }}
+                toastOptions={{
+                    style: {
+                        background: '#363636',
+                        color: '#fff',
+                    },
+                    success: {
+                        style: {
+                            background: '#4BB543',
+                        },
+                        duration: 3000,
+                    },
+                    error: {
+                        style: {
+                            background: '#FF3333',
+                        },
+                        duration: 4000,
+                    },
+                }}
+            />
+            <div className="absolute inset-0" onClick={onClose} />
+
+            <div className="relative z-10 bg-white w-[1100px] mx-4 px-[60px] py-[40px] shadow-lg">
+                <div className="flex justify-between border-b-[0.5px] border-[#ededed] pb-[14px] items-start">
+                    <div className="flex flex-col">
+                        <p className="text-[16px] text-[#022B23] font-medium">Order Details</p>
+                        <p className="text-[14px] text-[#707070] font-medium">View and manage order details</p>
+                    </div>
+                    <div
+                        className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            order.status === "PENDING"
+                                ? "bg-[#ECFDF3] text-[#027A48]"
+                                : order.status === "PROCESSING"
+                                    ? "bg-[#FFFAEB] text-[#F99007]"
+                                    : order.status === "SHIPPED"
+                                        ? "bg-[#E6F4FA] text-[#0A6EB4]"
+                                        : order.status === "DELIVERED"
+                                            ? "bg-[#E6F4FA] text-[#0A6EB4]"
+                                            : "bg-[#EDEDED] text-[#707070]"
+                        }`}
+                    >
+                        {order.status}
+                    </div>
+                </div>
+
+                <div className="w-full flex">
+                    <div className="w-[50%] pt-[24px] pr-[32px] border-r-[0.5px] border-[#ededed] pb-[2px] gap-[30px] flex flex-col">
+                        <div className="flex flex-col gap-[14px]">
+                            <p className="text-[#022B23] text-[16px] font-semibold">{order.orderNumber}</p>
+                            <div>
+                                <p className="text-[#707070] font-medium text-[14px] leading-tight">Order date: <span className="text-[#000000]">{formattedOrderDate}</span></p>
+                                {/*<p className="text-[#707070] font-medium text-[14px] leading-tight">Buyer: <span className="text-[#000000]">{order.items[0]?.buyerName || 'Unknown'}</span></p>*/}
+                            </div>
+                        </div>
+                        {order.items.map((item, index) => (
+                            <div key={index} className="w-[100%] flex items-center justify-between h-[72px] border-[1px] border-[#ededed] rounded-[14px]">
+                                <div className="flex items-center h-full gap-[10px]">
+                                    <div className="h-full bg-[#f9f9f9] rounded-bl-[14px] rounded-tl-[14px] w-[70px] border-l-[0.5px] border-[#ededed]">
+                                        <Image src={item.productImage} alt={'image'} width={70} height={70} className="h-full w-[70px] rounded-bl-[14px] rounded-tl-[14px]"/>
+                                    </div>
+                                    <div className="flex flex-col leading-tight">
+                                        <p className="text-[#101828] text-[14px] font-medium">{item.productName}</p>
+                                        <p className="text-[#667085] text-[12px]">{item.description}</p>
+                                    </div>
+                                </div>
+                                <p className="text-[#667085] text-[14px] mr-[10px]">Quantity: {item.quantity}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <div className="w-[50%] flex justify-between flex-col gap-[20px] pl-[15px] pt-[20px] pb-[5px]">
+                        <p className="text-[#022B23] font-semibold text-[16px]">Order Summary</p>
+                        <div className="flex flex-col gap-[8px] pb-[25px] border-b-[0.5px] border-[#ededed]">
+                            <div className="flex justify-between">
+                                <p className="text-[#707070] text-[14px] font-medium">Order date</p>
+                                <p className="text-[#000000] text-[14px] font-medium">{formattedOrderDate}</p>
+                            </div>
+                            <div className="flex justify-between">
+                                <p className="text-[#707070] text-[14px] font-medium">Order time</p>
+                                <p className="text-[#000000] text-[14px] font-medium">{formattedOrderTime}</p>
+                            </div>
+                            <div className="flex justify-between">
+                                <p className="text-[#707070] text-[14px] font-medium">Total amount</p>
+                                <p className="text-[#000000] text-[14px] font-medium">NGN {order.grandTotal.toLocaleString()}</p>
+                            </div>
+                            <div className="flex justify-between">
+                                <p className="text-[#707070] text-[14px] font-medium">Delivery method</p>
+                                <p className="text-[#000000] text-[14px] font-medium capitalize">{order.deliveryInfo.method}</p>
+                            </div>
+                            <div className="flex justify-between">
+                                <p className="text-[#707070] text-[14px] font-medium">Delivery address</p>
+                                <p className="text-[#000000] text-[14px] font-medium">{order.deliveryInfo.address}</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-[8px] pb-[25px] border-b-[0.5px] border-[#ededed]">
+                            <div className="flex justify-between">
+                                <p className="text-[#707070] text-[14px] font-medium">Customer email</p>
+                                <p className="text-[#000000] text-[14px] font-medium">{order.buyerEmail}</p>
+                            </div>
+                        </div>
+
+                        {order.status === OrderStatus.PENDING && (
+                            <div className="h-[48px] flex gap-[4px]">
+                                <div
+                                    className="flex cursor-pointer text-[#707070] text-[16px] font-semibold items-center justify-center w-[116px] h-full border-[0.5px] border-[#707070] rounded-[12px]"
+                                    onClick={handleDeclineOrder}
+                                >
+                                    Decline
+                                </div>
+                                <div
+                                    className="flex cursor-pointer text-[#461602] text-[16px] font-semibold items-center justify-center w-[163px] bg-[#FFEEBE] h-full rounded-[12px]"
+                                    onClick={handleProcessOrder}
+                                >
+                                    Process order
+                                </div>
+                                <div
+                                    className="flex cursor-pointer text-[#461602] text-[16px] font-semibold items-center justify-center w-[163px] bg-[#FFEEBE] h-full rounded-[12px]"
+                                    onClick={handleShipOrder}
+                                >
+                                    Ship order
+                                </div>
+                            </div>
+                        )}
+                        {order.status === OrderStatus.PROCESSING && (
+                            <div className="h-[48px] flex gap-[4px]">
+                                <div
+                                    className="flex cursor-pointer text-[#461602] text-[16px] font-semibold items-center justify-center w-[163px] bg-[#FFEEBE] h-full rounded-[12px]"
+                                    onClick={handleShipOrder}
+                                >
+                                    Ship order
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DisputeActionsDropdown = ({ onViewDispute }: { productId: number; onViewDispute: () => void }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -561,56 +764,13 @@ const DisputeTableRow = ({
     );
 };
 
-interface OrderResponse {
-    id: number;
-    orderNumber: string;
-    buyerEmail: string;
-    status: OrderStatus;
-    deliveryInfo: DeliveryInfo;
-    totalAmount: number;
-    deliveryFee: number;
-    grandTotal: number;
-    createdAt: string;
-    items: OrderItemDto[];
-    isParentOrder: boolean;
-    shopId: number;
-    shopOrdersCount: number;
-}
-
-interface OrderItemDto {
-    id: number;
-    productId: number;
-    productName: string;
-    description: string;
-    productImage: string;
-    quantity: number;
-    unitPrice: number;
-    totalPrice: number;
-}
-
-interface DeliveryInfo {
-    method: string;
-    address: string;
-}
-
-enum OrderStatus {
-    PAID = 'PAID',
-    PENDING = 'PENDING',
-    PROCESSING = 'PROCESSING',
-    PENDING_DELIVERY = 'PENDING_DELIVERY',
-    SHIPPED = 'SHIPPED',
-    DELIVERED = 'DELIVERED',
-    DECLINED = 'DECLINED',
-    CANCELLED = 'CANCELLED'
-}
-
 interface ProductTableRowProps {
     order: OrderResponse;
     isLast: boolean;
-    onProcessOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
-    onDeclineOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
-    onShipOrder: (orderNumber: string, itemIds: number[]) => Promise<void>;
-    onViewOrder: (orderNumber: string) => void;
+    onProcessOrder: (orderId: number) => Promise<void>;
+    onDeclineOrder: (orderId: number) => Promise<void>;
+    onShipOrder: (orderId: number) => Promise<void>;
+    onViewOrder: () => void;
 }
 
 const ProductTableRow = ({
@@ -678,6 +838,7 @@ const ProductTableRow = ({
             </div>
             <div className="flex items-center justify-center w-[2%]">
                 <ProductActionsDropdown
+                    orderId={order.id}
                     orderNumber={order.orderNumber}
                     orderStatus={order.status}
                     items={order.items}
@@ -706,80 +867,128 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
     const [orders, setOrders] = useState<OrderResponse[]>(initialOrders);
     const [currentPage, setCurrentPage] = useState(1);
     const [filter, setFilter] = useState<'all' | 'today' | '1day' | '7days' | '30days'>('all');
-    const router = useRouter();
+    const [selectedOrder, setSelectedOrder] = useState<OrderResponse | null>(null);
 
-    const handleProcessOrder = async (orderNumber: string, itemIds: number[]) => {
+    const handleProcessOrder = async (orderId: number) => {
         try {
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/process-item`,
-                { orderNumber, itemIds },
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/process-order?id=${orderId}`,
+                null,
                 { headers: { 'Content-Type': 'application/json' } }
             );
 
             if (response.status === 200) {
-                toast.success('Order processed successfully');
-                updateOrderStatus(orderNumber, OrderStatus.PROCESSING);
+                toast.success('Order processed successfully', {
+                    position: 'top-center',
+                    style: {
+                        background: '#4BB543',
+                        color: '#fff',
+                    },
+                });
+                setOrders(prevOrders =>
+                    prevOrders.map(order =>
+                        order.id === orderId
+                            ? { ...order, status: OrderStatus.PROCESSING }
+                            : order
+                    )
+                );
             } else {
                 throw new Error('Failed to process order');
             }
         } catch (error) {
             console.error('Error processing order:', error);
-            toast.error('Failed to process order');
+            toast.error((error as any).response?.data?.message || 'Failed to process order', {
+                position: 'top-center',
+                style: {
+                    background: '#FF3333',
+                    color: '#fff',
+                },
+            });
         }
     };
 
-    const handleDeclineOrder = async (orderNumber: string, itemIds: number[]) => {
+    const handleDeclineOrder = async (orderId: number) => {
         try {
             const response = await axios.put(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/decline-order`,
-                { orderNumber, itemIds },
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/decline-order?id=${orderId}`,
+                null,
                 { headers: { 'Content-Type': 'application/json' } }
             );
 
             if (response.status === 200) {
-                toast.success('Order declined successfully');
-                updateOrderStatus(orderNumber, OrderStatus.CANCELLED);
+                toast.success('Order declined successfully', {
+                    position: 'top-center',
+                    style: {
+                        background: '#4BB543',
+                        color: '#fff',
+                    },
+                });
+                setOrders(prevOrders =>
+                    prevOrders.map(order =>
+                        order.id === orderId
+                            ? { ...order, status: OrderStatus.DECLINED }
+                            : order
+                    )
+                );
             } else {
                 throw new Error('Failed to decline order');
             }
         } catch (error) {
             console.error('Error declining order:', error);
-            toast.error('Failed to decline order');
+            toast.error((error as any).response?.data?.message || 'Failed to decline order', {
+                position: 'top-center',
+                style: {
+                    background: '#FF3333',
+                    color: '#fff',
+                },
+            });
         }
     };
 
-    const handleShipOrder = async (orderNumber: string, itemIds: number[]) => {
+    const handleShipOrder = async (orderId: number) => {
         try {
-            const response = await axios.post(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/ship-item`,
-                { orderNumber, itemIds },
+            const response = await axios.put(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/orders/ship-order?id=${orderId}`,
+                null,
                 { headers: { 'Content-Type': 'application/json' } }
             );
 
             if (response.status === 200) {
-                toast.success('Order shipped successfully');
-                updateOrderStatus(orderNumber, OrderStatus.SHIPPED);
+                toast.success('Order shipped successfully', {
+                    position: 'top-center',
+                    style: {
+                        background: '#4BB543',
+                        color: '#fff',
+                    },
+                });
+                setOrders(prevOrders =>
+                    prevOrders.map(order =>
+                        order.id === orderId
+                            ? { ...order, status: OrderStatus.SHIPPED }
+                            : order
+                    )
+                );
             } else {
                 throw new Error('Failed to ship order');
             }
         } catch (error) {
             console.error('Error shipping order:', error);
-            toast.error('Failed to ship order');
+            toast.error((error as any).response?.data?.message || 'Failed to ship order', {
+                position: 'top-center',
+                style: {
+                    background: '#FF3333',
+                    color: '#fff',
+                },
+            });
         }
     };
 
-    const updateOrderStatus = (orderNumber: string, newStatus: OrderStatus) => {
-        setOrders(prevOrders =>
-            prevOrders.map(order =>
-                order.orderNumber === orderNumber
-                    ? { ...order, status: newStatus }
-                    : order
-            )
-        );
+    const handleViewOrder = (order: OrderResponse) => {
+        setSelectedOrder(order);
     };
 
-    const handleViewOrder = (orderNumber: string) => {
-        router.push(`/vendor/dashboard/order/${orderNumber}`);
+    const closeModal = () => {
+        setSelectedOrder(null);
     };
 
     useEffect(() => {
@@ -869,116 +1078,128 @@ const PendingOrders = ({ orders: initialOrders, loading }: PendingOrdersProps) =
     }
 
     return (
-        <div className="flex flex-col gap-[50px]">
-            <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
-                <div className="my-[20px] mx-[25px] flex flex-col">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <p className="text-[#101828] font-medium">Orders ({filteredOrders.length})</p>
-                            <p className="text-[#667085] text-[14px]">View your product orders</p>
+        <>
+            <div className="flex flex-col gap-[50px]">
+                <div className="flex flex-col rounded-[24px] border-[1px] border-[#EAECF0]">
+                    <div className="my-[20px] mx-[25px] flex flex-col">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <p className="text-[#101828] font-medium">Orders ({filteredOrders.length})</p>
+                                <p className="text-[#667085] text-[14px]">View your product orders</p>
+                            </div>
+                            <FilterDropdown
+                                filter={filter}
+                                setFilter={setFilter}
+                                setCurrentPage={setCurrentPage}
+                            />
                         </div>
-                        <FilterDropdown
-                            filter={filter}
-                            setFilter={setFilter}
-                            setCurrentPage={setCurrentPage}
-                        />
                     </div>
-                </div>
 
-                <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
-                    <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Products</p>
-                        <Image src={arrowDown} alt="Sort" width={12} height={12} />
+                    <div className="flex h-[44px] bg-[#F9FAFB] border-b-[1px] border-[#EAECF0]">
+                        <div className="flex items-center px-[24px] w-[30%] py-[12px] gap-[4px]">
+                            <p className="text-[#667085] font-medium text-[12px]">Products</p>
+                            <Image src={arrowDown} alt="Sort" width={12} height={12} />
+                        </div>
+                        <div className="flex justify-center items-center px-[24px] w-[10%] py-[12px]">
+                            <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                        </div>
+                        <div className="flex items-center px-[24px] w-[13%] py-[12px]">
+                            <p className="text-[#667085] font-medium text-[12px]">Order Number</p>
+                        </div>
+                        <div className="flex items-center px-[15px] w-[20%] py-[12px]">
+                            <p className="text-[#667085] font-medium text-[12px]">Delivery method</p>
+                        </div>
+                        <div className="flex items-center px-[10px] w-[15%] py-[12px]">
+                            <p className="text-[#667085] font-medium text-[12px]">Total Amount</p>
+                        </div>
+                        <div className="flex items-center px-[10px] w-[10%] py-[12px]">
+                            <p className="text-[#667085] font-medium text-[12px]">Items</p>
+                        </div>
+                        <div className="w-[2%]"></div>
                     </div>
-                    <div className="flex justify-center items-center px-[24px] w-[10%] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Status</p>
-                    </div>
-                    <div className="flex items-center px-[24px] w-[13%] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Order Number</p>
-                    </div>
-                    <div className="flex items-center px-[15px] w-[20%] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Delivery method</p>
-                    </div>
-                    <div className="flex items-center px-[10px] w-[15%] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Total Amount</p>
-                    </div>
-                    <div className="flex items-center px-[10px] w-[10%] py-[12px]">
-                        <p className="text-[#667085] font-medium text-[12px]">Items</p>
-                    </div>
-                    <div className="w-[2%]"></div>
-                </div>
 
-                <div className="flex flex-col">
-                    {filteredOrders.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-10">
-                            <p className="text-[#667085] text-[14px] mb-4">No orders</p>
+                    <div className="flex flex-col">
+                        {filteredOrders.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-10">
+                                <p className="text-[#667085] text-[14px] mb-4">No orders</p>
+                                <button
+                                    onClick={() => setFilter('all')}
+                                    className="text-[#022B23] text-[14px] font-medium hover:underline"
+                                >
+                                    Clear filters
+                                </button>
+                            </div>
+                        ) : (
+                            currentOrders.map((order, index) => (
+                                <ProductTableRow
+                                    key={order.id}
+                                    order={order}
+                                    isLast={index === currentOrders.length - 1}
+                                    onProcessOrder={() => handleProcessOrder(order.id)}
+                                    onDeclineOrder={() => handleDeclineOrder(order.id)}
+                                    onShipOrder={() => handleShipOrder(order.id)}
+                                    onViewOrder={() => handleViewOrder(order)}
+                                />
+                            ))
+                        )}
+                    </div>
+
+                    {filteredOrders.length > 0 && (
+                        <div className="flex justify-between items-center mt-4 px-6 pb-6">
                             <button
-                                onClick={() => setFilter('all')}
-                                className="text-[#022B23] text-[14px] font-medium hover:underline"
+                                onClick={handlePrevPage}
+                                disabled={currentPage === 1}
+                                className={`px-4 py-2 rounded-md ${
+                                    currentPage === 1
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-[#022B23] hover:bg-gray-100'
+                                }`}
                             >
-                                Clear filters
+                                Previous
+                            </button>
+
+                            <div className="flex gap-2">
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                    <button
+                                        key={page}
+                                        onClick={() => handlePageChange(page)}
+                                        className={`w-8 h-8 rounded-md flex items-center justify-center ${
+                                            currentPage === page
+                                                ? 'bg-[#022B23] text-white'
+                                                : 'text-[#022B23] hover:bg-gray-100'
+                                        }`}
+                                    >
+                                        {page}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={handleNextPage}
+                                disabled={currentPage === totalPages}
+                                className={`px-4 py-2 rounded-md ${
+                                    currentPage === totalPages
+                                        ? 'text-gray-400 cursor-not-allowed'
+                                        : 'text-[#022B23] hover:bg-gray-100'
+                                }`}
+                            >
+                                Next
                             </button>
                         </div>
-                    ) : (
-                        currentOrders.map((order, index) => (
-                            <ProductTableRow
-                                key={order.id}
-                                order={order}
-                                isLast={index === currentOrders.length - 1}
-                                onProcessOrder={handleProcessOrder}
-                                onDeclineOrder={handleDeclineOrder}
-                                onShipOrder={handleShipOrder}
-                                onViewOrder={handleViewOrder}
-                            />
-                        ))
                     )}
                 </div>
-
-                {filteredOrders.length > 0 && (
-                    <div className="flex justify-between items-center mt-4 px-6 pb-6">
-                        <button
-                            onClick={handlePrevPage}
-                            disabled={currentPage === 1}
-                            className={`px-4 py-2 rounded-md ${
-                                currentPage === 1
-                                    ? 'text-gray-400 cursor-not-allowed'
-                                    : 'text-[#022B23] hover:bg-gray-100'
-                            }`}
-                        >
-                            Previous
-                        </button>
-
-                        <div className="flex gap-2">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <button
-                                    key={page}
-                                    onClick={() => handlePageChange(page)}
-                                    className={`w-8 h-8 rounded-md flex items-center justify-center ${
-                                        currentPage === page
-                                            ? 'bg-[#022B23] text-white'
-                                            : 'text-[#022B23] hover:bg-gray-100'
-                                    }`}
-                                >
-                                    {page}
-                                </button>
-                            ))}
-                        </div>
-
-                        <button
-                            onClick={handleNextPage}
-                            disabled={currentPage === totalPages}
-                            className={`px-4 py-2 rounded-md ${
-                                currentPage === totalPages
-                                    ? 'text-gray-400 cursor-not-allowed'
-                                    : 'text-[#022B23] hover:bg-gray-100'
-                            }`}
-                        >
-                            Next
-                        </button>
-                    </div>
-                )}
             </div>
-        </div>
+
+            {selectedOrder && (
+                <OrderDetailsModal
+                    order={selectedOrder}
+                    onClose={closeModal}
+                    onProcessOrder={handleProcessOrder}
+                    onDeclineOrder={handleDeclineOrder}
+                    onShipOrder={handleShipOrder}
+                />
+            )}
+        </>
     );
 };
 
@@ -993,7 +1214,6 @@ const Disputes = () => {
             if (session?.user?.email) {
                 try {
                     setLoading(true);
-                    // First get the shop ID
                     const shopResponse = await fetch(
                         `${process.env.NEXT_PUBLIC_API_BASE_URL}/shops/getbyEmail?email=${session.user.email}`
                     );
@@ -1002,8 +1222,6 @@ const Disputes = () => {
                     }
                     const shopData = await shopResponse.json();
 
-
-                    // Then get the disputes for this shop
                     const disputesResponse = await fetch(
                         `${process.env.NEXT_PUBLIC_API_BASE_URL}/dispute/get-shop-disputes?id=${shopData.id}`
                     );
@@ -1012,7 +1230,7 @@ const Disputes = () => {
                     }
                     const disputesData = await disputesResponse.json();
                     setDisputes(disputesData);
-                    console.log("Disputes: ",disputesData);
+                    console.log("Disputes: ", disputesData);
                 } catch (error) {
                     console.error('Error fetching disputes:', error);
                 } finally {
@@ -1102,9 +1320,6 @@ const Disputes = () => {
         </>
     );
 };
-
-import { useSession } from "next-auth/react";
-import axios from "axios";
 
 const OrderClient = () => {
     const searchParams = useSearchParams();

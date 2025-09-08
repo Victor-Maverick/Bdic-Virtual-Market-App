@@ -31,6 +31,7 @@ interface DeliveryInfo {
 }
 
 interface BuyerOrderResponse {
+    id: number;
     orderNumber: string;
     status: string;
     deliveryInfo: DeliveryInfo;

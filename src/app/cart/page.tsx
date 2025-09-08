@@ -146,13 +146,13 @@ const Cart = () => {
         }
     }, [session]);
 
-    const verifyPayment = useCallback(async (transRef: string) => {
+    const verifyPayment = useCallback(async (reference: string) => {
         setIsVerifying(true);
         setPaymentError(null);
 
         try {
             const response = await axios.get<VerifyPaymentResponse>(
-                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify?reference=${transRef}`,
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/payments/verify?reference=${reference}`,
                 { timeout: 20000 }
             );
 
@@ -172,7 +172,7 @@ const Cart = () => {
                     buyerEmail: session.user.email,
                     deliveryMethod: selectedDeliveryOption,
                     address: selectedDeliveryOption === 'pickup' ? 'Shop Pickup' : selectedAddress,
-                    transRef,
+                    reference,
                     phoneNumber: contactPhone,
                     deliveryFee: DELIVERY_FEE,
                 });
@@ -674,22 +674,22 @@ const Cart = () => {
                                     ₦{getTotalPrice().toLocaleString()}.00
                                 </p>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <p className="text-[#022B23] text-[14px] font-normal">Discount</p>
-                                <p className="text-[14px] font-semibold text-[#1E1E1E]">
-                                    -₦{discount.toLocaleString()}.00
-                                </p>
-                            </div>
+                            {/*<div className="flex justify-between items-center">*/}
+                            {/*    <p className="text-[#022B23] text-[14px] font-normal">Discount</p>*/}
+                            {/*    <p className="text-[14px] font-semibold text-[#1E1E1E]">*/}
+                            {/*        -₦{discount.toLocaleString()}.00*/}
+                            {/*    </p>*/}
+                            {/*</div>*/}
                             <div className="flex justify-between items-center">
                                 <p className="text-[#022B23] text-[14px] font-normal">VAT</p>
                                 <p className="text-[14px] font-semibold text-[#1E1E1E]">0%</p>
                             </div>
-                            <div className="flex justify-between items-center">
-                                <p className="text-[#022B23] text-[14px] font-normal">Delivery</p>
-                                <p className="text-[14px] font-semibold text-[#1E1E1E]">
-                                    ₦{DELIVERY_FEE.toLocaleString()}.00
-                                </p>
-                            </div>
+                            {/*<div className="flex justify-between items-center">*/}
+                            {/*    <p className="text-[#022B23] text-[14px] font-normal">Delivery</p>*/}
+                            {/*    <p className="text-[14px] font-semibold text-[#1E1E1E]">*/}
+                            {/*        ₦{DELIVERY_FEE.toLocaleString()}.00*/}
+                            {/*    </p>*/}
+                            {/*</div>*/}
                             <div className="border-t border-[#ededed] pt-3 mt-3">
                                 <div className="flex justify-between items-center">
                                     <p className="text-[#022B23] text-[18px] font-medium">Total</p>

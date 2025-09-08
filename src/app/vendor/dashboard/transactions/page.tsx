@@ -5,7 +5,6 @@ import biArrows from "../../../../../public/assets/images/biArrows.svg";
 import arrowUp from "../../../../../public/assets/images/arrow-up.svg";
 import exportImg from "../../../../../public/assets/images/exportImg.svg";
 import archiveImg from "../../../../../public/assets/images/archive.svg";
-// import Stats from "../../../../../public/assets/images/Stats.svg";
 import { useCallback, useEffect, useState } from "react";
 import arrowDown from "../../../../../public/assets/images/arrow-down.svg";
 import PayoutRequestSuccessModal from "@/components/payoutRequestSuccessModal";
@@ -106,13 +105,7 @@ const ProductTableRow = ({ order, isLast }: { order: OrderResponse; isLast: bool
             </div>
 
             <div className="flex items-center w-[30%] px-[20px]">
-                <div className={`w-[50%] h-[22px] rounded-[8px] flex items-center justify-center ${
-                    order.status === OrderStatus.PAID || order.status === OrderStatus.DELIVERED
-                        ? 'bg-[#ECFDF3] text-[#027A48]'
-                        : 'bg-[#FEF3F2] text-[#FF5050]'
-                }`}>
-                    <p className="text-[12px] font-medium capitalize">{order.status.toLowerCase().replace('_', ' ')}</p>
-                </div>
+                <p className="text-[12px] font-medium capitalize">NGN {order.totalAmount}</p>
             </div>
 
             <div className="flex flex-col w-[15%] px-[16px] justify-center">
@@ -447,7 +440,7 @@ const Transactions = () => {
                                     <Image src={arrowDown} alt="Sort" width={12} height={12} />
                                 </div>
                                 <div className="flex items-center px-[24px] w-[30%] py-[12px]">
-                                    <p className="text-[#667085] font-medium text-[12px]">Status</p>
+                                    <p className="text-[#667085] font-medium text-[12px]">Amount</p>
                                 </div>
                                 <div className="flex items-center px-[24px] w-[15%] py-[12px]">
                                     <p className="text-[#667085] font-medium text-[12px]">Date</p>

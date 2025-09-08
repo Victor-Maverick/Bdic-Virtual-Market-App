@@ -32,7 +32,7 @@ export interface CheckoutData {
     buyerEmail: string;
     deliveryMethod: 'pickup' | 'delivery';
     address: string;
-    transRef: string;
+    reference: string;
     phoneNumber?: string;
     deliveryFee?: number;
 }

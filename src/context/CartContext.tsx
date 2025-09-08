@@ -15,7 +15,7 @@ interface CheckoutData {
     buyerEmail: string;
     deliveryMethod: 'pickup' | 'delivery';
     address: string;
-    transRef: string;
+    reference: string;
     phoneNumber?: string;
     deliveryFee?: number;
 }
@@ -42,7 +42,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
     // Load cartId from localStorage on initial render
     useEffect(() => {
         const storedCartId = localStorage.getItem('cartId');
@@ -127,11 +126,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         try {
             setLoading(true);
             const response = await apiCheckoutCart(currentCartId, checkoutData);
-
             localStorage.removeItem('cartId');
             setCartId(null);
             setCartItems([]);
-
             return response;
         } catch (err) {
             setError('Failed to checkout');
